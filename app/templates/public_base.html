@@ -26,6 +26,27 @@
 </header>
 <div id="main-content" tabindex="-1"></div>
 {% endblock %}
+{% block floating_nav %}
+<div class="floating-nav-container" x-data="{ scrolled: false }" @scroll.window="scrolled = window.scrollY > 100">
+  <nav class="fixed top-4 left-1/2 -translate-x-1/2 z-50
+               backdrop-blur-xl bg-white/70 dark:bg-navy-800/70
+               border border-gray-200/70 dark:border-white/[0.08]
+               rounded-full shadow-lg shadow-gray-900/[0.06] dark:shadow-black/30
+               flex items-center gap-1 px-1.5 py-1.5
+               transition-all duration-300"
+       :class="{ 'translate-y-0 opacity-100': scrolled, 'translate-y-[-10px] opacity-0': !scrolled }">
+    <a href="/" class="wordmark" aria-label="Raja Voting Digital — Beranda">
+      <img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="40" height="40" alt="Logo Raja Voting Digital">
+    </a>
+    <div class="desktop-nav">
+      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
+      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Jelajahi Event</a>
+      <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Leaderboard</a>
+    </div>
+    <a href="/events" class="button button-dark header-cta">Mulai Voting {{ icon('arrow') }}</a>
+  </nav>
+</div>
+{% endblock %}
 {% block footer %}
 <footer class="public-footer"><div class="shell footer-grid">
   <div><a class="wordmark" href="/"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a><p>Panggung untuk setiap talenta.<br>Ruang untuk setiap dukungan.</p></div>

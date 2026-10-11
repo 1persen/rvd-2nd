@@ -5,6 +5,15 @@ module.exports = {
     './app/templates/**/*.html',
     './app/static/js/**/!(alpine*).js',
   ],
+  safelist: [
+    'backdrop-blur-xl',
+    'bg-white/70',
+    'bg-navy-800/70',
+    'border-gray-200/70',
+    'dark:border-white/[0.08]',
+    'shadow-gray-900/[0.06]',
+    'dark:shadow-black/30',
+  ],
   theme: {
     extend: {
       colors: {
