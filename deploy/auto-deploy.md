@@ -4,6 +4,10 @@
 
 ## Release gates
 
+GitHub Actions runs the `RVD checks` job for every pull request targeting `main` and every push to `main`. It validates the locked Python/Node dependencies, CSS build, migrations against an empty disposable PostgreSQL database, JavaScript tests, deployment tests, application tests, and Chromium navigation at 390/1440 px. Browser dependencies live separately in `tests/browser` and are not installed on production. No production credentials are available to CI.
+
+The repository owner must enable a branch protection rule for `main`: require a pull request, require `RVD checks` from GitHub Actions, require the branch to be up to date, enforce the rule for administrators, and disallow force pushes and deletion. For a solo-maintained repository, a required review count of zero still requires a PR and passing checks without making self-authored changes impossible to merge. The workflow alone does not block merging; confirm the protection rule in GitHub Settings after the first successful run. GitHub's merge check and the server's release validation are separate gates; a green PR is not proof that production has updated.
+
 The root-owned runner fetches an exact commit, rejects archives containing links, and creates `/srv/rvd/releases/git-<commit>`. Candidate dependencies, asset builds and tests run as `rvd-build`, which cannot read `/etc/rvd/production.env`. The runner loads only `/etc/rvd/loadtest.env` for application tests. That environment points to disposable PostgreSQL and Redis databases.
 
 Every release installs Python dependencies using hash-verified `requirements.lock`, verifies dependency compatibility, installs CSS dependencies with `npm ci --ignore-scripts`, builds Tailwind, and runs JavaScript, deployment and application tests. It then makes release files root-owned, creates and validates a protected PostgreSQL backup, switches `/srv/rvd/current` atomically and restarts `rvd.service`. Health/public-page checks and anonymous admin API rejection must pass; otherwise the runner restores the previous release and checks it again. There is a brief service restart, not a zero-downtime rollout.
@@ -20,7 +24,7 @@ Inspect the timer with `sudo systemctl status rvd-auto-deploy.timer`. Inspect de
 
 ## Failed releases and recovery
 
-A failed revision is recorded in `/var/lib/rvd-deploy/last-attempt` and is not retried every minute. Fix it through a new commit. For a transient failure, inspect the journal, stop the timer, remove that one marker, and start the service once before re-enabling the timer. Do not remove it without understanding the failure.
+A failed revision is recorded in `/var/lib/rvd-deploy/last-attempt` and is not retried every minute. Subsequent polls continue to exit unsuccessfully for that revision, keeping the service failure visible without rebuilding it. Fix it through a new commit. For a transient failure, inspect the journal, stop the timer, remove that one marker, and start the service once before re-enabling the timer. Do not remove it without understanding the failure.
 
 Stop `rvd-auto-deploy.timer` and let any active deployment finish before a manual rollback. Repoint `current` atomically to a verified retained release, restart `rvd`, and verify health. Keep the timer stopped while investigating; otherwise a subsequent main commit can replace the manually selected release. The runner does not update event schedules, seed data, change payment configuration, or run production payment tests.
 

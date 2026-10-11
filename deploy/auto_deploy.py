@@ -133,7 +133,7 @@ def deploy(sha):
         return
     attempted = STATE / 'last-attempt'
     if attempted.exists() and attempted.read_text().strip() == sha:
-        return  # A failed revision requires a new commit or an explicit operator retry.
+        raise RuntimeError(f'Previously failed revision {sha}; submit a fix or inspect the journal before retrying')
     attempted.write_text(sha + '\n')
     release = ROOT / 'releases' / ('git-' + sha)
     switched = False

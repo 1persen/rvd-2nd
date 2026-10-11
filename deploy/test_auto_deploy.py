@@ -60,7 +60,8 @@ class DeploymentTests(unittest.TestCase):
                 deployer.deploy(self.sha)
             self.assertEqual((self.root / 'current').resolve(), self.previous)
             self.assertFalse(self.release.exists())
-            deployer.deploy(self.sha)
+            with self.assertRaisesRegex(RuntimeError, 'Previously failed revision'):
+                deployer.deploy(self.sha)
             build.assert_called_once()
             restart.assert_not_called()
 
