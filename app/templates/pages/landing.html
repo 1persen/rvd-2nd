@@ -2,10 +2,20 @@
 {% from "macros/public.html" import icon, podium %}
 {% block title %}Raja Voting Digital — Setiap Dukungan Berarti{% endblock %}
 {% block content %}
-<section class="home-hero"><div class="shell hero-grid">
-  <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }} PANGGUNG UNTUK SETIAP POTENSI</span><h1>Talenta mereka.<br>Dukunganmu.<br><em>Momen luar biasa.</em></h1><p>Dari karya hingga prestasi, setiap peserta punya cerita. Berikan suaramu dan jadi bagian dari perjalanan mereka.</p><div class="hero-actions"><a href="/events" class="button button-gold">Jelajahi Event {{ icon('arrow') }}</a><a href="#cara-voting" class="text-link">Bagaimana caranya? <span>↗</span></a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Beragam kompetisi</span></div></div>
-  {% include "partials/trophy_art.html" %}
-</div><div class="hero-bottom shell"><span>UNTUK SETIAP BENTUK TALENTA</span><p>Seni &amp; Kreativitas <i>✦</i> Pendidikan <i>✦</i> Olahraga <i>✦</i> Komunitas</p></div></section>
+<section class="landing-slide" data-slide="hero">
+  <div class="landing-section-inner section-visible">
+    <div class="home-hero"><div class="shell hero-grid">
+      <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }} PANGGUNG UNTUK SETIAP POTENSI</span><h1>Talenta mereka.<br>Dukunganmu.<br><em>Momen luar biasa.</em></h1><p>Dari karya hingga prestasi, setiap peserta punya cerita. Berikan suaramu dan jadi bagian dari perjalanan mereka.</p><div class="hero-actions"><a href="/events" class="button button-gold">Jelajahi Event {{ icon('arrow') }}</a><a href="#cara-voting" class="text-link">Bagaimana caranya? <span>↗</span></a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Beragam kompetisi</span></div></div>
+      {% include "partials/trophy_art.html" %}
+    </div>
+    <div class="absolute inset-0 flex flex-col justify-end">
+      <div class="hero-bottom shell">
+        <span>UNTUK SETIAP BENTUK TALENTA</span>
+        <p>Seni &amp; Kreativitas <i>✦</i> Pendidikan <i>✦</i> Olahraga <i>✦</i> Komunitas</p>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="shell featured-section">
   <div class="section-heading"><div><span class="eyebrow">JANGAN LEWATKAN MOMENNYA</span><h2>Temukan. Dukung. <em>Rayakan.</em></h2></div><a class="text-link" href="/events">Semua event {{ icon('arrow') }}</a></div>
   {% if event %}

@@ -74,3 +74,18 @@ function eventCountdown(event) {
     },
   };
 }
+
+// SIMPASKOR: Intersection Observer for section-visible class toggling
+document.addEventListener('DOMContentLoaded', function() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('section-visible');
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.landing-section-inner').forEach(el => {
+    observer.observe(el);
+  });
+});
