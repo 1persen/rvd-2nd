@@ -1,0 +1,7 @@
+{
+  "name": "rvd-browser-tests",
+  "private": true,
+  "devDependencies": {
+    "playwright": "1.63.0"
+  }
+}
