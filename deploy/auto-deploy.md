@@ -1,6 +1,6 @@
 # Automatic Tencent deployment
 
-`rvd-auto-deploy.timer` checks the public GitHub repository's `main` branch every 60 seconds after the preceding check finishes. A merge normally reaches production within a few minutes, including build and validation time. This uses outbound HTTPS from Tencent, with no GitHub token, inbound webhook, SSH credential in GitHub, or Actions permission requirement. It follows `main`, so any direct push to that branch is also a deployment trigger; use reviewed pull requests.
+`rvd-auto-deploy.timer` checks the public [`1persen/rvd-2nd`](https://github.com/1persen/rvd-2nd) repository's `main` branch every 60 seconds after the preceding check finishes. A merge normally reaches production within a few minutes, including build and validation time. This uses outbound HTTPS from Tencent, with no GitHub token, inbound webhook, SSH credential in GitHub, or Actions permission requirement. It follows `main`, so any direct push to that branch is also a deployment trigger; use reviewed pull requests.
 
 ## Release gates
 
@@ -17,6 +17,8 @@ Changes to `alembic.ini` or migration Python files stop deployment before activa
 Five recent automatic releases plus any protected current/previous release are retained, together with ten `rvd-auto-*.dump` backups. Existing named manual releases and backups are not pruned. These backups are on the same host and do not replace off-site backups.
 
 ## Setup on the existing host
+
+The source repository moved from `1stind/rvd` to `1persen/rvd-2nd`. The installed root-owned runner must be updated from this reviewed source to complete the switch; changing a local Git remote or merging this file alone does not update that installed copy. Existing application data, credentials, domain, backups and retained releases stay on Tencent.
 
 From the reviewed checkout, run `sudo bash deploy/install_auto_deploy.sh`. It installs the runner and units, provisions the unprivileged build account, preserves startup compatibility for the current manual release, and enables the timer. It assumes the existing PostgreSQL/Redis setup, production/test environment files, Python 3.12 venv support, Node/npm, Git, systemd and legacy `/srv/rvd/venv` already exist. It does not provision credentials or a database.
 
