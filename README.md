@@ -14,7 +14,7 @@ Install dependencies with `pip install --require-hashes -r requirements.lock`, a
 
 Install the locked CSS build dependencies with `npm ci --prefix deploy/assets --ignore-scripts --no-audit --no-fund`, then build the Tailwind stylesheet with `sh scripts/build_css.sh` before starting production. It uses Tailwind 3.4.17; `app/static/css/tailwind.css` is generated and ignored by Git. The template selects the compiled stylesheet at startup and versions asset URLs. The CDN fallback is for development.
 
-Tencent automatically polls GitHub `main` every minute and deploys tested application revisions. See [automatic deployment and recovery](deploy/auto-deploy.md); schema migrations require a reviewed manual deployment.
+Tencent automatically polls [`1persen/rvd-2nd`](https://github.com/1persen/rvd-2nd) `main` every minute and deploys tested application revisions. See [automatic deployment and recovery](deploy/auto-deploy.md); schema migrations require a reviewed manual deployment.
 
 Nothing is seeded automatically. Admin accounts are provisioned separately. Demo seeding is for disposable development databases only, never production; the sample event's fixed schedule must be adjusted before testing current voting windows.
 
