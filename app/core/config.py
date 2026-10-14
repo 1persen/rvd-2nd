@@ -48,6 +48,11 @@ class Settings(BaseSettings):
     MIDTRANS_MOCK_MODE: bool = False
     APP_BASE_URL: str = "http://localhost:8000"
 
+    # Duitku payment gateway (Sandbox only per spec)
+    DUITKU_MERCHANT_CODE: str = ""
+    DUITKU_API_KEY: str = ""
+    DUITKU_ENVIRONMENT: str = "sandbox"  # sandbox | production (not used yet)
+
     REDIS_URL: str = "redis://localhost:6379/0"
     CLOUDFLARE_API_KEY: str = ""
     MAX_ACTIVE_USER: int = 500

@@ -1,0 +1,68 @@
+# Raja Voting Digital
+
+## Hero
+
+**Platform Voting Digital untuk Berbagai Event**
+
+Kelola voting kompetisi secara online, mulai dari pemilihan tim hingga pemantauan hasil suara. Dukung tim pilihanmu dan ikuti perkembangan perolehan vote secara transparan.
+
+**CTA utama:** Lihat Event  
+**CTA sekunder:** Lihat Leaderboard
+
+## Event Voting
+
+**Jelajahi Event Voting**
+
+Temukan kompetisi yang tersedia, kenali tim peserta, dan pilih event yang ingin kamu ikuti.
+
+**Pencarian:** Cari nama event atau kompetisi...  
+**Filter:** Semua Event · Berlangsung · Akan Datang · Selesai
+
+**Status kosong:**  
+Belum ada event yang tersedia saat ini.
+
+## Leaderboard
+
+**Peringkat Peserta**
+
+Pantau perolehan vote dan posisi setiap tim selama periode voting berlangsung.
+
+**CTA:** Lihat Semua Peringkat
+
+## Cara Voting
+
+**Cara Memberikan Vote**
+
+1. **Pilih Event**  
+   Buka event yang ingin kamu ikuti.
+
+2. **Pilih Tim**  
+   Tinjau daftar peserta dan tentukan tim yang ingin didukung.
+
+3. **Tentukan Jumlah Vote**  
+   Masukkan jumlah vote dan periksa total pembayaran.
+
+4. **Selesaikan Pembayaran**  
+   Ikuti instruksi pembayaran. Vote akan diproses setelah transaksi berhasil diverifikasi.
+
+## FAQ
+
+**Bagaimana cara memberikan vote?**  
+Pilih event, tentukan tim dan jumlah vote, lalu selesaikan pembayaran jika diperlukan.
+
+**Kapan vote dihitung?**  
+Vote tercatat setelah transaksi berhasil diverifikasi oleh sistem.
+
+**Bagaimana cara melihat hasil voting?**  
+Buka leaderboard untuk melihat perolehan vote setiap tim.
+
+**Apa yang harus dilakukan jika pembayaran bermasalah?**  
+Periksa status transaksi melalui halaman pesanan sebelum melakukan pembayaran ulang.
+
+## Footer
+
+**Raja Voting Digital**
+
+Platform voting digital untuk mendukung kompetisi, mengelola partisipasi, dan memantau hasil voting secara online.
+
+Beranda · Event Voting · Leaderboard · Panduan · Kebijakan Privasi · Syarat dan Ketentuan

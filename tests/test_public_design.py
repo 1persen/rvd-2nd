@@ -58,6 +58,24 @@ def test_public_templates_render(name):
     assert 'id="main-content"' in html
 
 
+def test_support_template_renders_without_placeholders():
+    html = pages.templates.get_template('pages/support.html').render(
+        request=request(), support_email='', support_phone='', support_hours='')
+    assert '/static/css/public.css' in html
+    assert 'public-site' in html
+    assert '/static/images/raja-voting-logo.png' in html
+    assert 'via Midtrans' not in html
+    assert 'id="main-content"' in html
+    assert 'Pusat Bantuan' in html
+    assert 'Raja Voting Digital' in html
+    assert 'Masukkan email resmi' not in html
+    assert 'Masukkan nomor kontak aktif' not in html
+    assert 'Masukkan jam operasional' not in html
+    assert 'Tentukan apakah pesanan' not in html
+    assert 'Ketentuan final yang perlu ditetapkan' not in html
+    assert 'Kebijakan Privasi' not in html
+
+
 @pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard'])
 def test_public_empty_states_render(name):
     html = pages.templates.get_template(f'pages/{name}.html').render(

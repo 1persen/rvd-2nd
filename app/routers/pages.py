@@ -17,6 +17,7 @@ from app.core.database import get_db
 from app.enums.event_status import EventStatus
 from app.repositories import event as event_repo
 from app.repositories import payment as payment_repo
+from app.repositories import system_settings as settings_repo
 from app.repositories import team as team_repo
 from app.services import event_service, leaderboard_service
 from app.services.public_page_cache import cache_discovery_page
@@ -31,6 +32,7 @@ _TAILWIND_CSS = Path("app/static/css/tailwind.css")
 templates.env.globals["tailwind_css_version"] = (
     int(_TAILWIND_CSS.stat().st_mtime) if _TAILWIND_CSS.exists() else None
 )
+
 
 _STATUS_LABELS = {
     EventStatus.DRAFT: "Draf",
@@ -217,7 +219,26 @@ async def leaderboard(
     return templates.TemplateResponse(
         request,
         "pages/leaderboard.html",
-        {"event": _event_dict(event) if event else None, "leaderboard": entries},
+        {
+            "event": _event_dict(event) if event else None,
+            "leaderboard": entries,
+        },
+    )
+
+
+@router.get("/support")
+async def support(request: Request, session: AsyncSession = Depends(get_db)):
+    contact = await settings_repo.get_bulk(
+        session, ["support_email", "support_phone", "support_hours"]
+    )
+    return templates.TemplateResponse(
+        request,
+        "pages/support.html",
+        {
+            "support_email": contact.get("support_email", ""),
+            "support_phone": contact.get("support_phone", ""),
+            "support_hours": contact.get("support_hours", ""),
+        },
     )
 
 

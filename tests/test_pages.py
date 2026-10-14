@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("path", ["/", "/events", "/leaderboard", "/admin/login"])
+@pytest.mark.parametrize("path", ["/", "/events", "/leaderboard", "/support", "/admin/login"])
 async def test_public_pages_render(path):
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(path)
@@ -68,6 +68,22 @@ async def test_discovery_lists_published_events_without_drafts(db_session):
             assert public.name in response.text
             # The catalog's initial selected-event payload must not leak a draft either.
             assert draft.name not in response.text
+
+
+@pytest.mark.asyncio
+async def test_support_page_has_no_placeholders():
+    async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        response = await client.get("/support")
+    assert response.status_code == 200
+    assert "Pusat Bantuan" in response.text
+    assert "Raja Voting Digital" in response.text
+    assert "via Midtrans" not in response.text
+    assert "Masukkan email resmi" not in response.text
+    assert "Masukkan nomor kontak aktif" not in response.text
+    assert "Masukkan jam operasional" not in response.text
+    assert "Tentukan apakah pesanan" not in response.text
+    assert "Ketentuan final yang perlu ditetapkan" not in response.text
+    assert "Kebijakan Privasi" not in response.text
 
 
 @pytest.mark.asyncio

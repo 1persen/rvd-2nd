@@ -1,6 +1,7 @@
 // Production Tailwind build (scripts/build_css.sh). Keep `theme` in sync with the
 // inline CDN config in app/templates/base.html, which is still used in dev.
 module.exports = {
+  darkMode: 'class',
   content: [
     './app/templates/**/*.html',
     './app/static/js/**/!(alpine*).js',
@@ -24,7 +25,7 @@ module.exports = {
       fontFamily: {
         display: ['"Plus Jakarta Sans"', 'sans-serif'],
         score: ['"Plus Jakarta Sans"', 'sans-serif'],
-        body: ['"Plus Jakarta Sans"', 'sans-serif'],
+        body: ['Inter', 'sans-serif'],
       },
     },
   },

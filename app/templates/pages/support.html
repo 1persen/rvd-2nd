@@ -1,0 +1,233 @@
+{% extends "public_base.html" %}
+{% from "macros/public.html" import icon %}
+{% block title %}Pusat Bantuan — Raja Voting Digital{% endblock %}
+{% block content %}
+<div class="support-page">
+  <section class="support-hero shell">
+    <span class="eyebrow">RAJA VOTING DIGITAL</span>
+    <h1 class="page-heading">Pusat Bantuan</h1>
+    <p class="lead">Selamat datang di Pusat Bantuan Raja Voting Digital. Halaman ini menyediakan informasi tentang platform, kontak bantuan, ketentuan penggunaan layanan, transaksi, serta jawaban atas pertanyaan yang sering diajukan.</p>
+  </section>
+
+  <section class="support-section shell">
+    <div class="section-heading"><h2>Tentang Kami</h2></div>
+    <div class="support-content">
+      <p><strong>Raja Voting Digital</strong> adalah platform voting digital yang menyediakan sarana bagi pengguna untuk berpartisipasi dalam berbagai event kompetisi secara online.</p>
+      <p>Melalui platform ini, pengguna dapat melihat informasi event, mengenal peserta atau tim yang berkompetisi, memberikan dukungan melalui voting, serta memantau perolehan suara melalui leaderboard yang tersedia.</p>
+    </div>
+  </section>
+
+  <section class="support-section shell">
+    <div class="section-heading"><h2>Hubungi Kami</h2></div>
+    <p>Kami menyediakan kanal bantuan untuk pertanyaan seputar layanan, informasi event, pembayaran, status pesanan, dan kendala penggunaan platform.</p>
+    <div class="support-contact-grid">
+      {% if support_email %}
+      <div class="support-contact-item">
+        <span class="contact-label">Email</span>
+        <a href="mailto:{{ support_email }}" class="contact-value">{{ support_email }}</a>
+      </div>
+      {% endif %}
+      {% if support_phone %}
+      <div class="support-contact-item">
+        <span class="contact-label">Nomor kontak</span>
+        <a href="tel:{{ support_phone }}" class="contact-value">{{ support_phone }}</a>
+      </div>
+      {% endif %}
+      {% if support_hours %}
+      <div class="support-contact-item">
+        <span class="contact-label">Jam layanan</span>
+        <span class="contact-value">{{ support_hours }}</span>
+      </div>
+      {% endif %}
+    </div>
+    <p class="support-notice">Saat menghubungi tim bantuan mengenai transaksi, sertakan nomor pesanan dan informasi kendala yang dialami. Jangan mengirimkan kata sandi, PIN, kode OTP, atau informasi rahasia akun maupun pembayaran.</p>
+    <p class="support-notice">Kami akan meninjau laporan berdasarkan informasi yang diberikan. Waktu penanganan dapat bergantung pada jenis kendala dan kebutuhan verifikasi transaksi.</p>
+  </section>
+
+  <section class="support-section shell">
+    <div class="section-heading"><h2>Syarat, Ketentuan &amp; Pembatalan</h2></div>
+    <p>Dengan menggunakan Raja Voting Digital, pengguna dianggap telah membaca dan memahami ketentuan yang berlaku. Ketentuan khusus pada suatu event juga perlu diperhatikan karena dapat berbeda dari event lainnya.</p>
+
+    <h3>Syarat dan Ketentuan Penggunaan</h3>
+    <ol>
+      <li>Pengguna wajib memberikan informasi yang benar saat melakukan pemesanan.</li>
+      <li>Pengguna wajib mengikuti ketentuan umum platform dan aturan khusus pada event yang diikuti.</li>
+      <li>Pengguna bertanggung jawab memastikan pilihan event, peserta, dan jumlah vote sudah benar sebelum menyelesaikan pesanan.</li>
+      <li>Pengguna dilarang menyalahgunakan layanan, memanipulasi sistem voting, atau melakukan tindakan yang dapat mengganggu keamanan dan integritas platform.</li>
+      <li>Hasil voting mengacu pada data yang tercatat dan diproses oleh sistem sesuai mekanisme event.</li>
+      <li>Raja Voting Digital dapat melakukan pemeriksaan terhadap aktivitas yang terindikasi melanggar ketentuan atau mengganggu jalannya voting.</li>
+      <li>Informasi mengenai periode voting, batas waktu, dan ketentuan khusus mengikuti pengumuman pada halaman masing-masing event.</li>
+    </ol>
+
+    <h3>Aturan Transaksi dan Pembayaran</h3>
+    <ol>
+      <li>Periksa nama event, peserta, jumlah vote, dan total pembayaran sebelum menyelesaikan transaksi.</li>
+      <li>Pembayaran harus dilakukan melalui metode yang tersedia pada halaman checkout.</li>
+      <li>Pesanan berbayar diproses setelah status pembayaran berhasil diterima dan diverifikasi oleh sistem.</li>
+      <li>Status pembayaran yang masih menunggu konfirmasi tidak dapat dianggap sebagai transaksi berhasil.</li>
+      <li>Hindari melakukan pembayaran berulang sebelum memeriksa status transaksi sebelumnya.</li>
+      <li>Simpan nomor pesanan dan bukti pembayaran untuk membantu proses pemeriksaan jika terjadi kendala.</li>
+      <li>Biaya yang berlaku ditampilkan pada halaman pemesanan atau pembayaran sebelum pengguna menyelesaikan transaksi.</li>
+    </ol>
+
+    <h3>Pembatalan Pesanan</h3>
+    <p>Sebelum melakukan pembayaran, pengguna diharapkan memastikan seluruh rincian pesanan sudah sesuai. Kesalahan dalam memilih event, peserta, atau jumlah vote perlu diperiksa sebelum transaksi diselesaikan.</p>
+    <p>Permintaan pembatalan pesanan akan ditinjau berdasarkan status transaksi dan status pemrosesan vote. Pesanan yang telah diproses atau vote yang telah tercatat mungkin tidak dapat dibatalkan apabila proses tersebut tidak dapat dikembalikan.</p>
+
+    <h3>Kebijakan Refund</h3>
+    <p>Permintaan pengembalian dana atau refund dapat diajukan apabila terdapat masalah transaksi yang memenuhi ketentuan refund Raja Voting Digital.</p>
+    <p>Setiap pengajuan akan diperiksa berdasarkan status pembayaran, nomor pesanan, bukti transaksi, dan hasil verifikasi sistem. Pengajuan refund tidak otomatis disetujui sebelum pemeriksaan selesai.</p>
+    <p>Jika pembayaran telah berhasil tetapi pesanan tidak diproses, pengguna dapat menghubungi tim bantuan untuk meminta pemeriksaan transaksi.</p>
+
+    <h3>Penanganan Pembayaran Gagal</h3>
+    <p>Jika pembayaran gagal, tertunda, atau statusnya belum berubah, lakukan langkah berikut:</p>
+    <ol>
+      <li>Periksa status pesanan pada halaman transaksi.</li>
+      <li>Pastikan saldo atau dana tidak terpotong tanpa kejelasan status.</li>
+      <li>Simpan bukti pembayaran apabila dana sudah terpotong.</li>
+      <li>Hubungi tim bantuan dengan menyertakan nomor pesanan, waktu transaksi, metode pembayaran, dan bukti pendukung yang relevan.</li>
+      <li>Tunggu proses pemeriksaan sebelum mencoba membayar kembali agar tidak terjadi pembayaran ganda.</li>
+    </ol>
+    <p>Jika dana telah terpotong tetapi pesanan belum berhasil, transaksi akan diperiksa terlebih dahulu. Penyelesaian bergantung pada hasil verifikasi dan mekanisme penyedia pembayaran yang digunakan.</p>
+  </section>
+
+  <section class="support-section shell">
+    <div class="section-heading"><h2>FAQ</h2></div>
+
+    <h3>Seputar Voting</h3>
+    <div class="support-accordion">
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-voting-1" id="faq-voting-1-trigger">
+          <span>Bagaimana cara memberikan vote?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-voting-1" role="region" aria-labelledby="faq-voting-1-trigger" x-show="open" class="support-accordion__panel">
+          <p>Pilih event yang tersedia, tentukan peserta atau tim yang ingin didukung, masukkan jumlah vote, lalu ikuti instruksi pada halaman pemesanan hingga selesai.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-voting-2" id="faq-voting-2-trigger">
+          <span>Apakah semua event memiliki aturan voting yang sama?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-voting-2" role="region" aria-labelledby="faq-voting-2-trigger" x-show="open" class="support-accordion__panel">
+          <p>Tidak selalu. Periode voting, batasan jumlah vote, dan ketentuan lainnya dapat berbeda. Baca aturan pada halaman event sebelum melakukan pemesanan.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-voting-3" id="faq-voting-3-trigger">
+          <span>Kapan vote dihitung?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-voting-3" role="region" aria-labelledby="faq-voting-3-trigger" x-show="open" class="support-accordion__panel">
+          <p>Vote diproses sesuai mekanisme sistem setelah pesanan berbayar berhasil diverifikasi. Waktu pembaruan hasil dapat bergantung pada proses pemrosesan dan ketentuan event.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Pembayaran dan Transaksi</h3>
+    <div class="support-accordion">
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-payment-1" id="faq-payment-1-trigger">
+          <span>Metode pembayaran apa yang tersedia?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-payment-1" role="region" aria-labelledby="faq-payment-1-trigger" x-show="open" class="support-accordion__panel">
+          <p>Metode pembayaran yang tersedia dapat dilihat langsung pada halaman checkout saat melakukan pemesanan.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-payment-2" id="faq-payment-2-trigger">
+          <span>Pembayaran berhasil, tetapi vote belum bertambah. Apa yang harus dilakukan?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-payment-2" role="region" aria-labelledby="faq-payment-2-trigger" x-show="open" class="support-accordion__panel">
+          <p>Periksa status pesanan terlebih dahulu. Jika pembayaran sudah berhasil tetapi vote belum diproses, hubungi tim bantuan dengan menyertakan nomor pesanan dan bukti pembayaran.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-payment-3" id="faq-payment-3-trigger">
+          <span>Apakah saya perlu membayar ulang jika status transaksi masih tertunda?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-payment-3" role="region" aria-labelledby="faq-payment-3-trigger" x-show="open" class="support-accordion__panel">
+          <p>Jangan langsung membayar ulang. Periksa status transaksi terlebih dahulu dan hubungi tim bantuan jika statusnya belum jelas, terutama apabila dana sudah terpotong.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-payment-4" id="faq-payment-4-trigger">
+          <span>Bagaimana cara mengajukan refund?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-payment-4" role="region" aria-labelledby="faq-payment-4-trigger" x-show="open" class="support-accordion__panel">
+          <p>Hubungi tim bantuan dengan menyertakan nomor pesanan dan informasi transaksi. Pengajuan akan diperiksa berdasarkan kebijakan refund dan hasil verifikasi pembayaran.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Hasil Voting</h3>
+    <div class="support-accordion">
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-results-1" id="faq-results-1-trigger">
+          <span>Di mana saya bisa melihat hasil voting?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-results-1" role="region" aria-labelledby="faq-results-1-trigger" x-show="open" class="support-accordion__panel">
+          <p>Buka halaman leaderboard untuk melihat perolehan vote dan posisi peserta yang ditampilkan oleh sistem.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-results-2" id="faq-results-2-trigger">
+          <span>Mengapa jumlah vote atau peringkat belum berubah?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-results-2" role="region" aria-labelledby="faq-results-2-trigger" x-show="open" class="support-accordion__panel">
+          <p>Data leaderboard mungkin membutuhkan waktu untuk diperbarui atau diproses. Periksa kembali setelah beberapa saat. Jika perbedaan tetap terjadi, laporkan kepada tim bantuan dengan menyertakan informasi event terkait.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-results-3" id="faq-results-3-trigger">
+          <span>Apakah posisi peserta di leaderboard merupakan hasil akhir?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-results-3" role="region" aria-labelledby="faq-results-3-trigger" x-show="open" class="support-accordion__panel">
+          <p>Tidak selalu. Selama periode voting masih berlangsung, perolehan suara dan posisi peserta dapat berubah. Hasil akhir mengikuti ketentuan dan pengumuman resmi event.</p>
+        </div>
+      </div>
+    </div>
+
+    <h3>Kendala Penggunaan</h3>
+    <div class="support-accordion">
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-usage-1" id="faq-usage-1-trigger">
+          <span>Saya tidak bisa membuka halaman event atau melakukan pemesanan. Apa yang harus dilakukan?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-usage-1" role="region" aria-labelledby="faq-usage-1-trigger" x-show="open" class="support-accordion__panel">
+          <p>Coba muat ulang halaman dan pastikan koneksi internet stabil. Jika kendala berlanjut, hubungi tim bantuan dengan menjelaskan halaman yang bermasalah dan langkah yang dilakukan sebelum kendala muncul.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-usage-2" id="faq-usage-2-trigger">
+          <span>Bagaimana jika saya salah memilih peserta atau jumlah vote?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-usage-2" role="region" aria-labelledby="faq-usage-2-trigger" x-show="open" class="support-accordion__panel">
+          <p>Periksa kembali rincian pesanan sebelum menyelesaikan pembayaran. Jika transaksi sudah dilakukan, segera hubungi tim bantuan. Perubahan atau pembatalan akan ditinjau berdasarkan status pesanan dan ketentuan yang berlaku.</p>
+        </div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="faq-usage-3" id="faq-usage-3-trigger">
+          <span>Informasi apa yang perlu disiapkan saat melaporkan kendala?</span>
+          <span class="support-chevron" aria-hidden="true"></span>
+        </button>
+        <div id="faq-usage-3" role="region" aria-labelledby="faq-usage-3-trigger" x-show="open" class="support-accordion__panel">
+          <p>Sertakan nomor pesanan jika berkaitan dengan transaksi, nama event, waktu kejadian, penjelasan kendala, serta tangkapan layar jika diperlukan. Jangan menyertakan kata sandi, PIN, atau kode OTP.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <p class="support-footer-note shell">Ketentuan pada halaman ini perlu disesuaikan dengan mekanisme operasional Raja Voting Digital dan ketentuan penyedia pembayaran yang digunakan. Informasi kontak, aturan pembatalan, dan kebijikan refund harus ditetapkan sebelum halaman dipublikasikan.</p>
+</div>
+{% endblock %}

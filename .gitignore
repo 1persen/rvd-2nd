@@ -16,3 +16,4 @@ __pycache__/
 .venv/
 # Built by scripts/build_css.sh at deploy time
 app/static/css/tailwind.css
+.kilo
