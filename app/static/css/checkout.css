@@ -147,3 +147,28 @@
 .public-site .rv-ticket-total strong { color:#97713b; }
 .public-site .rv-dialog { background:#f8f7f3; }
 .public-site .rv-public .btn-primary { background:#17343d; }
+
+/* Dark mode variants for checkout/vote page */
+html.dark .rv-public { background: var(--canvas); color: var(--ink); }
+html.dark .rv-page { background: var(--canvas); }
+html.dark .rv-event-list .rv-event-row { background: var(--surface); border-color: var(--line); }
+html.dark .rv-event-row:hover { box-shadow: 0 4px 16px #00000040; }
+html.dark .rv-event-facts { background: var(--surface); border-color: var(--line); }
+html.dark .rv-event-facts dl { border-color: var(--line); }
+html.dark .rv-tabs button.is-active { color: var(--ink); border-color: var(--ink); }
+html.dark .rv-participant { border-color: var(--line); background: var(--surface); }
+html.dark .rv-participant-bottom { border-top-color: var(--line); }
+html.dark .rv-pagination { border-color: var(--line); }
+html.dark .rv-full-ranking { border-top-color: var(--line); }
+html.dark .rv-ranking-row { border-top-color: var(--line); }
+html.dark .rv-form-divider { border-top-color: var(--line); }
+html.dark .rv-phone-input { background: var(--surface); border-color: var(--control-border); }
+html.dark .rv-phone-input input { border-left-color: var(--line); }
+html.dark .rv-quantity input { background: var(--surface); border-color: var(--control-border); }
+html.dark .rv-ticket { background: linear-gradient(145deg,#f4efe0,#faf9f4); border-color: #d8c79e; }
+html.dark .rv-dialog { background: var(--surface); }
+html.dark .rv-dialog::backdrop { background: #00000088; }
+html.dark .rv-vote-bar { background: #1e2a4a; }
+html.dark .rv-vote-bar span { background: var(--accent, #60a5fa); }
+html.dark .rv-closed { background: var(--surface); }
+html.dark .rv-closed-explanation { border-top-color: var(--line); }

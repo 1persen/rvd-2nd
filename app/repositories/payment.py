@@ -28,6 +28,16 @@ async def get_by_midtrans_order_id(
     return result.scalar_one_or_none()
 
 
+async def get_by_duitku_merchant_order_id(
+    session: AsyncSession, merchant_order_id: str, for_update: bool = False
+) -> Optional[Payment]:
+    stmt = select(Payment).where(Payment.duitku_merchant_order_id == merchant_order_id)
+    if for_update:
+        stmt = stmt.with_for_update()
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def get_by_idempotency_key(session: AsyncSession, key: str) -> Optional[Payment]:
     stmt = select(Payment).where(Payment.idempotency_key == key)
     result = await session.execute(stmt)

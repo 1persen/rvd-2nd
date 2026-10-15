@@ -8,34 +8,35 @@
 <title>{% block title %}Web Voting Championship{% endblock %}</title>
 <meta name="description" content="Platform voting kompetisi online — dukung tim favoritmu dengan suara yang transparan dan bisa diaudit.">
 
-<!-- Fonts: Oswald (display/labels), Bebas Neue (scoreboard numerals), Plus Jakarta Sans (body) -->
-{% block fonts %}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-{% endblock %}
+  <!-- Fonts: Oswald (display/labels), Bebas Neue (scoreboard numerals), Plus Jakarta Sans (headings), Inter (body) -->
+  {% block fonts %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  {% endblock %}
 
 {% if not tailwind_css_version %}
 <!-- Tailwind CSS development fallback -->
 <script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    theme: {
-      extend: {
-        colors: {
-          navy: { DEFAULT: '#0B1D3A', 800: '#122A52', 700: '#173568' },
-          brand: { DEFAULT: '#1D4ED8', bright: '#3B82F6', 50: '#EEF3FF' },
-          medal: { gold: '#D4AF37', silver: '#94A3B8', bronze: '#B26339' },
-        },
-        fontFamily: {
-          display: ['Oswald', 'sans-serif'],
-          score: ['"Bebas Neue"', 'sans-serif'],
-          body: ['"Plus Jakarta Sans"', 'sans-serif'],
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            navy: { DEFAULT: '#0B1D3A', 800: '#122A52', 700: '#173568' },
+            brand: { DEFAULT: '#1D4ED8', bright: '#3B82F6', 50: '#EEF3FF' },
+            medal: { gold: '#D4AF37', silver: '#94A3B8', bronze: '#B26339' },
+          },
+          fontFamily: {
+            display: ['Oswald', 'sans-serif'],
+            score: ['"Bebas Neue"', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
         },
       },
-    },
-  };
-</script>
+    };
+  </script>
 {% else %}
 <link rel="stylesheet" href="/static/css/tailwind.css?v={{ tailwind_css_version }}">
 {% endif %}
@@ -58,7 +59,8 @@
 
 {% block scripts %}{% endblock %}
 
-<!-- Alpine.js self-hosted to avoid CDN issues -->
-<script defer src="/static/js/alpine.min.js?v={{ tailwind_css_version | default("preview", true) }}"></script>
+  <!-- Alpine.js self-hosted to avoid CDN issues -->
+  <script defer src="/static/js/alpine.min.js?v={{ tailwind_css_version | default("preview", true) }}"></script>
+  <script defer src="/static/js/theme-toggle.js?v={{ tailwind_css_version | default("preview", true) }}"></script>
 </body>
 </html>

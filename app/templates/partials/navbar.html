@@ -1,5 +1,5 @@
 <header class="site-header" x-data="{ open: false }" @keydown.escape.window="open = false">
-  <div class="site-header-inner">
+  <div class="site-header-inner relative flex items-center gap-1 rounded-full border border-gray-200/70 dark:border-white/[0.08] bg-white/70 dark:bg-white/[0.04] backdrop-blur-xl px-1.5 py-1.5 shadow-lg shadow-gray-900/[0.06] dark:shadow-black/30">
     <a href="/" class="brand-lockup" aria-label="Raja Voting Digital, beranda">
       <img src="/static/img/rv.png?v={{ tailwind_css_version | default("preview", true) }}" width="40" height="40" alt="">
       <span>Raja Voting<span class="brand-subtitle">Digital voting platform</span></span>
@@ -10,6 +10,18 @@
       <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
     </nav>
     <a href="/admin/login" class="organizer-link">Masuk panitia</a>
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+      <svg class="theme-toggle-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+        <path d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z"/>
+        <path d="M4.22 3.22a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/>
+        <path d="M15.36 4.28a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/>
+        <path d="M10 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
+        <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z"/>
+        <path d="M16 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1Z"/>
+        <path d="M4.22 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/>
+        <path d="M14.95 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/>
+      </svg>
+    </button>
     <button type="button" class="btn btn-secondary mobile-menu-button" @click="open = !open" :aria-expanded="open" aria-controls="mobile-navigation" x-text="open ? 'Tutup' : 'Menu'">Menu</button>
   </div>
   <nav id="mobile-navigation" class="mobile-nav" aria-label="Navigasi seluler" x-show="open" x-cloak>

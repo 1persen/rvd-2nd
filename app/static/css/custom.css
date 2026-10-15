@@ -1,14 +1,26 @@
 :root {
   color-scheme: light;
-  --canvas: #f7f8fa;
-  --surface: #fff;
-  --ink: #202124;
-  --muted: #626670;
-  --line: #e3e5e9;
-  --control-border: #8b8e96;
-  --brand: #24262b;
-  --accent: #3155d9;
-  --brand-soft: #f0f1f4;
+  --canvas:#f7f8fa;
+  --surface:#fff;
+  --ink:#202124;
+  --muted:#626670;
+  --line:#e3e5e9;
+  --control-border:#8b8e96;
+  --brand:#24262b;
+  --accent:#3155d9;
+  --brand-soft:#f0f1f4;
+}
+html.dark {
+  color-scheme: dark;
+  --canvas:#0B1D3A;
+  --surface:#122A52;
+  --ink:#e4e6eb;
+  --muted:#9ca3af;
+  --line:#2a3548;
+  --control-border:#3a4a66;
+  --brand:#3B82F6;
+  --accent:#60a5fa;
+  --brand-soft:#1e2a4a;
 }
 * { box-sizing: border-box; }
 html { scroll-padding-top: 6rem; }
@@ -49,9 +61,7 @@ input, select, textarea { scroll-margin-block: 7rem; }
 .empty-state { padding: 48px 24px; text-align: center; color: var(--muted); }
 .notice { padding: 16px 20px; border: 1px solid var(--line); background: #f0f4fa; border-radius: 10px; color: #384961; }
 .notice-error { border-color: #deaaa5; background: #fff1ef; color: #9b2820; }
-.site-header { position: relative; z-index: 40; background: var(--surface); border-bottom: 1px solid var(--line); }
-.site-header-inner { display: flex; align-items: center; gap: 28px; max-width: 1200px; min-height: 80px; margin: auto; padding: 16px 20px; }
-.brand-lockup { display: flex; align-items: center; gap: 11px; font-weight: 800; font-size: .9375rem; line-height: 1.25; text-decoration: none; color: var(--ink); margin-right: auto; }
+.site-header { position: fixed; top: 1rem; left: 0; right: 0; margin: 0 auto; max-width: min(100%, 1200px); z-index: 40; }
 .brand-lockup img { width: 40px; height: 40px; object-fit: contain; }
 .brand-lockup { min-height: 44px; }
 .brand-subtitle { display: block; font-size: .6875rem; color: var(--muted); font-weight: 500; margin-top: 4px; }
@@ -71,11 +81,104 @@ input, select, textarea { scroll-margin-block: 7rem; }
 .site-footer nav a { display: inline-flex; align-items: center; min-height: 44px; font-size: .8125rem; color: var(--muted); }
 .site-footer a:hover { color: var(--brand); }
 @media (min-width: 760px) {
-  .page-shell, .site-header-inner { padding-inline: 28px; }
+  .page-shell { padding-inline: 28px; }
   .desktop-nav, .organizer-link { display: flex; }
   .mobile-menu-button, .mobile-nav { display: none !important; }
   .lead { font-size: 1.0625rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
+/* Theme toggle button */
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid var(--control-border);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+.theme-toggle:hover {
+  background: var(--brand-soft);
+}
+.theme-toggle-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dark mode variants for admin components */
+html.dark .site-header {
+  background: var(--surface);
+}
+html.dark .site-footer {
+  border-top-color: var(--line);
+  background: var(--surface);
+}
+html.dark .panel {
+  background: var(--surface);
+  border-color: var(--line);
+}
+html.dark .status {
+  background: #1e2a4a;
+  color: #93c5fb;
+}
+html.dark .status-open {
+  background: #143a2a;
+  color: #6ee7b7;
+}
+html.dark .status-closed {
+  background: #1e2a4a;
+  color: #9ca3af;
+}
+html.dark .status-pending {
+  background: #4a3a1a;
+  color: #fcd34d;
+}
+html.dark .notice {
+  background: #1e2a4a;
+  border-color: var(--line);
+  color: #cbd5e1;
+}
+html.dark .notice-error {
+  background: #4a1f2a;
+  border-color: #7f1d1d;
+  color: #fca5a5;
+}
+html.dark .btn-primary {
+  background: var(--brand);
+}
+html.dark .btn-secondary {
+  background: var(--surface);
+  border-color: var(--control-border);
+  color: var(--ink);
+}
+html.dark .btn-secondary:hover {
+  background: var(--brand-soft);
+}
+html.dark .btn-quiet:hover {
+  background: var(--brand-soft);
+}
+html.dark .input,
+html.dark .field input,
+html.dark .field select,
+html.dark .field textarea {
+  background: var(--surface);
+  border-color: var(--control-border);
+  color: var(--ink);
+}
+html.dark .desktop-nav a[aria-current="page"] {
+  color: var(--brand);
+}
+html.dark .organizer-link {
+  border-left-color: var(--line);
+}
+html.dark .mobile-nav a:hover,
+html.dark .mobile-nav a[aria-current="page"] {
+  background: var(--brand-soft);
 }
