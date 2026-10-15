@@ -10,10 +10,7 @@ Rules enforced here:
 - payments are never hard-deleted
 - webhook is idempotent (re-process is a no-op)
 """
-import asyncio
-import functools
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Optional
@@ -32,7 +29,6 @@ from app.repositories import vote_log as vote_log_repo
 from app.repositories import webhook_log as webhook_log_repo
 from app.schemas.payment import PaymentCreate, PaymentOut
 from app.services import event_service
-from app.services.midtrans_service import create_transaction as midtrans_create_transaction
 from app.services.midtrans_service import verify_signature as midtrans_verify_signature
 from app.services import duitku_service
 from app.services.vote_service import process_successful_payment
@@ -41,10 +37,6 @@ from app.utils import new_id
 logger = logging.getLogger(__name__)
 
 INVOICE_TTL_MINUTES = 15
-MIDTRANS_TIMEOUT_SECONDS = 15
-# Own pool so a burst of invoices neither waits behind nor starves the default
-# executor (which asyncio also uses for DNS lookups).
-_GATEWAY_EXECUTOR = ThreadPoolExecutor(max_workers=16, thread_name_prefix="gateway")
 MOCK_QRIS_BASE = "WVC2026"
 
 # Status Midtrans yang dianggap sukses → vote diberikan.
@@ -127,12 +119,8 @@ async def create_payment(
     if not event.price_per_vote or event.price_per_vote <= 0:
         raise PaymentError("Harga vote untuk event ini belum diatur.")
 
-    # Fail closed if effectively unconfigured (legacy midtrans behavior) OR no Duitku creds
-    is_midtrans_unconfigured = (not settings.MIDTRANS_SERVER_KEY and not settings.midtrans_mock_enabled)
-    if is_midtrans_unconfigured or (not settings.DUITKU_MERCHANT_CODE or not settings.DUITKU_API_KEY):
-        if is_midtrans_unconfigured:
-            raise PaymentUnavailable("Pembayaran belum dikonfigurasi. Hubungi panitia.")
-        # if midtrans configured but Duitku missing - still treat as per our impl? but test expects midtrans rules
+    if not settings.payments_configured:
+        raise PaymentUnavailable("Pembayaran belum dikonfigurasi. Hubungi panitia.")
 
     package_code = "custom"
     package_label = f"{payload.qty} vote"
@@ -203,52 +191,36 @@ async def create_payment(
                 return _replay_or_raise(existing_by_key, payload)
         raise
 
-    if False and settings.MIDTRANS_SERVER_KEY:
-        try:
-            # midtransclient is blocking `requests` with no timeout: run it off the
-            # event loop (otherwise every SSE stream and request on this worker
-            # freezes for the whole round trip) and bound the wait.
-            result = await asyncio.wait_for(
-                asyncio.get_running_loop().run_in_executor(
-                    _GATEWAY_EXECUTOR,
-                    functools.partial(
-                        midtrans_create_transaction,
-                        payment,
-                        server_key=settings.MIDTRANS_SERVER_KEY,
-                        is_production=settings.MIDTRANS_IS_PRODUCTION,
-                    ),
-                ),
-                timeout=MIDTRANS_TIMEOUT_SECONDS,
-            )
-            payment.midtrans_order_id = result.get("order_id", payment.id)
-            payment.midtrans_transaction_id = result.get("transaction_id")
-            payment.midtrans_payload = result
-        except Exception as exc:
-            logger.exception("Midtrans charge failed for payment %s", payment.id)
-            raise PaymentError("Gagal membuat invoice pembayaran. Coba lagi.") from exc
-    else:
+    if settings.midtrans_mock_enabled:
         payment.midtrans_order_id = payment.id
-        callback_url = f"{settings.APP_BASE_URL}/api/v1/payments/duitku/callback"
-        return_url = f"{settings.APP_BASE_URL}/events/{event.id}/vote/{team.id}?payment_id={payment.id}"
-        payment_method = "QRIS"
-        if getattr(settings, "midtrans_mock_enabled", False) or getattr(settings, "MIDTRANS_MOCK_MODE", False) or str(settings.DUITKU_MERCHANT_CODE) in ("M112233","M","DUMMY") or str(settings.DUITKU_API_KEY) in ("apikey","K","DUMMYKEY"):
-            result = {"merchantOrderId": payment.id, "reference": payment.id, "paymentUrl": return_url, "statusCode": "00"}
-        else:
+        payment.midtrans_payload = {
+            "mock": True,
+            "qr_string": f"{MOCK_QRIS_BASE}:{event.id}:{payment.id}:{payment.amount}:{payment.votes}",
+        }
+    else:
+        try:
             result = await duitku_service.create_transaction(
                 merchant_order_id=payment.id,
                 payment_amount=payment.amount,
-                payment_method=payment_method,
+                payment_method=settings.DUITKU_PAYMENT_METHOD,
                 product_details=f"Voting {team.name} - {payment.votes} vote(s)",
                 email=payload.supporter_email,
                 customer_va_name=payload.supporter_name,
-                callback_url=callback_url,
-                return_url=return_url,
+                callback_url=f"{settings.APP_BASE_URL}/api/v1/payments/duitku/callback",
+                return_url=f"{settings.APP_BASE_URL}/events/{event.id}/vote/{team.id}",
                 phone_number=payload.supporter_phone,
                 expiry_period=INVOICE_TTL_MINUTES,
             )
-        payment.duitku_merchant_order_id = result.get("merchantOrderId") or payment.id
-        payment.duitku_reference = result.get("reference")
-        payment.duitku_payment_method = payment_method
+            if (not isinstance(result, dict) or result.get("statusCode") != "00"
+                    or not result.get("reference")
+                    or not duitku_service.valid_payment_url(result.get("paymentUrl"))):
+                raise ValueError("Invalid Duitku inquiry response")
+        except Exception as exc:
+            logger.warning("Duitku inquiry failed for payment %s (%s)", payment.id, type(exc).__name__)
+            raise PaymentError("Gagal membuat invoice pembayaran. Coba lagi.") from exc
+        payment.duitku_merchant_order_id = payment.id
+        payment.duitku_reference = result["reference"]
+        payment.duitku_payment_method = settings.DUITKU_PAYMENT_METHOD
         payment.duitku_payload = result
         payment.payment_gateway = PaymentGateway.DUITKU
 
@@ -258,6 +230,7 @@ async def create_payment(
 
 def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
     is_mock = bool(payment.midtrans_payload and payment.midtrans_payload.get("mock"))
+    duitku_payload = payment.duitku_payload or {}
     return PaymentOut(
         id=payment.id,
         invoice_id=payment.id,
@@ -275,7 +248,8 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
         currency=payment.currency,
         signature_key=payment.signature_key,
         qris_url=None if is_mock else (payment.midtrans_payload or {}).get("qr_url"),
-        qr_string=None if not is_mock else (payment.midtrans_payload or {}).get("qr_string"),
+        qr_string=(payment.midtrans_payload or {}).get("qr_string") if is_mock else duitku_payload.get("qrString"),
+        payment_url=duitku_payload.get("paymentUrl") if duitku_service.valid_payment_url(duitku_payload.get("paymentUrl")) else None,
         expires_at=payment.expires_at,
         webhook_received_at=payment.webhook_received_at,
         settled_at=payment.settled_at,
@@ -290,9 +264,9 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
 
 
 def verify_webhook_signature(payload: dict, raw_body: bytes) -> bool:
-    # Detect Duitku callback by presence of merchantOrderId
-    if payload.get("merchantOrderId") or payload.get("merchantOrderID"):
-        return True  # Let Duitku verification handle in process/route
+    # Gateway callbacks cannot be routed through another gateway's verifier.
+    if "merchantOrderId" in payload or "merchantOrderID" in payload:
+        return False
     if not settings.MIDTRANS_SERVER_KEY:
         return settings.midtrans_mock_enabled
     return midtrans_verify_signature(payload, raw_body, settings.MIDTRANS_SERVER_KEY)
@@ -304,47 +278,6 @@ async def process_webhook(session: AsyncSession, payload: dict) -> tuple[Payment
     Returns (payment, voted_now) where voted_now tells the caller whether
     new votes were granted in this call (already flushed, not committed).
     """
-    # Try Duitku callback first (form-encoded style uses merchantOrderId/resultCode)
-    merchant_order_id = payload.get("merchantOrderId") or payload.get("merchantOrderID")
-    if merchant_order_id:
-        payment = await payment_repo.get_by_duitku_merchant_order_id(session, merchant_order_id, for_update=True)
-        if not payment:
-            payment = await payment_repo.get_payment(session, merchant_order_id, for_update=True)
-        if not payment:
-            raise PaymentNotFound(f"Payment {merchant_order_id} tidak ditemukan")
-        # Process Duitku callback
-        result_code = payload.get("resultCode")
-        # signature check handled outside; log
-        await webhook_log_repo.create_log(
-            session,
-            payment_id=payment.id,
-            payload=payload,
-            signature=payload.get("signature"),
-            is_valid=True,
-        )
-        await session.flush()
-        if payment.status == PaymentStatus.SUCCESS:
-            return payment, False
-        if str(result_code) == "00":
-            if payment.status != PaymentStatus.SUCCESS:
-                payment.status = PaymentStatus.SUCCESS
-                payment.duitku_payload = payload
-                payment.webhook_payload = payload
-                payment.webhook_received_at = datetime.now(timezone.utc)
-                payment.settled_at = datetime.now(timezone.utc)
-                payment.paid_at = datetime.now(timezone.utc)
-                await session.flush()
-                await process_successful_payment(session, payment)
-                await session.flush()
-                return payment, True
-        else:
-            payment.status = PaymentStatus.FAILED
-            payment.duitku_payload = payload
-            payment.webhook_payload = payload
-            payment.webhook_received_at = datetime.now(timezone.utc)
-            await session.flush()
-        return payment, False
-
     order_id = payload.get("order_id")
     if not order_id:
         raise PaymentError("order_id tidak ada di payload webhook")
@@ -353,6 +286,8 @@ async def process_webhook(session: AsyncSession, payload: dict) -> tuple[Payment
     if not payment:
         raise PaymentNotFound(f"Payment {order_id} tidak ditemukan")
 
+    if payment.payment_gateway != PaymentGateway.MIDTRANS:
+        raise PaymentError("Gateway invoice tidak sesuai")
     gross_amount = payload.get("gross_amount")
     if gross_amount is not None and not _amount_matches(gross_amount, payment.amount):
         logger.warning("Webhook amount mismatch for %s: got %s, expected %s",
@@ -396,6 +331,45 @@ async def process_webhook(session: AsyncSession, payload: dict) -> tuple[Payment
         payment.webhook_received_at = datetime.now(timezone.utc)
         await session.flush()
 
+    return payment, False
+
+
+async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple[Payment, bool]:
+    # Verify again at the service boundary so internal callers cannot skip it.
+    if not duitku_service.valid_callback(payload):
+        raise PaymentError("Signature tidak valid")
+    payment = await payment_repo.get_by_duitku_merchant_order_id(
+        session, payload["merchantOrderId"], for_update=True
+    )
+    if not payment:
+        raise PaymentNotFound("Invoice tidak ditemukan")
+    if payment.payment_gateway != PaymentGateway.DUITKU:
+        raise PaymentError("Gateway invoice tidak sesuai")
+    if not _amount_matches(payload["amount"], payment.amount):
+        raise PaymentError("Jumlah pembayaran tidak sesuai dengan invoice")
+    if not payment.duitku_reference or payload.get("reference") != payment.duitku_reference:
+        raise PaymentError("Referensi pembayaran tidak sesuai")
+    if payload.get("resultCode") not in ("00", "01"):
+        raise PaymentError("Status pembayaran tidak dikenal")
+    if payment.status == PaymentStatus.SUCCESS:
+        return payment, False
+    await webhook_log_repo.create_log(
+        session, payment_id=payment.id, payload=payload,
+        signature=payload["signature"], is_valid=True,
+    )
+    payment.webhook_payload = payload
+    payment.webhook_received_at = datetime.now(timezone.utc)
+    # Keep the inquiry payload (checkout URL and QR) separate from callbacks.
+    if payload["resultCode"] == "00":
+        payment.status = PaymentStatus.SUCCESS
+        payment.settled_at = payment.webhook_received_at
+        payment.paid_at = payment.webhook_received_at
+        await session.flush()
+        await process_successful_payment(session, payment)
+        await session.flush()
+        return payment, True
+    payment.status = PaymentStatus.FAILED
+    await session.flush()
     return payment, False
 
 

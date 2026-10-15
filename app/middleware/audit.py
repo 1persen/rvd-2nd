@@ -18,7 +18,7 @@ from app.repositories import audit_log as audit_repo
 
 logger = logging.getLogger(__name__)
 
-_SKIP_PATHS = ("/api/v1/payments/webhook",)
+_SKIP_PATHS = ("/api/v1/payments/webhook", "/api/v1/payments/duitku/callback")
 _MUTATING = ("POST", "PUT", "PATCH", "DELETE")
 
 

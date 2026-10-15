@@ -1,8 +1,10 @@
-﻿"""
-Duitku service - API integration for Duitku payment gateway (Sandbox).
+"""
+Duitku API integration for sandbox and production.
 """
 import hashlib
 import hmac
+import re
+from urllib.parse import urlsplit
 from typing import Any, Dict, Optional
 
 import httpx
@@ -30,6 +32,35 @@ def verify_callback_signature(merchant_code: str, amount: str, merchant_order_id
     expected_signature = hmac.new(api_key.encode("utf-8"), signing_string.encode("utf-8"), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_signature, received_signature)
 
+
+def valid_payment_url(value) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        url = urlsplit(value)
+        return (url.scheme == "https" and url.hostname in
+                {"passport.duitku.com", "sandbox.duitku.com"}
+                and url.port in (None, 443) and not url.username and not url.password)
+    except ValueError:
+        return False
+
+
+def valid_callback(payload) -> bool:
+    if not settings.DUITKU_MERCHANT_CODE or not settings.DUITKU_API_KEY:
+        return False
+    if not isinstance(payload, dict):
+        return False
+    fields = ("merchantCode", "amount", "merchantOrderId", "signature")
+    if any(not isinstance(payload.get(key), str) or not payload[key] for key in fields):
+        return False
+    if not re.fullmatch(r"[0-9a-f]{64}", payload["signature"]):
+        return False
+    if payload["merchantCode"] != settings.DUITKU_MERCHANT_CODE:
+        return False
+    return verify_callback_signature(
+        payload["merchantCode"], payload["amount"], payload["merchantOrderId"],
+        payload["signature"], settings.DUITKU_API_KEY,
+    )
 
 
 async def create_transaction(

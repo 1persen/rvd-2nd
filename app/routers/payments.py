@@ -8,6 +8,7 @@ Dikecualikan dari CSRF (signature = otentikasi), tapi tetap dirate-limit.
 import json
 import logging
 from typing import Optional
+from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -133,48 +134,35 @@ async def mock_simulate_payment(
     if payment.status == PaymentStatus.SUCCESS:
         await leaderboard_service.schedule_push(payment.event_id)
     return ok(data, "Simulasi status pembayaran")
+
+
 @router.post("/payments/duitku/callback")
 async def duitku_callback(request: Request, session: AsyncSession = Depends(get_db)):
     try:
-        form = await request.form()
-        payload = {k: v for k, v in form.multi_items()}
-    except Exception:
-        try:
-            raw = await request.body()
-            payload = json.loads(raw) if raw else {}
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid callback payload")
-
-    # Verify signature if possible
+        content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        raw = await request.body()
+        if len(raw) > 16384:
+            raise HTTPException(status_code=413, detail="Callback payload too large")
+        if content_type == "application/json":
+            payload = json.loads(raw)
+        elif content_type in ("application/x-www-form-urlencoded", ""):
+            pairs = parse_qsl(raw.decode("utf-8"), keep_blank_values=True,
+                              errors="strict", max_num_fields=64)
+            payload = dict(pairs)
+            if len(payload) != len(pairs):
+                raise ValueError("Duplicate callback fields")
+        else:
+            raise HTTPException(status_code=415, detail="Unsupported callback content type")
+    except (ValueError, UnicodeError):
+        raise HTTPException(status_code=400, detail="Invalid callback payload")
+    if not duitku_service.valid_callback(payload):
+        raise HTTPException(status_code=403, detail="Signature tidak valid")
     try:
-        merchant_code = payload.get("merchantCode") or ""
-        amount = str(payload.get("amount") or payload.get("paymentAmount") or "")
-        merchant_order_id = payload.get("merchantOrderId") or payload.get("merchantOrderID") or ""
-        received_signature = payload.get("signature") or ""
-        if settings.DUITKU_MERCHANT_CODE and settings.DUITKU_API_KEY:
-            ok = duitku_service.verify_callback_signature(
-                merchant_code or settings.DUITKU_MERCHANT_CODE,
-                amount,
-                merchant_order_id,
-                received_signature,
-                settings.DUITKU_API_KEY,
-            )
-            if not ok:
-                logger.warning("Duitku callback signature invalid: %s", merchant_order_id)
-                raise HTTPException(status_code=403, detail="Signature tidak valid")
-    except HTTPException:
-        raise
-    except Exception:
-        logger.warning("Duitku callback signature verification failed")
-        # Don't reject if verification can't parse - but spec says validate
-
-    try:
-        payment, voted_now = await payment_service.process_webhook(session, payload)
+        payment, voted_now = await payment_service.process_duitku_callback(session, payload)
     except payment_service.PaymentNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except payment_service.PaymentError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)

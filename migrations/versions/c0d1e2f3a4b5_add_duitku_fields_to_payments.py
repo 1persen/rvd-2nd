@@ -9,7 +9,6 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'c0d1e2f3a4b5'
@@ -33,17 +32,13 @@ def upgrade() -> None:
     if 'duitku_payload' not in columns:
         op.add_column('payments', sa.Column('duitku_payload', sa.JSON(), nullable=True))
     # Add index if not exists
-    try:
+    indexes = {index['name'] for index in inspector.get_indexes('payments')}
+    if 'ix_payments_duitku_merchant_order_id' not in indexes:
         op.create_index('ix_payments_duitku_merchant_order_id', 'payments', ['duitku_merchant_order_id'], unique=False)
-    except Exception:
-        pass
 
 
 def downgrade() -> None:
-    try:
-        op.drop_index('ix_payments_duitku_merchant_order_id', table_name='payments')
-    except Exception:
-        pass
+    op.drop_index('ix_payments_duitku_merchant_order_id', table_name='payments', if_exists=True)
     op.drop_column('payments', 'duitku_payload')
     op.drop_column('payments', 'duitku_payment_method')
     op.drop_column('payments', 'duitku_reference')

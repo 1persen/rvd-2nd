@@ -14,7 +14,7 @@ Install dependencies with `pip install --require-hashes -r requirements.lock`, a
 
 Install the locked CSS build dependencies with `npm ci --prefix deploy/assets --ignore-scripts --no-audit --no-fund`, then build the Tailwind stylesheet with `sh scripts/build_css.sh` before starting production. It uses Tailwind 3.4.17; `app/static/css/tailwind.css` is generated and ignored by Git. The template selects the compiled stylesheet at startup and versions asset URLs. The CDN fallback is for development.
 
-Tencent automatically polls [`1persen/rvd-2nd`](https://github.com/1persen/rvd-2nd) `main` every minute and deploys tested application revisions. See [automatic deployment and recovery](deploy/auto-deploy.md); schema migrations require a reviewed manual deployment.
+Tencent automatically polls [`1persen/rvd-2nd`](https://github.com/1persen/rvd-2nd) `main` every minute and deploys tested application revisions. See [automatic deployment and recovery](deploy/auto-deploy.md); schema migrations require operator approval for the exact commit before the runner applies them.
 
 Nothing is seeded automatically. Admin accounts are provisioned separately. Demo seeding is for disposable development databases only, never production; the sample event's fixed schedule must be adjusted before testing current voting windows.
 
@@ -33,7 +33,7 @@ Nothing is seeded automatically. Admin accounts are provisioned separately. Demo
 
 ## Payment and vote integrity
 
-Production gateway integration remains deferred. With no Midtrans key and `MIDTRANS_MOCK_MODE=false`, checkout shows an unavailable notice, invoice creation fails closed, unsigned webhooks are rejected and mock simulation is hidden. Adding real keys alone is insufficient: the Snap/QRIS response contract still requires integration and sandbox verification.
+New real invoices use Duitku hosted QRIS checkout. Without Duitku credentials and with `MIDTRANS_MOCK_MODE=false`, checkout shows an unavailable notice, invoice creation fails closed, unsigned callbacks are rejected and mock simulation is hidden. Legacy Midtrans callbacks remain for existing invoices. Follow the [Duitku configuration runbook](deploy/auto-deploy.md#duitku-configuration); production payment readiness requires credentials, an enabled QRIS channel and a verified real payment/callback round trip.
 
 The backend grants `qty` votes, independently of the rupiah amount, only after successful payment. Payment snapshots preserve the purchased quantity. Row locks, atomic increments and a unique vote log per payment prevent duplicate or lost votes. Idempotent invoice replay verifies that the key belongs to the same request. Status expiry does not overwrite concurrent settlement.
 
