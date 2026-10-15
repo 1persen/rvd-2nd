@@ -43,7 +43,7 @@ jobs:
       REDIS_URL: redis://127.0.0.1:6379/0
       APP_BASE_URL: http://127.0.0.1:8765
       DEBUG: 'false'
-      MIDTRANS_MOCK_MODE: 'false'
+      MIDTRANS_MOCK_MODE: 'true'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
