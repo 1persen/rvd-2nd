@@ -21,7 +21,7 @@
     </form>
     <aside class="panel rv-ticket"><h2 class="rv-summary-title">Ringkasan dukungan</h2><div class="rv-ticket-team"><div class="rv-ticket-image">{% if team.photo_url or team.logo_url %}<img src="{{ team.photo_url or team.logo_url }}" alt="{{ team.name }}">{% else %}<span aria-hidden="true">{{ team.name[:2] | upper }}</span>{% endif %}</div><h3>{{ team.name }}</h3>{% if team.school %}<p class="rv-muted">{{ team.school }}</p>{% endif %}</div><dl class="rv-receipt"><div><dt>Event</dt><dd>{{ event.name }}</dd></div><div><dt>Harga per vote</dt><dd x-text="formatCurrency(event.price_per_vote)"></dd></div><div><dt>Jumlah</dt><dd><span x-text="qty || 0"></span> vote</dd></div></dl><div class="rv-ticket-total"><span>Total pembayaran</span><strong x-text="formatCurrency(totalPrice)"></strong></div><p class="rv-field-hint">Periksa nama peserta dan jumlah suara sebelum membayar.</p></aside>
   </div>
-  <dialog x-ref="paymentDialog" class="rv-dialog" aria-labelledby="payment-title" @cancel="closeModal()" @click="if ($event.target === $el) closeModal()">
+  <dialog x-ref="paymentDialog" class="rv-dialog" aria-labelledby="payment-title" @cancel="closeModal()">
     <div class="rv-dialog-body">
       <div class="rv-dialog-heading"><p class="rv-kicker">Dukunganmu</p><button class="btn btn-quiet" type="button" @click="closeModal()" aria-label="Tutup dialog">Tutup</button></div>
       <h2 id="payment-title" class="rv-section-title" x-text="showSuccessModal ? 'Dukungan tercatat.' : showMockSimulator ? 'Simulasi pembayaran' : showQrModal ? 'Selesaikan pembayaran.' : 'Periksa sekali lagi.'"></h2>
