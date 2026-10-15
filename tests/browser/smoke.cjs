@@ -26,7 +26,7 @@ const zlib = require('node:zlib');
     async function capture(label, width) {
       if ([390, 1440].includes(width)) {
         const name = `${label}-${width}`;
-        const jpeg = await page.screenshot({ path: `tests/browser/artifacts/${name}.jpg`, type: 'jpeg', quality: 65, fullPage: false });
+        const jpeg = await page.screenshot({ path: `tests/browser/artifacts/${name}.jpg`, type: 'jpeg', quality: 65, animations: 'disabled', fullPage: false });
         // Keep bounded visual proof in CI logs; no workflow permission or extra package is required.
         if (process.env.CI) console.log(`RVD_PROOF_JPEG:${name}:` + jpeg.toString('base64'));
       }
@@ -55,9 +55,11 @@ const zlib = require('node:zlib');
       }
       await page.waitForURL(`${baseURL}/support`);
       await layout(`support ${width}`);
+      await capture('support', width);
       await page.goto(`${baseURL}/events?event_id=${fixture.event_id}`);
       await page.getByText('Cakrawala', { exact: true }).first().waitFor({ state: 'visible' });
       await layout(`event ${width}`);
+      await capture('event', width);
       await page.goto(`${baseURL}/leaderboard?event_id=${fixture.event_id}`);
       await page.locator('.podium-person[data-place="3"]').waitFor({ state: 'visible' });
       assert.equal(await page.locator('.podium-person').count(), 3);
@@ -93,6 +95,7 @@ const zlib = require('node:zlib');
         assert.equal((await page.goto(baseURL + path)).status(), 200);
         await page.locator('.admin-page-heading h1').waitFor({ state: 'visible' });
         await layout(`${path} ${width}`);
+        if (path === '/admin') await capture('admin-dashboard', width);
       }
     }
     assert.deepEqual(errors, []);
