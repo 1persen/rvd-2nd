@@ -2,15 +2,17 @@ const { chromium } = require('playwright');
 const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
+const zlib = require('node:zlib');
 
 (async () => {
   const baseURL = 'http://127.0.0.1:8765';
   const fixture = JSON.parse(execFileSync('python', ['tests/browser/seed.py'], { encoding: 'utf8' }));
   const browser = await chromium.launch({ headless: true });
   fs.mkdirSync('tests/browser/artifacts', { recursive: true });
+  let page;
   try {
     const context = await browser.newContext({ colorScheme: 'dark' });
-    const page = await context.newPage();
+    page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -37,7 +39,7 @@ const fs = require('node:fs');
       const title = await page.locator('.hero-copy h1').boundingBox();
       assert.ok(header.height >= 70 && header.height <= 90, `header height ${header.height}`);
       assert.ok(title.y >= header.y + header.height, 'header overlaps hero');
-      assert.ok(title.height < 300, 'hero copy became a display-sized paragraph');
+      assert.ok(title.height < 300, `hero copy became a display-sized paragraph at ${width}px: ${JSON.stringify(title)}`);
       const logo = await page.locator('.header-inner .wordmark').boundingBox();
       const theme = await page.locator('.theme-toggle').boundingBox();
       assert.ok(logo.x + logo.width <= theme.x, 'brand overlaps theme control');
@@ -92,6 +94,14 @@ const fs = require('node:fs');
     }
     assert.deepEqual(errors, []);
     console.log('PASS ivory default, responsive header, navigation, centered premium podium, checkout, theme, admin login and seven admin pages; widths 320/390/820/1440; no JavaScript errors.');
+  } catch (error) {
+    if (page) {
+      console.error('Layout diagnostics:', await page.locator('.hero-copy h1').evaluateAll(elements => elements.map(el => ({ text: el.textContent, width: el.clientWidth, font: getComputedStyle(el).font, lineHeight: getComputedStyle(el).lineHeight }))));
+      // A compressed failure image is recoverable from CI logs without runtime credentials.
+      const png = await page.screenshot();
+      console.error('RVD_FAILURE_PNG_GZIP:' + zlib.gzipSync(png).toString('base64'));
+    }
+    throw error;
   } finally {
     await browser.close();
   }
