@@ -61,7 +61,9 @@ input, select, textarea { scroll-margin-block: 7rem; }
 .empty-state { padding: 48px 24px; text-align: center; color: var(--muted); }
 .notice { padding: 16px 20px; border: 1px solid var(--line); background: #f0f4fa; border-radius: 10px; color: #384961; }
 .notice-error { border-color: #deaaa5; background: #fff1ef; color: #9b2820; }
-.site-header { position: fixed; top: 1rem; left: 0; right: 0; margin: 0 auto; max-width: min(100%, 1200px); z-index: 40; }
+.site-header { position:sticky; top:0; z-index:40; background:var(--surface); border-bottom:1px solid var(--line); }
+.site-header-inner { display:flex; align-items:center; gap:20px; max-width:1200px; min-height:80px; margin:auto; padding:16px 20px; }
+.brand-lockup { display:flex; align-items:center; gap:11px; font-weight:800; font-size:.9375rem; line-height:1.25; margin-right:auto; }
 .brand-lockup img { width: 40px; height: 40px; object-fit: contain; }
 .brand-lockup { min-height: 44px; }
 .brand-subtitle { display: block; font-size: .6875rem; color: var(--muted); font-weight: 500; margin-top: 4px; }

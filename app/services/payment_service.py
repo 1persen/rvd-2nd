@@ -260,6 +260,8 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
         supporter_phone=payment.supporter_phone,
         is_anonymous=payment.is_anonymous,
         is_mock=is_mock,
+        is_sandbox=(payment.payment_gateway == PaymentGateway.DUITKU
+                    and duitku_service.is_sandbox_payment_url(duitku_payload.get("paymentUrl"))),
     )
 
 

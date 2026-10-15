@@ -45,6 +45,10 @@ def valid_payment_url(value) -> bool:
         return False
 
 
+def is_sandbox_payment_url(value) -> bool:
+    return valid_payment_url(value) and urlsplit(value).hostname == "sandbox.duitku.com"
+
+
 def valid_callback(payload) -> bool:
     if not settings.DUITKU_MERCHANT_CODE or not settings.DUITKU_API_KEY:
         return False

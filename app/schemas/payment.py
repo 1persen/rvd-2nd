@@ -55,3 +55,4 @@ class PaymentOut(BaseModel):
     supporter_phone: str
     is_anonymous: bool = False
     is_mock: bool = False
+    is_sandbox: bool = False
