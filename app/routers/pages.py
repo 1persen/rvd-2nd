@@ -25,6 +25,11 @@ from app.services.public_page_cache import cache_discovery_page
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
+templates.env.globals["payment_sandbox_enabled"] = lambda: (
+    not settings.midtrans_mock_enabled
+    and settings.payments_configured
+    and settings.DUITKU_ENVIRONMENT == "sandbox"
+)
 
 # Prebuilt Tailwind (scripts/build_css.sh) replaces the in-browser Play CDN when
 # present; the mtime busts browser caches after a rebuild + restart.

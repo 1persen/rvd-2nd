@@ -23,6 +23,6 @@ For a release, validate the source and locked dependencies, build CSS, test agai
 
 The current release passed 70 Python checks on the isolated server database and production browser checks across desktop and mobile widths. The integrated workspace also passes 18 JavaScript tests. Details and file-hash evidence are in [the release report](../docs/tencent-ivory-gold-verification.json).
 
-Production mock payments remain disabled and real gateway integration is deferred. A checkout must remain unavailable until the Snap/QRIS contract has been completed and verified. Never run demo seeding or settlement/load tests against production.
+Production mock payments remain disabled. New invoices use Duitku; see the [current payment configuration runbook](auto-deploy.md#duitku-configuration). Without gateway credentials, checkout stays unavailable. Sandbox must be visibly labeled and tested on a dedicated test event; never run demo seeding or load tests against production.
 
 The previous same-host restore drill succeeded. The fresh visual-release backup has a validated archive listing but was not independently restored. Scheduled/off-site backups are still outstanding. Earlier high-volume independent-connection tests exposed unresolved transport limits; this visual release does not claim a new throughput SLA or repeat sustained/distributed load testing.

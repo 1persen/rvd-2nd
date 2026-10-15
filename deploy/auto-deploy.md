@@ -4,7 +4,7 @@
 
 ## Release gates
 
-GitHub Actions runs the `RVD checks` job for every pull request targeting `main` and every push to `main`. It validates the locked Python/Node dependencies, CSS build, migrations against an empty disposable PostgreSQL database, JavaScript tests, deployment tests, application tests, and Chromium navigation at 390/1440 px. Browser dependencies live separately in `tests/browser` and are not installed on production. No production credentials are available to CI.
+GitHub Actions runs the `RVD checks` job for every pull request targeting `main` and every push to `main`. It validates the locked Python/Node dependencies, CSS build, migrations against an empty disposable PostgreSQL database, JavaScript tests, deployment tests, application tests, and Chromium layout/navigation at 320/390/820/1440 px. Browser dependencies live separately in `tests/browser` and are not installed on production. No production credentials are available to CI.
 
 The repository owner must enable a branch protection rule for `main`: require a pull request, require `RVD checks` from GitHub Actions, require the branch to be up to date, enforce the rule for administrators, and disallow force pushes and deletion. For a solo-maintained repository, a required review count of zero still requires a PR and passing checks without making self-authored changes impossible to merge. The workflow alone does not block merging; confirm the protection rule in GitHub Settings after the first successful run. GitHub's merge check and the server's release validation are separate gates; a green PR is not proof that production has updated.
 
@@ -47,3 +47,11 @@ Stop `rvd-auto-deploy.timer` and let any active deployment finish before a manua
 ## Verification
 
 Deployment unit tests cover successful activation, repeat no-op, build and backup failure, health-check rollback, migration blocking, concurrent locking, archive links, and retention. They use temporary directories and mocked system/database commands; they do not deliberately break the live service. Application and browser checks are separate evidence. Physical hardware failures, a full backup restore, and real payment processing are not part of this automation check.
+
+### Sandbox checkout
+
+Keep merchant credentials in the server environment file; never commit them. Set `DUITKU_ENVIRONMENT=sandbox`, `MIDTRANS_MOCK_MODE=false`, and choose an enabled QRIS method from the merchant payment-method API. `NQ` is Nobu QRIS; availability depends on the merchant account.
+
+The public site displays a sandbox notice before checkout, and invoice responses carry `is_sandbox` based on the saved, validated checkout URL. This label survives environment changes. Sandbox uses the real Duitku inquiry/signature path, not the application's local mock simulator. Use a dedicated test event so test votes do not affect a real competition.
+
+Duitku's [official testing guide](https://docs.duitku.com/api/en/#testing) documents channel-specific test clients. An accepted inquiry proves invoice creation; it does not prove settlement or callback delivery. Channels without a documented simulator require provider support for settlement testing. Switch to production only with production credentials and a verified real payment/callback round trip.

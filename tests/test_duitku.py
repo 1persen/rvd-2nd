@@ -117,6 +117,25 @@ async def test_checkout_page_accepts_duitku_credentials(async_client, test_data,
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize('host,is_sandbox', [('sandbox.duitku.com', True), ('passport.duitku.com', False)])
+async def test_invoice_environment_follows_saved_checkout_url(async_client, test_data, duitku, monkeypatch, host, is_sandbox):
+    # Old invoices retain their identity even after the server environment changes.
+    monkeypatch.setattr(settings, 'DUITKU_ENVIRONMENT', 'production' if is_sandbox else 'sandbox')
+    duitku.return_value['paymentUrl'] = f'https://{host}/checkout/test'
+    payment = (await invoice(async_client, test_data)).json()['data']
+    assert payment['is_sandbox'] is is_sandbox
+    assert payment['is_mock'] is False
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('environment,visible', [('sandbox', True), ('production', False)])
+async def test_checkout_discloses_sandbox_before_invoice(async_client, test_data, duitku, monkeypatch, environment, visible):
+    monkeypatch.setattr(settings, 'DUITKU_ENVIRONMENT', environment)
+    response = await async_client.get(f"/events/{test_data['event'].id}/vote/{test_data['team'].id}")
+    assert ('data-payment-environment="sandbox"' in response.text) is visible
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize('payload', [[], None, {'signature': 123}, {
     'merchantCode': 'test-merchant', 'merchantOrderId': 'id', 'amount': '1000', 'signature': 'é' * 64,
 }])

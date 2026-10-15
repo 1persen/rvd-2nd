@@ -165,7 +165,7 @@ html.dark .rv-form-divider { border-top-color: var(--line); }
 html.dark .rv-phone-input { background: var(--surface); border-color: var(--control-border); }
 html.dark .rv-phone-input input { border-left-color: var(--line); }
 html.dark .rv-quantity input { background: var(--surface); border-color: var(--control-border); }
-html.dark .rv-ticket { background: linear-gradient(145deg,#f4efe0,#faf9f4); border-color: #d8c79e; }
+html.dark .rv-ticket { background:linear-gradient(145deg,#26332f,#18292d); border-color:#756744; }
 html.dark .rv-dialog { background: var(--surface); }
 html.dark .rv-dialog::backdrop { background: #00000088; }
 html.dark .rv-vote-bar { background: #1e2a4a; }

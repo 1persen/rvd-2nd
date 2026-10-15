@@ -27,6 +27,7 @@
       <h2 id="payment-title" class="rv-section-title" x-text="showSuccessModal ? 'Dukungan tercatat.' : showMockSimulator ? 'Simulasi pembayaran' : showQrModal ? 'Selesaikan pembayaran.' : 'Periksa sekali lagi.'"></h2>
       <p class="rv-muted" x-show="step === 2">Pastikan peserta, jumlah suara, dan data pendukung sudah benar.</p>
       <p class="notice" x-show="showMockSimulator">Mode uji coba. Tidak ada pembayaran uang sungguhan.</p>
+      <p class="notice" x-show="payment?.is_sandbox" x-cloak>Sandbox Duitku: transaksi ini hanya untuk pengujian. Jangan membayar dengan uang sungguhan.</p>
       <p class="notice notice-error" role="alert" x-show="error" x-text="error"></p>
       <dl class="rv-receipt"><div><dt>Peserta</dt><dd>{{ team.name }}</dd></div><div x-show="step === 2"><dt>Nama</dt><dd x-text="voter.name"></dd></div><div x-show="step === 2"><dt>WhatsApp</dt><dd x-text="'+62' + voter.phone"></dd></div><div><dt>Jumlah vote</dt><dd x-text="payment?.votes || qty"></dd></div><div><dt>Total</dt><dd x-text="formatCurrency(payment?.amount || totalPrice)"></dd></div><div x-show="payment"><dt>ID pembayaran</dt><dd class="rv-order-id" x-text="payment?.id"></dd></div></dl>
       <div class="rv-actions" x-show="step === 2"><button class="btn btn-secondary" @click="closeModal()" :disabled="isLoading">Ubah data</button><button class="btn btn-primary" @click="createInvoice()" :disabled="isLoading" x-text="isLoading ? 'Membuat pembayaran...' : 'Buat pembayaran'"></button></div>
