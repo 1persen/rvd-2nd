@@ -288,7 +288,7 @@
  .public-site .menu-toggle { display:block; border:1px solid #d6dbd0; border-radius:5px; padding:10px 14px; font-size:11px; }
  .public-site .mobile-nav { display:flex; flex-direction:column; padding-block:10px 22px; gap:15px; font-size:13px; }
  .public-site .hero-grid { grid-template-columns:1fr; padding-block:43px 10px; gap:6px; }
- .public-site .hero-copy h1 { font-size:46px; }
+ .public-site .hero-copy h1 { font-size:clamp(36px,10vw,46px); }
  .public-site .hero-copy>p { max-width:360px; font-size:13px; }
  .public-site .hero-copy .eyebrow { font-size:8px; }
  .public-site .hero-assurance { margin-top:25px; gap:14px; font-size:9px; }
@@ -383,47 +383,8 @@
  .public-site .vote-page .fixed .p-8 { padding:24px; }
  .public-site .vote-page .fixed .text-3xl { font-size:24px; }
 }
-/* SIMPASKOR hero layout rules (preserved selectors) */
-.landing-section-inner.section-visible {
-  display: flex;
-  height: 100%;
-  position: relative;
-  align-items: center;
-  overflow: hidden;
-  border-width: 0;
-}
-
-@media (max-width: 1023px) {
-  .landing-slide[data-slide="hero"] .landing-section-inner {
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    padding-bottom: 0;
-  }
-}
-
-.absolute.inset-0.flex.flex-col.justify-end {
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  pointer-events: none;
-}
-
-@media (max-width: 767px) {
-  .landing-section-inner {
-    height: auto;
-    min-height: calc(100vh - 7.5rem);
-    overflow: visible;
-    align-items: flex-start;
-    padding-top: 2rem;
-    padding-bottom: 2rem;
-  }
-}
+/* Keep hero artwork and the category strip in normal document flow. */
+.landing-section-inner.section-visible { display:block; position:relative; overflow:hidden; }
 
 .public-site .discovery-filters { display:flex; flex-wrap:wrap; align-items:end; gap:20px; margin-bottom:24px; }
 .public-site .discovery-filters .field { width:min(100%,380px); }

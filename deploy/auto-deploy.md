@@ -4,7 +4,7 @@
 
 ## Release gates
 
-GitHub Actions runs the `RVD checks` job for every pull request targeting `main` and every push to `main`. It validates the locked Python/Node dependencies, CSS build, migrations against an empty disposable PostgreSQL database, JavaScript tests, deployment tests, application tests, and Chromium navigation at 390/1440 px. Browser dependencies live separately in `tests/browser` and are not installed on production. No production credentials are available to CI.
+GitHub Actions runs the `RVD checks` job for every pull request targeting `main` and every push to `main`. It validates the locked Python/Node dependencies, CSS build, migrations against an empty disposable PostgreSQL database, JavaScript tests, deployment tests, application tests, and Chromium layout/navigation at 320/390/820/1440 px. Browser dependencies live separately in `tests/browser` and are not installed on production. No production credentials are available to CI.
 
 The repository owner must enable a branch protection rule for `main`: require a pull request, require `RVD checks` from GitHub Actions, require the branch to be up to date, enforce the rule for administrators, and disallow force pushes and deletion. For a solo-maintained repository, a required review count of zero still requires a PR and passing checks without making self-authored changes impossible to merge. The workflow alone does not block merging; confirm the protection rule in GitHub Settings after the first successful run. GitHub's merge check and the server's release validation are separate gates; a green PR is not proof that production has updated.
 

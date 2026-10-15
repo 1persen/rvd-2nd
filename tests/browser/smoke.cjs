@@ -25,7 +25,10 @@ const zlib = require('node:zlib');
     }
     async function capture(label, width) {
       if ([390, 1440].includes(width)) {
-        await page.screenshot({ path: `tests/browser/artifacts/${label}-${width}.png`, fullPage: false });
+        const name = `${label}-${width}`;
+        const jpeg = await page.screenshot({ path: `tests/browser/artifacts/${name}.jpg`, type: 'jpeg', quality: 65, fullPage: false });
+        // Keep bounded visual proof in CI logs; no workflow permission or extra package is required.
+        if (process.env.CI) console.log(`RVD_PROOF_JPEG:${name}:` + jpeg.toString('base64'));
       }
     }
     for (const width of [320, 390, 820, 1440]) {
