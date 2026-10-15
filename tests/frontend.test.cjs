@@ -15,7 +15,7 @@ function checkout(globals = {}) {
   const form = context.votePage({ id: 'team' }, { id: 'event', is_voting_open: true, price_per_vote: 1000 }, '/payments', '/payments');
   const dialog = { open: false, showModal() { this.open = true; }, close() { this.open = false; } };
   form.$refs = { paymentDialog: dialog };
-  form.voter = { name: 'Preview supporter', phone: '81234567890', email: '' };
+  form.voter = { name: 'Preview supporter', phone: '81234567890', email: 'sandbox-test@example.com' };
   return { form, dialog };
 }
 
@@ -35,6 +35,16 @@ test('closed voting cannot enter payment confirmation', () => {
   form.nextStep();
   assert.equal(dialog.open, false);
   assert.match(form.error, /Voting/);
+});
+
+test('checkout requires a valid payer email before confirmation', () => {
+  for (const email of ['', 'invalid', 'a b@example.com', 'a'.repeat(40) + '@example.com']) {
+    const { form, dialog } = checkout();
+    form.voter.email = email;
+    form.nextStep();
+    assert.equal(dialog.open, false);
+    assert.match(form.error, /email/);
+  }
 });
 
 test('invoice rejection leaves the confirmation available for retry', async () => {

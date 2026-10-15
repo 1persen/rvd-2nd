@@ -8,10 +8,10 @@
   <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
   <div class="rv-checkout">
     <form class="panel rv-vote-form" @submit.prevent="nextStep()">
-      <div class="rv-form-heading"><div><h2>Data pendukung</h2><p class="rv-muted">Nama dan nomor WhatsApp wajib diisi.</p></div></div>
+      <div class="rv-form-heading"><div><h2>Data pendukung</h2><p class="rv-muted">Nama, nomor WhatsApp, dan email wajib diisi.</p></div></div>
       <div class="field"><label for="voter-name">Nama lengkap</label><input id="voter-name" x-model="voter.name" autocomplete="name" required maxlength="200" placeholder="Nama kamu"></div>
       <div class="field"><label for="voter-phone">Nomor WhatsApp</label><div class="rv-phone-input"><span>+62</span><input id="voter-phone" x-model="voter.phone" type="tel" inputmode="numeric" autocomplete="tel-national" required pattern="[0-9]{9,13}" maxlength="13" aria-describedby="phone-hint" placeholder="81234567890"></div><p id="phone-hint" class="rv-field-hint">Masukkan 9-13 angka tanpa awalan +62 atau 0.</p></div>
-      <div class="field"><label for="voter-email">Email <span class="rv-muted">(opsional)</span></label><input id="voter-email" x-model="voter.email" type="email" autocomplete="email" maxlength="255" placeholder="nama@email.com"></div>
+      <div class="field"><label for="voter-email">Email</label><input id="voter-email" x-model="voter.email" type="email" autocomplete="email" required maxlength="50" placeholder="nama@email.com"></div>
       <div class="rv-form-heading rv-form-divider"><div><h2>Jumlah vote</h2><p class="rv-muted"><span x-text="formatCurrency(event.price_per_vote)"></span> per vote</p></div></div>
       <div class="rv-quantity"><button type="button" class="btn btn-secondary" @click="decrementQty()" :disabled="qty <= 1" aria-label="Kurangi vote">−</button><label for="vote-qty" class="sr-only">Jumlah vote</label><input id="vote-qty" type="number" min="1" max="10000" step="1" required x-model.number="qty" inputmode="numeric"><button type="button" class="btn btn-secondary" @click="incrementQty()" :disabled="qty >= 10000" aria-label="Tambah vote">+</button></div>
       <p class="rv-field-hint">Suara akan dihitung setelah pembayaran berhasil.</p>

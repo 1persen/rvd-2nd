@@ -25,6 +25,10 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
       if (!this.voter.name.trim() || !/^\d{9,13}$/.test(this.voter.phone)) {
         this.error = 'Isi nama dan nomor WhatsApp dengan benar.'; return;
       }
+      this.voter.email = this.voter.email.trim();
+      if (this.voter.email.length > 50 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(this.voter.email)) {
+        this.error = 'Isi alamat email yang valid (maksimal 50 karakter) untuk pembayaran.'; return;
+      }
       if (!Number.isInteger(this.qty) || this.qty < 1 || this.qty > 10000) {
         this.error = 'Jumlah vote harus berupa angka bulat antara 1 dan 10.000.'; return;
       }

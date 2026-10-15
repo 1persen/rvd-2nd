@@ -38,6 +38,8 @@ New real invoices use Duitku; legacy Midtrans callbacks remain available for exi
 
 The checkout opens Duitku's HTTPS hosted payment page. Callbacks must match the merchant, signature, invoice amount, reference and gateway before granting votes, and retries are idempotent. Protocol source: [Duitku API documentation](https://docs.duitku.com/api/en/). Gateway availability, enabled merchant channels, credentials and a real payment/callback round trip must be verified separately before announcing payment readiness.
 
+Duitku checkout requires a valid payer email (maximum 50 characters, matching the provider's documented validation limit). The form and invoice API reject missing or malformed emails before inquiry. Provider timeouts return HTTP 503 with a retryable availability message, without exposing provider responses or credentials. Inspect the payment ID and configured method in the warning log; an enabled channel can still be unavailable upstream. Check the provider transaction status before diagnosing a timed-out inquiry as definitively absent, and do not extend the request timeout beyond the database transaction timeout to mask an upstream outage.
+
 ## Failed releases and recovery
 
 A failed revision is recorded in `/var/lib/rvd-deploy/last-attempt` and is not retried every minute. Subsequent polls continue to exit unsuccessfully for that revision, keeping the service failure visible without rebuilding it. Fix it through a new commit. For a transient failure, inspect the journal, stop the timer, remove that one marker, and start the service once before re-enabling the timer. Do not remove it without understanding the failure.

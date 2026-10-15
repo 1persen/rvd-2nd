@@ -23,11 +23,31 @@ def duitku(monkeypatch):
     return gateway
 
 
-async def invoice(client, data):
+async def invoice(client, data, **overrides):
     return await client.post('/api/v1/payments', json={
         'event_id': data['event'].id, 'team_id': data['team'].id, 'qty': 3,
         'supporter_name': 'Test', 'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com', **overrides,
     })
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('email', [None, '', '   ', 'invalid', 'test@', 'a b@example.com', 'a' * 40 + '@example.com'])
+async def test_duitku_requires_valid_email_before_contacting_gateway(async_client, test_data, duitku, email):
+    response = await invoice(async_client, test_data, supporter_email=email)
+    assert response.status_code == 400
+    assert 'email' in response.json()['message'].lower()
+    duitku.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_gateway_timeout_has_actionable_error(async_client, test_data, duitku):
+    import httpx
+    duitku.side_effect = httpx.ReadTimeout('Provider stalled')
+    response = await invoice(async_client, test_data)
+    assert response.status_code == 503
+    assert 'Duitku' in response.json()['message']
+    assert 'merespons' in response.json()['message']
 
 
 def callback(payment, **overrides):

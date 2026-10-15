@@ -11,10 +11,12 @@ Rules enforced here:
 - webhook is idempotent (re-process is a no-op)
 """
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 from typing import Optional
 
+import httpx
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -54,7 +56,7 @@ class PaymentNotFound(PaymentError):
 
 
 class PaymentUnavailable(PaymentError):
-    """The payment gateway is not configured, so no invoice can be issued."""
+    """The payment gateway is unconfigured or temporarily unavailable."""
 
 
 def _replay_or_raise(existing: Payment, payload: PaymentCreate) -> Payment:
@@ -121,6 +123,12 @@ async def create_payment(
 
     if not settings.payments_configured:
         raise PaymentUnavailable("Pembayaran belum dikonfigurasi. Hubungi panitia.")
+
+    if not settings.midtrans_mock_enabled:
+        email = (payload.supporter_email or "").strip()
+        if len(email) > 50 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            raise PaymentError("Isi alamat email yang valid (maksimal 50 karakter) untuk pembayaran.")
+        payload.supporter_email = email
 
     package_code = "custom"
     package_label = f"{payload.qty} vote"
@@ -215,6 +223,12 @@ async def create_payment(
                     or not result.get("reference")
                     or not duitku_service.valid_payment_url(result.get("paymentUrl"))):
                 raise ValueError("Invalid Duitku inquiry response")
+        except httpx.TimeoutException as exc:
+            logger.warning("Duitku inquiry timed out for payment %s (method=%s)",
+                           payment.id, settings.DUITKU_PAYMENT_METHOD)
+            raise PaymentUnavailable(
+                "Duitku belum merespons. Tunggu beberapa saat sebelum mencoba lagi."
+            ) from exc
         except Exception as exc:
             logger.warning("Duitku inquiry failed for payment %s (%s)", payment.id, type(exc).__name__)
             raise PaymentError("Gagal membuat invoice pembayaran. Coba lagi.") from exc
