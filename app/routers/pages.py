@@ -185,7 +185,7 @@ async def vote_page(
             status_code=200,
         )
 
-    if not settings.MIDTRANS_SERVER_KEY and not settings.midtrans_mock_enabled:
+    if not settings.payments_configured:
         return templates.TemplateResponse(
             request,
             "pages/payments_unavailable.html",

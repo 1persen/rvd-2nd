@@ -37,7 +37,7 @@ def _limit(bucket: str) -> int:
 def _bucket_name(method: str, path: str) -> str:
     if path.startswith("/api/v1/auth"):
         return "auth"
-    if path == "/api/v1/payments/webhook":
+    if path in ("/api/v1/payments/webhook", "/api/v1/payments/duitku/callback"):
         return "webhook"
     if method == "POST" and path == "/api/v1/payments":
         return "payment"

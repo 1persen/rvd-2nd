@@ -88,6 +88,65 @@ class DeploymentTests(unittest.TestCase):
             restart.assert_not_called()
             self.assertEqual((self.root / 'current').resolve(), self.previous)
 
+    def test_migration_approval_is_bound_to_exact_revision(self):
+        (self.previous / 'migrations/old.py').write_text('old migration')
+        (self.state / 'approved-migration').write_text('b' * 40)
+        with patch.object(deployer, 'extract_release', side_effect=self.extract), \
+             patch.object(deployer, 'build_release') as build:
+            with self.assertRaisesRegex(RuntimeError, 'operator approval'):
+                deployer.deploy(self.sha)
+            build.assert_not_called()
+
+    def test_approved_migration_runs_after_backup_before_activation(self):
+        (self.previous / 'migrations/old.py').write_text('old migration')
+        (self.state / 'approved-migration').write_text(self.sha)
+        steps = []
+
+        def migrate(release, *, production):
+            self.assertTrue(production)
+            self.assertTrue((self.backups / ('rvd-auto-' + self.sha + '.dump')).exists())
+            self.assertEqual((self.root / 'current').resolve(), self.previous)
+            steps.append('migrated')
+
+        with patch.object(deployer, 'extract_release', side_effect=self.extract), \
+             patch.object(deployer, 'build_release'), \
+             patch.object(deployer, 'run', side_effect=self.fake_command), \
+             patch.object(deployer, 'migrate', side_effect=migrate), \
+             patch.object(deployer, 'restart'), \
+             patch.object(deployer, 'check_health'):
+            deployer.deploy(self.sha)
+        self.assertEqual(steps, ['migrated'])
+        self.assertEqual((self.root / 'current').resolve(), self.release)
+        self.assertFalse((self.state / 'approved-migration').exists())
+
+    def test_migration_failure_preserves_previous_release(self):
+        (self.previous / 'migrations/old.py').write_text('old migration')
+        (self.state / 'approved-migration').write_text(self.sha)
+        with patch.object(deployer, 'extract_release', side_effect=self.extract), \
+             patch.object(deployer, 'build_release'), \
+             patch.object(deployer, 'run', side_effect=self.fake_command), \
+             patch.object(deployer, 'migrate', side_effect=RuntimeError('DDL failed')), \
+             patch.object(deployer, 'restart') as restart:
+            with self.assertRaisesRegex(RuntimeError, 'DDL failed'):
+                deployer.deploy(self.sha)
+            restart.assert_not_called()
+        self.assertEqual((self.root / 'current').resolve(), self.previous)
+        self.assertTrue((self.backups / ('rvd-auto-' + self.sha + '.dump')).exists())
+
+    def test_migration_commands_use_scoped_users_and_bounded_timeouts(self):
+        with patch.object(deployer, 'run') as run:
+            deployer.migrate(self.release, production=False)
+            args = run.call_args.args[0]
+            self.assertIn('/etc/rvd/loadtest.env', args)
+            self.assertIn('rvd-build', args)
+            self.assertNotIn('/etc/rvd/production.env', args)
+            deployer.migrate(self.release, production=True)
+            args = run.call_args.args[0]
+            self.assertIn('/etc/rvd/production.env', args)
+            self.assertIn('rvd', args)
+            self.assertIn('lock_timeout=5s', args[2])
+            self.assertEqual(run.call_args.kwargs['timeout'], 120)
+
     def test_archive_rejects_symlinks(self):
         data = io.BytesIO()
         with tarfile.open(fileobj=data, mode='w') as archive:

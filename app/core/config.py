@@ -3,6 +3,7 @@ Application configuration.
 Loads settings from environment variables (.env).
 """
 from functools import lru_cache
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -48,10 +49,11 @@ class Settings(BaseSettings):
     MIDTRANS_MOCK_MODE: bool = False
     APP_BASE_URL: str = "http://localhost:8000"
 
-    # Duitku payment gateway (Sandbox only per spec)
+    # Duitku is used for new real invoices; Midtrans callbacks remain for existing invoices.
     DUITKU_MERCHANT_CODE: str = ""
     DUITKU_API_KEY: str = ""
-    DUITKU_ENVIRONMENT: str = "sandbox"  # sandbox | production (not used yet)
+    DUITKU_ENVIRONMENT: Literal["sandbox", "production"] = "sandbox"
+    DUITKU_PAYMENT_METHOD: Literal["SP", "NQ", "SQ"] = "SP"
 
     REDIS_URL: str = "redis://localhost:6379/0"
     CLOUDFLARE_API_KEY: str = ""
@@ -68,12 +70,18 @@ class Settings(BaseSettings):
         for name in ("SECRET_KEY", "JWT_SECRET_KEY"):
             if getattr(self, name) in ("", "change-this-secret-key"):
                 raise RuntimeError(f"{name} must be set to a secure value (e.g. `openssl rand -hex 32`)")
+        if self.MIDTRANS_MOCK_MODE and (self.DUITKU_MERCHANT_CODE or self.DUITKU_API_KEY or self.DUITKU_ENVIRONMENT == "production"):
+            raise RuntimeError("Mock payments cannot be combined with Duitku credentials or production mode")
         if self.MIDTRANS_MOCK_MODE and (self.MIDTRANS_SERVER_KEY or self.MIDTRANS_IS_PRODUCTION):
             raise RuntimeError("MIDTRANS_MOCK_MODE cannot be combined with a Midtrans server key or production mode")
 
     @property
     def midtrans_mock_enabled(self) -> bool:
         return self.MIDTRANS_MOCK_MODE and not self.MIDTRANS_SERVER_KEY
+
+    @property
+    def payments_configured(self) -> bool:
+        return self.midtrans_mock_enabled or bool(self.DUITKU_MERCHANT_CODE and self.DUITKU_API_KEY)
 
     @property
     def is_sqlite(self) -> bool:

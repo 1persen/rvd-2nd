@@ -12,7 +12,7 @@ The root-owned runner fetches an exact commit, rejects archives containing links
 
 Every release installs Python dependencies using hash-verified `requirements.lock`, verifies dependency compatibility, installs CSS dependencies with `npm ci --ignore-scripts`, builds Tailwind, and runs JavaScript, deployment and application tests. It then makes release files root-owned, creates and validates a protected PostgreSQL backup, switches `/srv/rvd/current` atomically and restarts `rvd.service`. Health/public-page checks and anonymous admin API rejection must pass; otherwise the runner restores the previous release and checks it again. There is a brief service restart, not a zero-downtime rollout.
 
-Changes to `alembic.ini` or migration Python files stop deployment before activation. Apply reviewed schema changes manually, validate both databases, and deploy the matching release before resuming automatic updates. Database restores are never automatic. Runtime secrets, gateway activation and operating-system configuration are not taken from Git. Changes to the root-owned deployment runner or systemd units also require an operator to rerun the installer from a reviewed checkout.
+Changes to `alembic.ini` or migration Python files require operator approval for the exact commit. The runner upgrades the isolated test database before application tests. For an approved release it validates a production backup, runs the migration as `rvd` with bounded lock/statement timeouts, and only then activates the release. Approval is removed after success. Database restores are never automatic. Runtime secrets, gateway activation and operating-system configuration are not taken from Git. Changes to the root-owned deployment runner or systemd units also require an operator to rerun the installer from a reviewed checkout.
 
 Five recent automatic releases plus any protected current/previous release are retained, together with ten `rvd-auto-*.dump` backups. Existing named manual releases and backups are not pruned. These backups are on the same host and do not replace off-site backups.
 
@@ -23,6 +23,20 @@ The source repository moved from `1stind/rvd` to `1persen/rvd-2nd`. The installe
 From the reviewed checkout, run `sudo bash deploy/install_auto_deploy.sh`. It installs the runner and units, provisions the unprivileged build account, preserves startup compatibility for the current manual release, and enables the timer. It assumes the existing PostgreSQL/Redis setup, production/test environment files, Python 3.12 venv support, Node/npm, Git, systemd and legacy `/srv/rvd/venv` already exist. It does not provision credentials or a database.
 
 Inspect the timer with `sudo systemctl status rvd-auto-deploy.timer`. Inspect deployment logs with `sudo journalctl -u rvd-auto-deploy.service -n 100 --no-pager`. The successful deployed commit is stored in `/srv/rvd/current/.git-revision`; verify it against GitHub `main`. A lock prevents concurrent deployments. The same successful revision does not trigger another build/restart.
+
+## Reviewed schema releases
+
+The runner intentionally blocks unknown schema changes even when GitHub CI passes. Repository ownership does not change this policy. An operator must review migrations for compatibility with the currently running release, test an upgrade from its schema, and ensure that rollback of application code can safely leave the new schema in place. Destructive or incompatible migrations require a separate maintenance plan; do not approve them through this path.
+
+For an additive migration release, stop `rvd-auto-deploy.timer` and wait for the deployment service to become inactive. Under `/var/lib/rvd-deploy/lock`, put the reviewed full 40-character main commit into root-only `/var/lib/rvd-deploy/approved-migration`. Remove `last-attempt` only if it records that same revision and the failure has been investigated. Start the deployment service once, inspect the journal, verify `.git-revision` and public health, then resume the timer. Approval for one commit does not authorize a subsequent commit. Never approve a revision before completing its review and checks.
+
+The installed root-owned runner must first be updated from the reviewed version containing this approval support. A merge does not overwrite the installed runner. Partial/nontransactional DDL may remain after a failed migration or application rollback; inspect the database before retrying. The runner never restores a database automatically.
+
+## Duitku configuration
+
+New real invoices use Duitku; legacy Midtrans callbacks remain available for existing invoices. Set `DUITKU_ENVIRONMENT=production`, the merchant's enabled QRIS code in `DUITKU_PAYMENT_METHOD` (`SP`, `NQ`, or `SQ`), and the production `DUITKU_MERCHANT_CODE` / `DUITKU_API_KEY` in `/etc/rvd/production.env`. Keep `MIDTRANS_MOCK_MODE=false`. Without merchant credentials checkout returns 503 and Duitku callbacks return 403; no fabricated invoice or vote is created. Local mock payments are incompatible with Duitku production mode or credentials.
+
+The checkout opens Duitku's HTTPS hosted payment page. Callbacks must match the merchant, signature, invoice amount, reference and gateway before granting votes, and retries are idempotent. Protocol source: [Duitku API documentation](https://docs.duitku.com/api/en/). Gateway availability, enabled merchant channels, credentials and a real payment/callback round trip must be verified separately before announcing payment readiness.
 
 ## Failed releases and recovery
 

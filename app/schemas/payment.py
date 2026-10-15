@@ -42,6 +42,7 @@ class PaymentOut(BaseModel):
     payment_channel: Optional[PaymentChannel] = None
     currency: str
     signature_key: Optional[str] = None
+    payment_url: Optional[str] = None
     qris_url: Optional[str] = None
     qr_string: Optional[str] = None
     expires_at: Optional[datetime] = None

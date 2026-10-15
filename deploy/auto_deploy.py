@@ -71,12 +71,31 @@ def build_release(release):
         cwd=release, timeout=180)
     run(user + [python, '-m', 'unittest', 'discover', '-s', 'deploy', '-p', 'test_auto_deploy.py'],
         cwd=release)
+    # Exercise upgrades against the isolated database before application tests.
+    migrate(release, production=False)
     # Only the isolated test environment reaches candidate code, under an unprivileged user.
     run(['bash', '-c', 'set -ea; source /etc/rvd/loadtest.env; set +a; '
          'exec runuser -u rvd-build -- "$@"', '--', python, '-m', 'pytest', 'tests', '-q'],
         cwd=release, timeout=180)
     run(['chown', '-R', 'root:rvd', str(release)])
     run(['chmod', '-R', 'a+rX,go-w', str(release)])
+
+
+def migrate(release, *, production):
+    env = '/etc/rvd/production.env' if production else '/etc/rvd/loadtest.env'
+    user = 'rvd' if production else 'rvd-build'
+    # Candidate code runs without root privileges. Keep DDL lock waits bounded.
+    run(['bash', '-c', 'set -ea; source "$1"; set +a; '
+         'export PGOPTIONS="-c lock_timeout=5s -c statement_timeout=60s"; '
+         'shift; exec runuser -u "$1" -- "${@:2}"', '--', env, user,
+         str(release / '.venv/bin/python'), '-m', 'alembic', 'upgrade', 'head'],
+        cwd=release, timeout=120)
+
+
+def migrations_approved(sha):
+    # This file lives in root-only STATE, never in the fetched repository.
+    approval = STATE / 'approved-migration'
+    return approval.exists() and approval.read_text().strip() == sha
 
 
 def activate(release):
@@ -140,14 +159,18 @@ def deploy(sha):
     try:
         release.mkdir()
         extract_release(sha, release)
-        if schema_files(previous) != schema_files(release):
-            raise RuntimeError('Migration changes require a reviewed manual deployment')
+        schema_changed = schema_files(previous) != schema_files(release)
+        if schema_changed and not migrations_approved(sha):
+            raise RuntimeError('Migration changes require operator approval for this exact revision')
         log('Validating candidate', revision=sha)
         build_release(release)
         backup = BACKUPS / ('rvd-auto-' + sha + '.dump')
         run(['runuser', '-u', 'postgres', '--', 'pg_dump', '-Fc', '-d', 'rvd', '-f', str(backup)], timeout=120)
         backup.chmod(0o600)
         run(['runuser', '-u', 'postgres', '--', 'pg_restore', '--list', str(backup)], capture=True)
+        if schema_changed:
+            log('Applying reviewed migrations after backup', revision=sha)
+            migrate(release, production=True)
         (release / '.git-revision').write_text(sha + '\n')
         switched = True
         activate(release)
@@ -162,6 +185,8 @@ def deploy(sha):
         if release.exists() and (ROOT / 'current').resolve() != release:
             shutil.rmtree(release)
         raise
+    if migrations_approved(sha):
+        (STATE / 'approved-migration').unlink()
     log('Deployment healthy', revision=sha, release=str(release))
     prune_releases(previous)
 
