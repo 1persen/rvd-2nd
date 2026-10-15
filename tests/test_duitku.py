@@ -143,3 +143,10 @@ async def test_parallel_duitku_callbacks_grant_votes_once(async_client, test_dat
     outcomes = await asyncio.gather(*(settle() for _ in range(5)))
     assert outcomes.count(True) == 1
     assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3
+
+
+@pytest.mark.asyncio
+async def test_duplicate_callback_fields_are_rejected(async_client, duitku):
+    response = await async_client.post('/api/v1/payments/duitku/callback',
+        content='amount=1&amount=1000', headers={'content-type': 'application/x-www-form-urlencoded'})
+    assert response.status_code == 400

@@ -8,6 +8,7 @@ Dikecualikan dari CSRF (signature = otentikasi), tapi tetap dirate-limit.
 import json
 import logging
 from typing import Optional
+from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -138,11 +139,20 @@ async def mock_simulate_payment(
 @router.post("/payments/duitku/callback")
 async def duitku_callback(request: Request, session: AsyncSession = Depends(get_db)):
     try:
-        if request.headers.get("content-type", "").split(";", 1)[0] == "application/json":
-            payload = await request.json()
+        content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+        raw = await request.body()
+        if len(raw) > 16384:
+            raise HTTPException(status_code=413, detail="Callback payload too large")
+        if content_type == "application/json":
+            payload = json.loads(raw)
+        elif content_type in ("application/x-www-form-urlencoded", ""):
+            pairs = parse_qsl(raw.decode("utf-8"), keep_blank_values=True,
+                              errors="strict", max_num_fields=64)
+            payload = dict(pairs)
+            if len(payload) != len(pairs):
+                raise ValueError("Duplicate callback fields")
         else:
-            form = await request.form()
-            payload = dict(form)
+            raise HTTPException(status_code=415, detail="Unsupported callback content type")
     except (ValueError, UnicodeError):
         raise HTTPException(status_code=400, detail="Invalid callback payload")
     if not duitku_service.valid_callback(payload):
