@@ -94,8 +94,13 @@ const zlib = require('node:zlib');
       for (const path of ['/admin', '/admin/events', '/admin/leaderboard', '/admin/transactions', '/admin/settings', '/admin/audit-logs', '/admin/progress']) {
         assert.equal((await page.goto(baseURL + path)).status(), 200);
         await page.locator('.admin-page-heading h1').waitFor({ state: 'visible' });
+        if (path !== '/admin/progress') {
+          const section = path === '/admin' ? 'dashboard' : path.split('/').pop();
+          await page.locator(`#${section}-content`).waitFor({ state: 'visible' });
+          assert.equal(await page.locator('#error-state').isVisible(), false, `${path} failed to load its API data`);
+        }
         await layout(`${path} ${width}`);
-        if (path === '/admin') await capture('admin-dashboard', width);
+        await capture(path === '/admin' ? 'admin-dashboard' : path.slice(1).replace('/', '-'), width);
       }
     }
     assert.deepEqual(errors, []);
