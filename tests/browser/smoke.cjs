@@ -84,44 +84,31 @@ const zlib = require('node:zlib');
       await layout(`admin login ${width}`);
       await capture('admin-login', width);
     }
-    // Provider responses are simulated here; database settlement is tested separately.
-    await page.setViewportSize({ width: 390, height: 900 });
-    const pending = { id: 'pay_browser_recovery', status: 'PENDING', qty: 1,
-      amount: 1000, is_mock: false, is_sandbox: true, payment_url: null };
+    // Direct payment URL navigation; no intermediate dialog or status polling.
+    const pending = { id: 'pay_browser_navigation', status: 'PENDING', qty: 1,
+      amount: 1000, is_mock: false, is_sandbox: true,
+      payment_url: 'https://sandbox.duitku.com/checkout/test' };
     let creations = 0;
-    let reconciliations = 0;
     await page.route('**/api/v1/payments', async route => {
       assert.ok(route.request().headers()['idempotency-key']);
       creations++;
       await route.fulfill({ json: { success: true, data: pending } });
     });
-    await page.route('**/api/v1/payments/pay_browser_recovery/*', async route => {
-      if (route.request().url().endsWith('/reconcile')) {
-        assert.equal(route.request().method(), 'POST');
-        reconciliations++;
-      } else { assert.equal(route.request().method(), 'GET'); }
-      await route.fulfill({ json: { success: true, data: pending } });
-    });
     await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-    await page.getByLabel('Nama lengkap').fill('Browser Recovery');
+    await page.getByLabel('Nama lengkap').fill('Browser Navigation');
     await page.getByLabel('Nomor WhatsApp').fill('81000000002');
-    await page.getByLabel('Email', { exact: true }).fill('recovery@example.com');
+    await page.getByLabel('Email', { exact: true }).fill('navigation@example.com');
     await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
-    await page.getByRole('dialog').waitFor({ state: 'visible' });
-    await page.mouse.click(2, 2);
-    assert.ok(await page.getByRole('dialog').isVisible(), 'backdrop must not dismiss confirmation');
     await page.getByRole('button', { name: 'Buat pembayaran', exact: true }).click();
-    await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).waitFor({ state: 'visible' });
+    // "Lanjutkan pembayaran" button shows with the payment URL.
+    await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).waitFor({ state: 'visible' });
+    // No intermediate dialog, no "Buka pembayaran Duitku", no "Periksa status".
+    assert.equal(await page.getByRole('dialog').count(), 0);
     assert.equal(await page.getByRole('link', { name: 'Buka pembayaran Duitku' }).count(), 0);
-    await page.reload();
-    await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
-    await page.getByRole('button', { name: 'Periksa status', exact: true }).click();
-    await page.getByRole('button', { name: 'Periksa status', exact: true }).waitFor({ state: 'visible' });
-    assert.equal(creations, 1, 'refresh must restore the original invoice');
-    assert.equal(reconciliations, 1);
-    await capture('checkout-recovery', 390);
+    assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0);
+    assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).count(), 0);
+    assert.equal(creations, 1);
     await page.unroute('**/api/v1/payments');
-    await page.unroute('**/api/v1/payments/pay_browser_recovery/*');
 
     // Exercise the real admin login and protected APIs using an ephemeral account.
     await page.goto(`${baseURL}/admin/login`);

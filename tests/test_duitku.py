@@ -140,7 +140,9 @@ async def test_checkout_page_accepts_duitku_credentials(async_client, test_data,
     response = await async_client.get(f"/events/{test_data['event'].id}/vote/{test_data['team'].id}")
     assert response.status_code == 200
     assert 'id="voter-phone"' in response.text
-    assert 'Buka pembayaran Duitku' in response.text
+    assert 'Lanjutkan pembayaran' in response.text
+    assert 'Buka pembayaran Duitku' not in response.text
+    assert 'Periksa status' not in response.text
 
 
 @pytest.mark.asyncio

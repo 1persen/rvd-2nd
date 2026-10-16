@@ -348,7 +348,7 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
         settled_at=payment.settled_at,
         created_at=payment.created_at,
         message=("Duitku belum memberikan tautan pembayaran. Invoice ini sudah disimpan; "
-                 "gunakan Periksa status setelah satu menit. Jangan membuat pembayaran baru."
+                 "silakan coba lagi setelah satu menit. Jangan membuat pembayaran baru."
                  if payment.payment_gateway == PaymentGateway.DUITKU and payment.status == PaymentStatus.PENDING
                  and not duitku_service.valid_payment_url(duitku_payload.get('paymentUrl')) else ""),
         supporter_name=payment.supporter_name,
