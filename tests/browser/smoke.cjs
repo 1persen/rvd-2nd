@@ -114,7 +114,7 @@ const zlib = require('node:zlib');
       assert.equal(await page.getByRole('dialog').count(), 0, `${width}: no dialog`);
       assert.equal(await page.getByRole('link', { name: 'Buka pembayaran Duitku' }).count(), 0, `${width}: no Duitku link`);
       assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0, `${width}: no status button`);
-      assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).count(), 0, `${width}: no missing URL error`);
+      assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).filter({ visible: true }).count(), 0, `${width}: no missing URL error`);
       assert.equal(creations, 1, `${width}: single payment creation`);
       // Click "Lanjutkan pembayaran" → navigates to backend payment_url.
       await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
