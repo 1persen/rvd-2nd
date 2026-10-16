@@ -49,6 +49,8 @@ async def create_payment(
     team = await team_repo.get_team(session, payment.team_id)
     data = payment_service.to_payment_out(payment, team).model_dump()
     await session.commit()
+    if payment.status == PaymentStatus.SUCCESS:
+        await leaderboard_service.schedule_push(payment.event_id)
     return ok(data, "Invoice pembayaran sudah dibuat")
 
 
@@ -72,6 +74,25 @@ async def payment_status(
 
     team = await team_repo.get_team(session, payment.team_id)
     data = payment_service.to_payment_out(payment, team).model_dump()
+    return ok(data)
+
+
+@router.post("/payments/{payment_id}/reconcile")
+async def reconcile_payment(payment_id: str, session: AsyncSession = Depends(get_db)):
+    """Explicit recovery, separately throttled per invoice across workers."""
+    try:
+        payment, voted_now = await payment_service.reconcile_duitku_payment(session, payment_id)
+    except payment_service.PaymentNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except payment_service.PaymentUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except payment_service.PaymentError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    team = await team_repo.get_team(session, payment.team_id)
+    data = payment_service.to_payment_out(payment, team).model_dump()
+    await session.commit()
+    if voted_now:
+        await leaderboard_service.schedule_push(payment.event_id)
     return ok(data)
 
 
@@ -161,6 +182,8 @@ async def duitku_callback(request: Request, session: AsyncSession = Depends(get_
         payment, voted_now = await payment_service.process_duitku_callback(session, payload)
     except payment_service.PaymentNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except payment_service.PaymentUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except payment_service.PaymentError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     await session.commit()

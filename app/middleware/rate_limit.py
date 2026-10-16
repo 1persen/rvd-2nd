@@ -28,7 +28,7 @@ _EXEMPT_PREFIXES = ("/static/", "/health")
 def _limit(bucket: str) -> int:
     return {
         "public": settings.RATE_LIMIT_PUBLIC_PER_MIN,
-        "payment": settings.RATE_LIMIT_PAYMENT_PER_MIN,  # invoice creation only
+        "payment": settings.RATE_LIMIT_PAYMENT_PER_MIN,  # creation and explicit reconciliation
         "webhook": settings.RATE_LIMIT_WEBHOOK_PER_MIN,
         "auth": settings.RATE_LIMIT_AUTH_PER_MIN,
     }[bucket]
@@ -39,7 +39,8 @@ def _bucket_name(method: str, path: str) -> str:
         return "auth"
     if path in ("/api/v1/payments/webhook", "/api/v1/payments/duitku/callback"):
         return "webhook"
-    if method == "POST" and path == "/api/v1/payments":
+    if method == "POST" and (path == "/api/v1/payments" or
+                             (path.startswith("/api/v1/payments/") and path.endswith("/reconcile"))):
         return "payment"
     # Status polling (GET /payments/{id}/status) is ordinary public traffic.
     return "public"

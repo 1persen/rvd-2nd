@@ -6,6 +6,29 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
     isLoading: false, isChecking: false,
     showQrModal: false, showSuccessModal: false, showMockSimulator: false,
     pollInterval: null,
+    idempotencyKey: '',
+
+    get storageKey() { return `rvd-payment:${this.event.id}:${this.team.id}`; },
+    async init() {
+      try {
+        const saved = JSON.parse(sessionStorage.getItem(this.storageKey) || 'null');
+        this.idempotencyKey = saved?.key || '';
+        if (saved?.paymentId) {
+          this.payment = { id: saved.paymentId, status: 'PENDING' };
+          await this.checkPayment();
+          if (this.payment?.status === 'PENDING') this.startPolling();
+        }
+      } catch (_) { /* Storage may be disabled; in-page retries still reuse the key. */ }
+    },
+    saveAttempt() {
+      try {
+        sessionStorage.setItem(this.storageKey, JSON.stringify({ key: this.idempotencyKey, paymentId: this.payment?.id }));
+      } catch (_) { /* Do not block checkout when storage is unavailable. */ }
+    },
+    clearAttempt() {
+      this.idempotencyKey = '';
+      try { sessionStorage.removeItem(this.storageKey); } catch (_) { /* Storage unavailable. */ }
+    },
 
     get isVotingOpen() {
       if (!this.event?.is_voting_open) return false;
@@ -20,6 +43,7 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
     incrementQty() { this.qty = Math.min(10000, (Number(this.qty) || 0) + 1); },
     decrementQty() { this.qty = Math.max(1, (Number(this.qty) || 1) - 1); },
     nextStep() {
+      if (this.payment?.status === 'PENDING') { this.resumePayment(); return; }
       this.error = '';
       if (!this.isVotingOpen) { this.error = 'Voting sedang tidak tersedia.'; return; }
       if (!this.voter.name.trim() || !/^\d{9,13}$/.test(this.voter.phone)) {
@@ -39,11 +63,14 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
     },
     async createInvoice() {
       if (this.isLoading) return;
+      if (this.payment?.status === 'PENDING') { this.resumePayment(); return; }
       this.isLoading = true;
       this.error = '';
       try {
+        this.idempotencyKey ||= crypto.randomUUID();
+        this.saveAttempt();
         const res = await fetch(this.createPaymentUrl, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': this.idempotencyKey },
           body: JSON.stringify({ event_id: this.event.id, team_id: this.team.id, qty: this.qty,
             supporter_name: this.voter.name.trim(), supporter_email: this.voter.email,
             supporter_phone: '+62' + this.voter.phone, is_anonymous: false }),
@@ -51,8 +78,11 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
         const body = await res.json();
         if (!res.ok || !body.success) throw new Error(body.message || 'Pembayaran belum dapat dibuat. Silakan coba lagi.');
         this.payment = body.data;
-        this.resumePayment();
-        this.startPolling();
+        this.saveAttempt();
+        if (this.payment.status === 'PENDING') {
+          this.resumePayment();
+          this.startPolling();
+        } else { this.applyPayment(this.payment); }
       } catch (error) { this.error = error.message || 'Tidak dapat menghubungi layanan pembayaran.'; }
       finally { this.isLoading = false; }
     },
@@ -67,21 +97,25 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
       clearInterval(this.pollInterval);
       this.pollInterval = setInterval(() => this.checkPayment(), 5000);
     },
-    async checkPayment() {
+    async checkPayment(manual = false) {
       if (!this.payment || this.isChecking) return;
       this.isChecking = true;
       try {
-        const res = await fetch(`${this.paymentStatusUrl}/${this.payment.id}/status`);
+        const reconcile = manual && !this.payment.is_mock;
+        const res = await fetch(`${this.paymentStatusUrl}/${this.payment.id}/${reconcile ? 'reconcile' : 'status'}`,
+          reconcile ? { method: 'POST' } : {});
         const body = await res.json();
-        if (!res.ok || !body.success) throw new Error('Status pembayaran belum dapat diperiksa.');
+        if (!res.ok || !body.success) throw new Error(body.message || 'Status pembayaran belum dapat diperiksa.');
         this.pollError = '';
         this.applyPayment(body.data);
-      } catch (error) { this.pollError = 'Koneksi terputus. Status pembayaran akan diperiksa kembali.'; }
+      } catch (error) { this.pollError = error.message || 'Koneksi terputus. Status pembayaran akan diperiksa kembali.'; }
       finally { this.isChecking = false; }
     },
     applyPayment(payment) {
       this.payment = payment;
+      if (Number.isInteger(payment.qty)) this.qty = payment.qty;
       if (payment.status === 'PENDING') return;
+      this.clearAttempt();
       clearInterval(this.pollInterval);
       this.pollInterval = null;
       this.showQrModal = this.showMockSimulator = false;
