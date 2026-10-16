@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const vm = require('node:vm');
 
 function load(file, globals = {}) {
-  const context = vm.createContext({ Intl, Date, console: { error() {} }, setInterval: () => 1, clearInterval() {}, ...globals });
+  const context = vm.createContext({ Intl, Date, crypto: require('node:crypto').webcrypto, console: { error() {} }, setInterval: () => 1, clearInterval() {}, ...globals });
   vm.runInContext(readFileSync(join(__dirname, '../app/static/js', file), 'utf8'), context);
   return context;
 }
@@ -80,4 +80,46 @@ test('event API failures show a retryable error instead of a false empty list', 
   assert.ok(page.error.peserta);
   assert.equal(page.loading.peserta, false);
   assert.equal(page.loadedTabs.peserta, undefined);
+});
+
+test('network retry reuses the same invoice idempotency key', async () => {
+  const keys = [];
+  const { form } = checkout({ fetch: async (_, options) => {
+    keys.push(options.headers['Idempotency-Key']);
+    throw new Error('Response lost');
+  } });
+  await form.createInvoice();
+  await form.createInvoice();
+  assert.ok(keys[0]);
+  assert.equal(keys[0], keys[1]);
+});
+
+test('refresh restores the pending invoice without creating another order', async () => {
+  const memory = new Map();
+  const sessionStorage = { getItem: key => memory.get(key), setItem: (key, value) => memory.set(key, value), removeItem: key => memory.delete(key) };
+  let creates = 0;
+  const payment = { id: 'saved-payment', team_id: 'team', event_id: 'event', qty: 3, status: 'PENDING', amount: 3000 };
+  const fetch = async (_, options = {}) => {
+    if (options.method === 'POST') creates++;
+    return { ok: true, json: async () => ({ success: true, data: payment }) };
+  };
+  const first = checkout({ fetch, sessionStorage });
+  await first.form.createInvoice();
+  const refreshed = checkout({ fetch, sessionStorage });
+  await refreshed.form.init();
+  assert.equal(refreshed.form.payment.id, payment.id);
+  assert.equal(refreshed.form.qty, 3);
+  assert.equal(creates, 1);
+});
+
+test('automatic status polling stays local while manual check requests reconciliation', async () => {
+  const calls = [];
+  const { form } = checkout({ fetch: async (url, options = {}) => {
+    calls.push([url, options.method || 'GET']);
+    return { ok: true, json: async () => ({ success: true, data: { id: 'payment', status: 'PENDING' } }) };
+  } });
+  form.payment = { id: 'payment', status: 'PENDING' };
+  await form.checkPayment();
+  await form.checkPayment(true);
+  assert.deepEqual(calls, [['/payments/payment/status', 'GET'], ['/payments/payment/reconcile', 'POST']]);
 });

@@ -22,6 +22,7 @@ def duitku(monkeypatch):
         'paymentUrl': 'https://passport.duitku.com/checkout/test', 'qrString': 'test-qr',
     })
     monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+    monkeypatch.setattr(duitku_service, 'check_transaction_status', AsyncMock(side_effect=httpx.ReadTimeout('Status unavailable')))
     return gateway
 
 
@@ -43,13 +44,14 @@ async def test_duitku_requires_valid_email_before_contacting_gateway(async_clien
 
 
 @pytest.mark.asyncio
-async def test_gateway_timeout_has_actionable_error(async_client, test_data, duitku):
+async def test_gateway_timeout_returns_saved_order_with_actionable_message(async_client, test_data, duitku):
     import httpx
     duitku.side_effect = httpx.ReadTimeout('Provider stalled')
     response = await invoice(async_client, test_data)
-    assert response.status_code == 503
-    assert 'Duitku' in response.json()['message']
-    assert 'merespons' in response.json()['message']
+    assert response.status_code == 200
+    assert response.json()['data']['status'] == 'PENDING'
+    assert 'Duitku' in response.json()['data']['message']
+    assert 'disimpan' in response.json()['data']['message']
 
 
 def callback(payment, **overrides):
@@ -76,14 +78,17 @@ async def test_checkout_uses_duitku_without_midtrans_key(async_client, test_data
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('bad', [{'statusCode': '01'}, {'statusCode': '00', 'reference': 'r', 'paymentUrl': 'javascript:alert(1)'}])
-async def test_rejected_inquiry_does_not_persist_invoice(async_client, test_data, duitku, bad):
+async def test_unusable_inquiry_retains_order_for_safe_retry(async_client, test_data, duitku, bad):
     duitku.return_value = bad
-    response = await invoice(async_client, test_data)
-    assert response.status_code == 400
-    # Retry can create an invoice; the rejected attempt left no pending row.
+    response = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    assert response.status_code == 200
+    assert response.json()['data']['payment_url'] is None
+    # A malformed response must not cause another provider order on retry.
     duitku.return_value = {'statusCode': '00', 'reference': 'retry', 'paymentUrl': 'https://passport.duitku.com/checkout/test'}
-    retry = await invoice(async_client, test_data)
+    retry = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
     assert retry.status_code == 200, retry.text
+    assert retry.json()['data']['id'] == response.json()['data']['id']
+    assert duitku.await_count == 1
 
 
 @pytest.mark.asyncio

@@ -15,7 +15,8 @@ from app.enums.payment_status import PaymentStatus
 async def get_payment(
     session: AsyncSession, payment_id: str, for_update: bool = False
 ) -> Optional[Payment]:
-    return await session.get(Payment, payment_id, with_for_update=for_update or None)
+    return await session.get(Payment, payment_id, with_for_update=for_update or None,
+                             populate_existing=for_update)
 
 
 async def get_by_midtrans_order_id(
@@ -23,7 +24,7 @@ async def get_by_midtrans_order_id(
 ) -> Optional[Payment]:
     stmt = select(Payment).where(Payment.midtrans_order_id == order_id)
     if for_update:
-        stmt = stmt.with_for_update()
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -33,7 +34,7 @@ async def get_by_duitku_merchant_order_id(
 ) -> Optional[Payment]:
     stmt = select(Payment).where(Payment.duitku_merchant_order_id == merchant_order_id)
     if for_update:
-        stmt = stmt.with_for_update()
+        stmt = stmt.with_for_update().execution_options(populate_existing=True)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
