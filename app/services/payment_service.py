@@ -226,6 +226,28 @@ async def create_payment(
         except httpx.TimeoutException as exc:
             logger.warning("Duitku inquiry timed out for payment %s (method=%s)",
                            payment.id, settings.DUITKU_PAYMENT_METHOD)
+            # Coba rekonsiliasi melalui transactionStatus sebelum gagal permanen.
+            # Jika Duitku sudah membuat transaksi di sisi mereka namun respons
+            # inquiry terlambat, kita dapat memulihkan referensi dan paymentUrl.
+            try:
+                status_result = await duitku_service.check_transaction_status(
+                    merchant_order_id=payment.id,
+                )
+                if (isinstance(status_result, dict)
+                        and status_result.get("statusCode") == "00"
+                        and status_result.get("reference")
+                        and duitku_service.valid_payment_url(status_result.get("paymentUrl"))):
+                    payment.duitku_merchant_order_id = payment.id
+                    payment.duitku_reference = status_result["reference"]
+                    payment.duitku_payment_method = settings.DUITKU_PAYMENT_METHOD
+                    payment.duitku_payload = status_result
+                    payment.payment_gateway = PaymentGateway.DUITKU
+                    await session.flush()
+                    return payment
+            except Exception:
+                # Rekonsiliasi gagal atau transaksi belum ada di Duitku;
+                # biarkan payment tetap PENDING untuk pemeriksaan lanjutan.
+                pass
             raise PaymentUnavailable(
                 "Duitku belum merespons. Tunggu beberapa saat sebelum mencoba lagi."
             ) from exc

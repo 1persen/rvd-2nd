@@ -27,6 +27,19 @@ def generate_signature(merchant_code: str, merchant_order_id: str, payment_amoun
     return hmac.new(api_key.encode("utf-8"), signing_string.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+def generate_transaction_status_signature(
+    merchant_code: str,
+    merchant_order_id: str,
+    api_key: str,
+) -> str:
+    """Signature khusus transactionStatus: HMAC-SHA256(merchantCode + merchantOrderId, apiKey).
+
+    Tidak menyertakan payment_amount, berbeda dari signature inquiry.
+    """
+    signing_string = f"{merchant_code}{merchant_order_id}"
+    return hmac.new(api_key.encode("utf-8"), signing_string.encode("utf-8"), hashlib.sha256).hexdigest()
+
+
 def verify_callback_signature(merchant_code: str, amount: str, merchant_order_id: str, received_signature: str, api_key: str) -> bool:
     signing_string = f"{merchant_code}{amount}{merchant_order_id}"
     expected_signature = hmac.new(api_key.encode("utf-8"), signing_string.encode("utf-8"), hashlib.sha256).hexdigest()
@@ -125,6 +138,45 @@ async def create_transaction(
         payload["expiryPeriod"] = expiry_period
 
     url = f"{_get_base_url()}/v2/inquiry"
+    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+        response = await client.post(url, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+
+async def check_transaction_status(
+    *,
+    merchant_order_id: str,
+    merchant_code: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Verifikasi status transaksi melalui endpoint transactionStatus Duitku.
+
+    Digunakan untuk rekonsiliasi saat inquiry timeout atau gagal. Tidak dianggap
+    bukti pembayaran sukses hanya karena HTTP 200; status bisnis dalam respons
+    harus dipetakan oleh pemanggil.
+
+    Tidak mencatat API key, signature lengkap, atau informasi sensitif ke log.
+    """
+    merchant_code = merchant_code or settings.DUITKU_MERCHANT_CODE
+    api_key = api_key or settings.DUITKU_API_KEY
+
+    if not merchant_code or not api_key:
+        raise ValueError("Duitku merchant code or API key not configured")
+
+    signature = generate_transaction_status_signature(
+        merchant_code=merchant_code,
+        merchant_order_id=merchant_order_id,
+        api_key=api_key,
+    )
+
+    payload: Dict[str, Any] = {
+        "merchantCode": merchant_code,
+        "merchantOrderId": merchant_order_id,
+        "signature": signature,
+    }
+
+    url = f"{_get_base_url()}/transactionStatus"
     async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
         response = await client.post(url, json=payload)
         response.raise_for_status()
