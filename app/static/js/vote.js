@@ -2,32 +2,13 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
   return {
     team, event, createPaymentUrl, paymentStatusUrl,
     voter: { name: '', email: '', phone: '' },
-    qty: 1, step: 1, payment: null, error: '', pollError: '',
-    isLoading: false, isChecking: false,
-    showQrModal: false, showSuccessModal: false, showMockSimulator: false,
-    pollInterval: null,
-    idempotencyKey: '',
+    qty: 1, payment: null, error: '',
+    isLoading: false, isNavigating: false, idempotencyKey: '',
 
-    get storageKey() { return `rvd-payment:${this.event.id}:${this.team.id}`; },
-    async init() {
-      try {
-        const saved = JSON.parse(sessionStorage.getItem(this.storageKey) || 'null');
-        this.idempotencyKey = saved?.key || '';
-        if (saved?.paymentId) {
-          this.payment = { id: saved.paymentId, status: 'PENDING' };
-          await this.checkPayment();
-          if (this.payment?.status === 'PENDING') this.startPolling();
-        }
-      } catch (_) { /* Storage may be disabled; in-page retries still reuse the key. */ }
-    },
-    saveAttempt() {
-      try {
-        sessionStorage.setItem(this.storageKey, JSON.stringify({ key: this.idempotencyKey, paymentId: this.payment?.id }));
-      } catch (_) { /* Do not block checkout when storage is unavailable. */ }
-    },
-    clearAttempt() {
-      this.idempotencyKey = '';
-      try { sessionStorage.removeItem(this.storageKey); } catch (_) { /* Storage unavailable. */ }
+    init() {
+      // No sessionStorage restore or polling. The payment URL is navigated to
+      // directly via the "Lanjutkan pembayaran" button. Payment settlement is
+      // handled exclusively by the backend callback and reconciliation.
     },
 
     get isVotingOpen() {
@@ -43,7 +24,6 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
     incrementQty() { this.qty = Math.min(10000, (Number(this.qty) || 0) + 1); },
     decrementQty() { this.qty = Math.max(1, (Number(this.qty) || 1) - 1); },
     nextStep() {
-      if (this.payment?.status === 'PENDING') { this.resumePayment(); return; }
       this.error = '';
       if (!this.isVotingOpen) { this.error = 'Voting sedang tidak tersedia.'; return; }
       if (!this.voter.name.trim() || !/^\d{9,13}$/.test(this.voter.phone)) {
@@ -57,18 +37,14 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
         this.error = 'Jumlah vote harus berupa angka bulat antara 1 dan 10.000.'; return;
       }
       this.payment = null;
-      this.step = 2;
-      this.showQrModal = this.showMockSimulator = this.showSuccessModal = false;
-      this.$refs.paymentDialog.showModal();
+      this.createInvoice();
     },
     async createInvoice() {
       if (this.isLoading) return;
-      if (this.payment?.status === 'PENDING') { this.resumePayment(); return; }
       this.isLoading = true;
       this.error = '';
       try {
         this.idempotencyKey ||= crypto.randomUUID();
-        this.saveAttempt();
         const res = await fetch(this.createPaymentUrl, {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': this.idempotencyKey },
           body: JSON.stringify({ event_id: this.event.id, team_id: this.team.id, qty: this.qty,
@@ -78,71 +54,23 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
         const body = await res.json();
         if (!res.ok || !body.success) throw new Error(body.message || 'Pembayaran belum dapat dibuat. Silakan coba lagi.');
         this.payment = body.data;
-        this.saveAttempt();
-        if (this.payment.status === 'PENDING') {
-          this.resumePayment();
-          this.startPolling();
-        } else { this.applyPayment(this.payment); }
+        if (this.payment.status === 'PENDING' && this.payment.payment_url) {
+          // Payment URL is available; customer navigates via "Lanjutkan pembayaran".
+          return;
+        }
+        if (this.payment.status === 'SUCCESS') {
+          this.error = 'Pembayaran sudah berhasil.';
+          return;
+        }
+        // PENDING without payment_url: uncertain outcome, do not navigate.
+        this.error = 'Tautan pembayaran belum tersedia. Invoice ini sudah disimpan; coba lagi setelah satu menit.';
       } catch (error) { this.error = error.message || 'Tidak dapat menghubungi layanan pembayaran.'; }
       finally { this.isLoading = false; }
     },
-    resumePayment() {
-      this.step = 3;
-      this.showMockSimulator = Boolean(this.payment?.is_mock);
-      this.showQrModal = !this.showMockSimulator;
-      this.showSuccessModal = false;
-      if (!this.$refs.paymentDialog.open) this.$refs.paymentDialog.showModal();
+    goToPayment() {
+      if (this.isNavigating || !this.payment?.payment_url) return;
+      this.isNavigating = true;
+      window.location.href = this.payment.payment_url;
     },
-    startPolling() {
-      clearInterval(this.pollInterval);
-      this.pollInterval = setInterval(() => this.checkPayment(), 5000);
-    },
-    async checkPayment(manual = false) {
-      if (!this.payment || this.isChecking) return;
-      this.isChecking = true;
-      try {
-        const reconcile = manual && !this.payment.is_mock;
-        const res = await fetch(`${this.paymentStatusUrl}/${this.payment.id}/${reconcile ? 'reconcile' : 'status'}`,
-          reconcile ? { method: 'POST' } : {});
-        const body = await res.json();
-        if (!res.ok || !body.success) throw new Error(body.message || 'Status pembayaran belum dapat diperiksa.');
-        this.pollError = '';
-        this.applyPayment(body.data);
-      } catch (error) { this.pollError = error.message || 'Koneksi terputus. Status pembayaran akan diperiksa kembali.'; }
-      finally { this.isChecking = false; }
-    },
-    applyPayment(payment) {
-      this.payment = payment;
-      if (Number.isInteger(payment.qty)) this.qty = payment.qty;
-      if (payment.status === 'PENDING') return;
-      this.clearAttempt();
-      clearInterval(this.pollInterval);
-      this.pollInterval = null;
-      this.showQrModal = this.showMockSimulator = false;
-      if (payment.status === 'SUCCESS') {
-        this.step = 3;
-        this.showSuccessModal = true;
-        if (!this.$refs.paymentDialog.open) this.$refs.paymentDialog.showModal();
-      } else {
-        this.closeModal();
-        this.error = payment.status === 'FAILED' ? 'Pembayaran gagal. Silakan periksa data dan coba lagi.' : 'Pembayaran telah berakhir. Silakan buat pembayaran baru.';
-      }
-    },
-    async simulate(action) {
-      if (this.isLoading) return;
-      this.isLoading = true;
-      this.error = '';
-      try {
-        const res = await fetch(`${this.paymentStatusUrl}/mock/${this.payment.id}/simulate`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action }),
-        });
-        const body = await res.json();
-        if (!res.ok || !body.success) throw new Error(body.message || 'Simulasi gagal.');
-        this.applyPayment(body.data);
-      } catch (error) { this.error = error.message; }
-      finally { this.isLoading = false; }
-    },
-    closeModal() { this.$refs.paymentDialog.close(); },
-    destroy() { clearInterval(this.pollInterval); },
   };
 }
