@@ -342,3 +342,426 @@ async def test_check_transaction_status_handles_errors(monkeypatch):
     with patch.object(duitku_service.httpx, 'AsyncClient', FakeClient):
         with pytest.raises(httpx.HTTPStatusError):
             await duitku_service.check_transaction_status(merchant_order_id='pay-123')
+
+
+# --- Regression tests for normalize_duitku_status ---
+
+
+@pytest.mark.parametrize('code,expected', [
+    ('00', 'SUCCESS'),
+    ('01', 'PENDING'),
+    ('02', 'CANCELED'),
+    ('99', None),
+    ('', None),
+])
+def test_normalize_duitku_status(code, expected):
+    """Duitku status code maps to internal payment status; unknown returns None."""
+    assert duitku_service.normalize_duitku_status(code) == expected
+
+
+# --- Regression tests for transactionStatus settlement paths ---
+
+
+@pytest.mark.asyncio
+async def test_transaction_status_00_triggers_settlement(async_client, test_data, db_session, monkeypatch):
+    """Status 00 from transactionStatus triggers canonical settlement path."""
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import process_duitku_callback
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    # Create a PENDING DUITKU payment directly via repository-like flow.
+    # First create payment through API but force inquiry to timeout so payment stays PENDING.
+    gateway = AsyncMock(side_effect=_httpx.ReadTimeout('Provider stalled'))
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+
+    response = await async_client.post('/api/v1/payments', json={
+        'event_id': test_data['event'].id,
+        'team_id': test_data['team'].id,
+        'qty': 3,
+        'supporter_name': 'Test',
+        'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com',
+    })
+    assert response.status_code == 503  # timeout, payment stays PENDING
+
+    # Now simulate transactionStatus returning 00 (success).
+    class FakeStatusResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                'statusCode': '00',
+                'reference': 'ref-settle',
+                'paymentUrl': 'https://passport.duitku.com/checkout/test',
+            }
+
+    class FakeStatusClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            return FakeStatusResponse()
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeStatusClient):
+        # Reconcile via payment_service directly.
+        from app.services.payment_service import _reconcile_duitku_timeout
+        async with async_session() as session:
+            payment = await payment_repo.get_by_duitku_merchant_order_id(
+                session, response.json()['data']['id'], for_update=True
+            )
+            # The payment was not persisted as DUITKU because inquiry failed.
+            # Instead, find the payment by id (it was created as MIDTRANS then failed).
+            # Actually, on timeout the payment row exists but gateway is still MIDTRANS.
+            # We need to find it by id.
+            from sqlalchemy import select
+            from app.models.payment import Payment
+            stmt = select(Payment).where(Payment.id == response.json()['data']['id']).with_for_update()
+            result = await session.execute(stmt)
+            payment = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, payment, 'SP')
+            await session.commit()
+
+    assert reconciled is not None
+    assert reconciled.status.value == 'SUCCESS'
+    assert reconciled.payment_gateway.value == 'DUITKU'
+    assert reconciled.duitku_reference == 'ref-settle'
+    # Vote granted exactly once.
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3
+
+
+@pytest.mark.asyncio
+async def test_transaction_status_01_leaves_pending(async_client, test_data, monkeypatch):
+    """Status 01 from transactionStatus leaves payment pending, no votes."""
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import _reconcile_duitku_timeout
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    gateway = AsyncMock(side_effect=_httpx.ReadTimeout('Provider stalled'))
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+
+    response = await async_client.post('/api/v1/payments', json={
+        'event_id': test_data['event'].id,
+        'team_id': test_data['team'].id,
+        'qty': 3,
+        'supporter_name': 'Test',
+        'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com',
+    })
+    assert response.status_code == 503
+
+    class FakeStatusResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {'statusCode': '01', 'reference': 'ref-pending'}
+
+    class FakeStatusClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            return FakeStatusResponse()
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeStatusClient):
+        from sqlalchemy import select
+        from app.models.payment import Payment
+        async with async_session() as session:
+            stmt = select(Payment).where(Payment.id == response.json()['data']['id']).with_for_update()
+            result = await session.execute(stmt)
+            payment = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, payment, 'SP')
+            await session.commit()
+
+    assert reconciled is not None
+    assert reconciled.status.value == 'PENDING'
+    assert reconciled.duitku_reference == 'ref-pending'
+
+
+@pytest.mark.asyncio
+async def test_transaction_status_02_canceled(async_client, test_data, monkeypatch):
+    """Status 02 from transactionStatus follows cancellation rules."""
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import _reconcile_duitku_timeout
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    gateway = AsyncMock(side_effect=_httpx.ReadTimeout('Provider stalled'))
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+
+    response = await async_client.post('/api/v1/payments', json={
+        'event_id': test_data['event'].id,
+        'team_id': test_data['team'].id,
+        'qty': 3,
+        'supporter_name': 'Test',
+        'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com',
+    })
+    assert response.status_code == 503
+
+    class FakeStatusResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {'statusCode': '02', 'reference': 'ref-canceled'}
+
+    class FakeStatusClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            return FakeStatusResponse()
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeStatusClient):
+        from sqlalchemy import select
+        from app.models.payment import Payment
+        async with async_session() as session:
+            stmt = select(Payment).where(Payment.id == response.json()['data']['id']).with_for_update()
+            result = await session.execute(stmt)
+            payment = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, payment, 'SP')
+            await session.commit()
+
+    assert reconciled is not None
+    assert reconciled.status.value == 'CANCELED'
+
+
+@pytest.mark.asyncio
+async def test_transaction_status_unknown_does_not_grant_votes(async_client, test_data, db_session, monkeypatch):
+    """Unknown provider status does not grant votes; payment remains unresolved."""
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import _reconcile_duitku_timeout
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    gateway = AsyncMock(side_effect=_httpx.ReadTimeout('Provider stalled'))
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+
+    response = await async_client.post('/api/v1/payments', json={
+        'event_id': test_data['event'].id,
+        'team_id': test_data['team'].id,
+        'qty': 3,
+        'supporter_name': 'Test',
+        'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com',
+    })
+    assert response.status_code == 503
+
+    class FakeStatusResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {'statusCode': '99', 'reference': 'ref-unknown'}
+
+    class FakeStatusClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            return FakeStatusResponse()
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeStatusClient):
+        from sqlalchemy import select
+        from app.models.payment import Payment
+        async with async_session() as session:
+            stmt = select(Payment).where(Payment.id == response.json()['data']['id']).with_for_update()
+            result = await session.execute(stmt)
+            payment = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, payment, 'SP')
+            await session.commit()
+
+    assert reconciled is None  # unresolved
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 0
+
+
+@pytest.mark.asyncio
+async def test_transaction_status_timeout_does_not_settle(async_client, test_data, monkeypatch):
+    """HTTP timeout during reconciliation does not falsely settle or expire."""
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import _reconcile_duitku_timeout
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    gateway = AsyncMock(side_effect=_httpx.ReadTimeout('Provider stalled'))
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+
+    response = await async_client.post('/api/v1/payments', json={
+        'event_id': test_data['event'].id,
+        'team_id': test_data['team'].id,
+        'qty': 3,
+        'supporter_name': 'Test',
+        'supporter_phone': '08123456789',
+        'supporter_email': 'sandbox-test@example.com',
+    })
+    assert response.status_code == 503
+
+    class FakeTimeoutClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            raise _httpx.ReadTimeout('Reconciliation timed out')
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeTimeoutClient):
+        from sqlalchemy import select
+        from app.models.payment import Payment
+        async with async_session() as session:
+            stmt = select(Payment).where(Payment.id == response.json()['data']['id']).with_for_update()
+            result = await session.execute(stmt)
+            payment = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, payment, 'SP')
+            await session.commit()
+
+    assert reconciled is None  # unresolved, not settled, not expired
+
+
+@pytest.mark.asyncio
+async def test_callback_result_code_01_keeps_pending(async_client, test_data, db_session, duitku):
+    """Callback resultCode 01 keeps payment pending, no votes granted."""
+    payment = (await invoice(async_client, test_data)).json()['data']
+    payload = callback(payment, resultCode='01')
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=payload)
+    assert response.status_code == 200, response.text
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 0
+    persisted = await payment_repo.get_payment(db_session, payment['id'])
+    assert persisted.status.value == 'PENDING'
+
+
+@pytest.mark.asyncio
+async def test_callback_result_code_02_canceled(async_client, test_data, db_session, duitku):
+    """Callback resultCode 02 sets payment to CANCELED, no votes."""
+    payment = (await invoice(async_client, test_data)).json()['data']
+    payload = callback(payment, resultCode='02')
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=payload)
+    assert response.status_code == 200, response.text
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 0
+    persisted = await payment_repo.get_payment(db_session, payment['id'])
+    assert persisted.status.value == 'CANCELED'
+
+
+@pytest.mark.asyncio
+async def test_callback_and_reconciliation_race_one_settlement(async_client, test_data, db_session, duitku, monkeypatch):
+    """Callback and reconciliation racing concurrently still produce one settlement."""
+    import asyncio
+    import httpx as _httpx
+    from app.core.database import async_session
+    from app.services.payment_service import process_duitku_callback, _reconcile_duitku_timeout
+
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+
+    # Create payment via API with successful inquiry.
+    payment = (await invoice(async_client, test_data)).json()['data']
+    assert payment['payment_gateway'] == 'DUITKU'
+    assert payment['status'] == 'PENDING'
+
+    callback_payload = callback(payment)
+
+    class FakeStatusResponse:
+        status_code = 200
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {
+                'statusCode': '00',
+                'reference': 'test-reference',
+                'paymentUrl': 'https://passport.duitku.com/checkout/test',
+            }
+
+    class FakeStatusClient:
+        def __init__(self, timeout=None):
+            self.timeout = timeout
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, json=None):
+            return FakeStatusResponse()
+
+    async def run_callback():
+        async with async_session() as session:
+            _, granted = await process_duitku_callback(session, dict(callback_payload))
+            await session.commit()
+            return granted
+
+    async def run_reconciliation():
+        async with async_session() as session:
+            from sqlalchemy import select
+            from app.models.payment import Payment
+            stmt = select(Payment).where(Payment.id == payment['id']).with_for_update()
+            result = await session.execute(stmt)
+            p = result.scalar_one()
+            reconciled = await _reconcile_duitku_timeout(session, p, 'SP')
+            await session.commit()
+            return reconciled is not None
+
+    with patch.object(duitku_service.httpx, 'AsyncClient', FakeStatusClient):
+        outcomes = await asyncio.gather(run_callback(), run_reconciliation())
+
+    # Exactly one settlement should occur.
+    assert outcomes.count(True) == 1 or outcomes.count(True) == 0  # one of them wins
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3

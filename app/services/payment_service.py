@@ -94,6 +94,121 @@ def _build_snapshot(
     }
 
 
+async def _reconcile_duitku_timeout(
+    session: AsyncSession,
+    payment: Payment,
+    payment_method: str,
+) -> Optional[Payment]:
+    """Attempt bounded reconciliation after an uncertain inquiry outcome.
+
+    Reuses the existing merchant order ID (payment.id) and queries Duitku
+    transaction status with exponential backoff. Only applies a verified,
+    permitted state transition. Returns the payment if reconciliation succeeded,
+    or None if the outcome remains unresolved.
+    """
+    import asyncio
+
+    for attempt in range(1, duitku_service.MAX_RECONCILIATION_ATTEMPTS + 1):
+        try:
+            status_result = await duitku_service.check_transaction_status(
+                merchant_order_id=payment.id,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Duitku reconciliation attempt %d/%d failed for payment %s: %s",
+                attempt, duitku_service.MAX_RECONCILIATION_ATTEMPTS, payment.id,
+                type(exc).__name__,
+            )
+            if attempt < duitku_service.MAX_RECONCILIATION_ATTEMPTS:
+                await asyncio.sleep(
+                    duitku_service.RECONCILIATION_BASE_DELAY * (2 ** (attempt - 1))
+                )
+            continue
+
+        if not isinstance(status_result, dict):
+            logger.warning(
+                "Duitku reconciliation returned non-object for payment %s (attempt %d)",
+                payment.id, attempt,
+            )
+            if attempt < duitku_service.MAX_RECONCILIATION_ATTEMPTS:
+                await asyncio.sleep(
+                    duitku_service.RECONCILIATION_BASE_DELAY * (2 ** (attempt - 1))
+                )
+            continue
+
+        status_code = status_result.get("statusCode")
+        reference = status_result.get("reference")
+        payment_url = status_result.get("paymentUrl")
+
+        # Validate provider response against internal payment record.
+        if status_code not in duitku_service.DUITKU_STATUS_TO_INTERNAL:
+            logger.warning(
+                "Duitku reconciliation unknown statusCode=%s for payment %s (attempt %d)",
+                status_code, payment.id, attempt,
+            )
+            if attempt < duitku_service.MAX_RECONCILIATION_ATTEMPTS:
+                await asyncio.sleep(
+                    duitku_service.RECONCILIATION_BASE_DELAY * (2 ** (attempt - 1))
+                )
+            continue
+
+        if reference and payment.duitku_reference and reference != payment.duitku_reference:
+            logger.warning(
+                "Duitku reconciliation reference mismatch for payment %s: "
+                "provider=%s internal=%s",
+                payment.id, reference, payment.duitku_reference,
+            )
+            raise PaymentError("Referensi pembayaran tidak sesuai dengan invoice")
+
+        internal_status = duitku_service.normalize_duitku_status(status_code)
+
+        if internal_status == "SUCCESS":
+            if not duitku_service.valid_payment_url(payment_url):
+                logger.warning(
+                    "Duitku reconciliation SUCCESS but invalid paymentUrl for payment %s",
+                    payment.id,
+                )
+                raise PaymentError("URL pembayaran dari Duitku tidak valid")
+            payment.duitku_merchant_order_id = payment.id
+            payment.duitku_reference = reference or payment.duitku_reference
+            payment.duitku_payment_method = payment_method
+            payment.duitku_payload = status_result
+            payment.payment_gateway = PaymentGateway.DUITKU
+            payment.status = PaymentStatus.SUCCESS
+            now = datetime.now(timezone.utc)
+            payment.settled_at = now
+            payment.paid_at = now
+            payment.webhook_received_at = now
+            await session.flush()
+            await process_successful_payment(session, payment)
+            await session.flush()
+            return payment
+
+        if internal_status == "PENDING":
+            # Keep payment pending; record provider reference if available.
+            payment.duitku_merchant_order_id = payment.id
+            payment.duitku_reference = reference or payment.duitku_reference
+            payment.duitku_payment_method = payment_method
+            payment.duitku_payload = status_result
+            payment.payment_gateway = PaymentGateway.DUITKU
+            await session.flush()
+            return payment
+
+        if internal_status == "CANCELED":
+            payment.status = PaymentStatus.CANCELED
+            payment.duitku_payload = status_result
+            await session.flush()
+            return payment
+
+    # All attempts exhausted; payment remains in its current state (PENDING).
+    logger.warning(
+        "Duitku reconciliation exhausted (%d attempts) for payment %s; "
+        "payment remains unresolved",
+        duitku_service.MAX_RECONCILIATION_ATTEMPTS, payment.id,
+    )
+    return None
+
+
 async def create_payment(
     session: AsyncSession,
     payload: PaymentCreate,
@@ -226,28 +341,28 @@ async def create_payment(
         except httpx.TimeoutException as exc:
             logger.warning("Duitku inquiry timed out for payment %s (method=%s)",
                            payment.id, settings.DUITKU_PAYMENT_METHOD)
-            # Coba rekonsiliasi melalui transactionStatus sebelum gagal permanen.
-            # Jika Duitku sudah membuat transaksi di sisi mereka namun respons
-            # inquiry terlambat, kita dapat memulihkan referensi dan paymentUrl.
-            try:
-                status_result = await duitku_service.check_transaction_status(
-                    merchant_order_id=payment.id,
-                )
-                if (isinstance(status_result, dict)
-                        and status_result.get("statusCode") == "00"
-                        and status_result.get("reference")
-                        and duitku_service.valid_payment_url(status_result.get("paymentUrl"))):
-                    payment.duitku_merchant_order_id = payment.id
-                    payment.duitku_reference = status_result["reference"]
-                    payment.duitku_payment_method = settings.DUITKU_PAYMENT_METHOD
-                    payment.duitku_payload = status_result
-                    payment.payment_gateway = PaymentGateway.DUITKU
-                    await session.flush()
-                    return payment
-            except Exception:
-                # Rekonsiliasi gagal atau transaksi belum ada di Duitku;
-                # biarkan payment tetap PENDING untuk pemeriksaan lanjutan.
-                pass
+            # Timeout = uncertain outcome. Do NOT mark EXPIRED; the provider may
+            # have created the transaction even though RVD did not receive the
+            # response. Attempt bounded reconciliation before giving up.
+            reconciliation_result = await _reconcile_duitku_timeout(
+                session, payment, settings.DUITKU_PAYMENT_METHOD
+            )
+            if reconciliation_result is not None:
+                return reconciliation_result
+            # Payment remains PENDING for later retry; do not create a duplicate
+            # order and do not mark it expired based solely on a timeout.
+            raise PaymentUnavailable(
+                "Duitku belum merespons. Tunggu beberapa saat sebelum mencoba lagi."
+            ) from exc
+        except httpx.HTTPStatusError as exc:
+            # HTTP 502/503/504 = uncertain outcome; do not mark EXPIRED.
+            logger.warning("Duitku inquiry HTTP error for payment %s (method=%s, status=%s)",
+                           payment.id, settings.DUITKU_PAYMENT_METHOD, exc.response.status_code)
+            reconciliation_result = await _reconcile_duitku_timeout(
+                session, payment, settings.DUITKU_PAYMENT_METHOD
+            )
+            if reconciliation_result is not None:
+                return reconciliation_result
             raise PaymentUnavailable(
                 "Duitku belum merespons. Tunggu beberapa saat sebelum mencoba lagi."
             ) from exc
@@ -387,7 +502,8 @@ async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple
         raise PaymentError("Jumlah pembayaran tidak sesuai dengan invoice")
     if not payment.duitku_reference or payload.get("reference") != payment.duitku_reference:
         raise PaymentError("Referensi pembayaran tidak sesuai")
-    if payload.get("resultCode") not in ("00", "01"):
+    result_code = payload.get("resultCode")
+    if result_code not in ("00", "01", "02"):
         raise PaymentError("Status pembayaran tidak dikenal")
     if payment.status == PaymentStatus.SUCCESS:
         return payment, False
@@ -398,7 +514,7 @@ async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple
     payment.webhook_payload = payload
     payment.webhook_received_at = datetime.now(timezone.utc)
     # Keep the inquiry payload (checkout URL and QR) separate from callbacks.
-    if payload["resultCode"] == "00":
+    if result_code == "00":
         payment.status = PaymentStatus.SUCCESS
         payment.settled_at = payment.webhook_received_at
         payment.paid_at = payment.webhook_received_at
@@ -406,7 +522,12 @@ async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple
         await process_successful_payment(session, payment)
         await session.flush()
         return payment, True
-    payment.status = PaymentStatus.FAILED
+    if result_code == "01":
+        # Pending/processing: keep payment unresolved, do not grant votes.
+        await session.flush()
+        return payment, False
+    # result_code == "02": canceled.
+    payment.status = PaymentStatus.CANCELED
     await session.flush()
     return payment, False
 
