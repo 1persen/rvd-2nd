@@ -3,7 +3,9 @@ Duitku API integration for sandbox and production.
 """
 import hashlib
 import hmac
+import logging
 import re
+import time
 from urllib.parse import urlsplit
 from typing import Any, Dict, Optional
 
@@ -14,6 +16,21 @@ from app.core.config import settings
 SANDBOX_BASE = "https://sandbox.duitku.com/webapi/api/merchant"
 PRODUCTION_BASE = "https://passport.duitku.com/webapi/api/merchant"
 HTTP_TIMEOUT = 15.0
+
+# Duitku transaction status codes (per API specification).
+# "00" = successful payment, "01" = pending/processing, "02" = canceled.
+DUITKU_STATUS_SUCCESS = "00"
+DUITKU_STATUS_PENDING = "01"
+DUITKU_STATUS_CANCELED = "02"
+
+# Internal payment status mapping from Duitku status codes.
+DUITKU_STATUS_TO_INTERNAL = {
+    DUITKU_STATUS_SUCCESS: "SUCCESS",
+    DUITKU_STATUS_PENDING: "PENDING",
+    DUITKU_STATUS_CANCELED: "CANCELED",
+}
+
+logger = logging.getLogger(__name__)
 
 
 def _get_base_url() -> str:
@@ -44,6 +61,15 @@ def verify_callback_signature(merchant_code: str, amount: str, merchant_order_id
     signing_string = f"{merchant_code}{amount}{merchant_order_id}"
     expected_signature = hmac.new(api_key.encode("utf-8"), signing_string.encode("utf-8"), hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected_signature, received_signature)
+
+
+def normalize_duitku_status(status_code: str) -> Optional[str]:
+    """Map Duitku status code to internal payment status.
+
+    Returns None for unknown/unrecognized status codes so callers can
+    handle them conservatively without assuming failure.
+    """
+    return DUITKU_STATUS_TO_INTERNAL.get(status_code)
 
 
 def valid_payment_url(value) -> bool:
@@ -138,10 +164,50 @@ async def create_transaction(
         payload["expiryPeriod"] = expiry_period
 
     url = f"{_get_base_url()}/v2/inquiry"
-    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        return response.json()
+    start = time.monotonic()
+    try:
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+    except httpx.TimeoutException as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry timeout for order %s (method=%s, elapsed=%.2fs)",
+            merchant_order_id, payment_method, elapsed,
+        )
+        raise
+    except httpx.HTTPStatusError as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry HTTP error for order %s (method=%s, status=%s, elapsed=%.2fs)",
+            merchant_order_id, payment_method, exc.response.status_code, elapsed,
+        )
+        raise
+    except (ValueError, TypeError) as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry invalid JSON for order %s (method=%s, elapsed=%.2fs): %s",
+            merchant_order_id, payment_method, elapsed, type(exc).__name__,
+        )
+        raise
+    except Exception as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry unexpected error for order %s (method=%s, elapsed=%.2fs): %s",
+            merchant_order_id, payment_method, elapsed, type(exc).__name__,
+        )
+        raise
+
+    elapsed = time.monotonic() - start
+    status_code = result.get("statusCode") if isinstance(result, dict) else None
+    reference = result.get("reference") if isinstance(result, dict) else None
+    logger.info(
+        "Duitku inquiry for order %s (statusCode=%s, reference=%s, elapsed=%.2fs)",
+        merchant_order_id, status_code, reference, elapsed,
+    )
+
+    return result
 
 
 async def check_transaction_status(
@@ -177,7 +243,50 @@ async def check_transaction_status(
     }
 
     url = f"{_get_base_url()}/transactionStatus"
-    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        return response.json()
+    start = time.monotonic()
+    try:
+        async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            result = response.json()
+    except httpx.TimeoutException as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku transactionStatus timeout for order %s (elapsed=%.2fs)",
+            merchant_order_id, elapsed,
+        )
+        raise
+    except httpx.HTTPStatusError as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku transactionStatus HTTP error for order %s (status=%s, elapsed=%.2fs)",
+            merchant_order_id, exc.response.status_code, elapsed,
+        )
+        raise
+    except (ValueError, TypeError) as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku transactionStatus invalid JSON for order %s (elapsed=%.2fs): %s",
+            merchant_order_id, elapsed, type(exc).__name__,
+        )
+        raise
+    except Exception as exc:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku transactionStatus unexpected error for order %s (elapsed=%.2fs): %s",
+            merchant_order_id, elapsed, type(exc).__name__,
+        )
+        raise
+
+    elapsed = time.monotonic() - start
+    status_code = result.get("statusCode") if isinstance(result, dict) else None
+    reference = result.get("reference") if isinstance(result, dict) else None
+    logger.info(
+        "Duitku transactionStatus for order %s (statusCode=%s, reference=%s, elapsed=%.2fs)",
+        merchant_order_id, status_code, reference, elapsed,
+    )
+
+    if not isinstance(result, dict):
+        raise ValueError("Duitku transactionStatus response is not a JSON object")
+
+    return result

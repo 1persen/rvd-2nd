@@ -447,7 +447,7 @@ async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple
         raise PaymentError("Gateway invoice tidak sesuai")
     if not _amount_matches(payload["amount"], payment.amount):
         raise PaymentError("Jumlah pembayaran tidak sesuai dengan invoice")
-    if payload.get("resultCode") not in ("00", "01"):
+    if payload.get("resultCode") not in ("00", "01", "02"):
         raise PaymentError("Status pembayaran tidak dikenal")
     voted_now = False
     if not payment.duitku_reference:
@@ -474,9 +474,14 @@ async def process_duitku_callback(session: AsyncSession, payload: dict) -> tuple
         await process_successful_payment(session, payment)
         await session.flush()
         return payment, True
-    payment.status = PaymentStatus.FAILED
+    if payload["resultCode"] == "01":
+        # Pending/processing: keep payment unresolved, do not grant votes.
+        await session.flush()
+        return payment, voted_now
+    # result_code == "02": canceled.
+    payment.status = PaymentStatus.CANCELED
     await session.flush()
-    return payment, False
+    return payment, voted_now
 
 
 async def simulate_payment_status(
