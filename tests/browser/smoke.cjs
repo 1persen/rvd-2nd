@@ -85,30 +85,45 @@ const zlib = require('node:zlib');
       await capture('admin-login', width);
     }
     // Direct payment URL navigation; no intermediate dialog or status polling.
+    // Tested on mobile and desktop viewports.
     const pending = { id: 'pay_browser_navigation', status: 'PENDING', qty: 1,
       amount: 1000, is_mock: false, is_sandbox: true,
       payment_url: 'https://sandbox.duitku.com/checkout/test' };
-    let creations = 0;
-    await page.route('**/api/v1/payments', async route => {
-      assert.ok(route.request().headers()['idempotency-key']);
-      creations++;
-      await route.fulfill({ json: { success: true, data: pending } });
-    });
-    await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-    await page.getByLabel('Nama lengkap').fill('Browser Navigation');
-    await page.getByLabel('Nomor WhatsApp').fill('81000000002');
-    await page.getByLabel('Email', { exact: true }).fill('navigation@example.com');
-    await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
-    await page.getByRole('button', { name: 'Buat pembayaran', exact: true }).click();
-    // "Lanjutkan pembayaran" button shows with the payment URL.
-    await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).waitFor({ state: 'visible' });
-    // No intermediate dialog, no "Buka pembayaran Duitku", no "Periksa status".
-    assert.equal(await page.getByRole('dialog').count(), 0);
-    assert.equal(await page.getByRole('link', { name: 'Buka pembayaran Duitku' }).count(), 0);
-    assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0);
-    assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).count(), 0);
-    assert.equal(creations, 1);
-    await page.unroute('**/api/v1/payments');
+    for (const width of [390, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      let creations = 0;
+      let navigatedTo = null;
+      await page.route('**/api/v1/payments', async route => {
+        assert.ok(route.request().headers()['idempotency-key']);
+        creations++;
+        await route.fulfill({ json: { success: true, data: pending } });
+      });
+      await page.route('**/sandbox.duitku.com/**', async route => {
+        navigatedTo = route.request().url();
+        await route.fulfill({ status: 200, body: 'ok' });
+      });
+      await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
+      await page.getByLabel('Nama lengkap').fill(`Browser Navigation ${width}`);
+      await page.getByLabel('Nomor WhatsApp').fill('81000000002');
+      await page.getByLabel('Email', { exact: true }).fill(`navigation${width}@example.com`);
+      await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
+      // createInvoice() is called directly after form submit; no "Buat pembayaran" button.
+      // "Lanjutkan pembayaran" appears when PENDING with payment_url.
+      await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).waitFor({ state: 'visible' });
+      // No intermediate dialog, no "Buka pembayaran Duitku", no "Periksa status".
+      assert.equal(await page.getByRole('dialog').count(), 0, `${width}: no dialog`);
+      assert.equal(await page.getByRole('link', { name: 'Buka pembayaran Duitku' }).count(), 0, `${width}: no Duitku link`);
+      assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0, `${width}: no status button`);
+      assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).count(), 0, `${width}: no missing URL error`);
+      assert.equal(creations, 1, `${width}: single payment creation`);
+      // Click "Lanjutkan pembayaran" → navigates to backend payment_url.
+      await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
+      await page.waitForTimeout(1000);
+      assert.equal(navigatedTo, 'https://sandbox.duitku.com/checkout/test', `${width}: navigated to backend payment_url`);
+      await page.unroute('**/api/v1/payments');
+      await page.unroute('**/sandbox.duitku.com/**');
+      await capture(`checkout-navigation-${width}`, width);
+    }
 
     // Exercise the real admin login and protected APIs using an ephemeral account.
     await page.goto(`${baseURL}/admin/login`);
@@ -131,7 +146,7 @@ const zlib = require('node:zlib');
       }
     }
     assert.deepEqual(errors, []);
-    console.log('PASS ivory default, responsive header, navigation, centered premium podium, checkout, durable invoice recovery UI, theme, admin login and seven admin pages; widths 320/390/820/1440; no JavaScript errors.');
+    console.log('PASS ivory default, responsive header, navigation, centered premium podium, checkout, direct Duitku payment URL navigation, theme, admin login and seven admin pages; widths 320/390/820/1440; no JavaScript errors.');
   } catch (error) {
     if (page) {
       console.error('Layout diagnostics:', await page.locator('.hero-copy h1').evaluateAll(elements => elements.map(el => ({ text: el.textContent, width: el.clientWidth, font: getComputedStyle(el).font, lineHeight: getComputedStyle(el).lineHeight }))));
