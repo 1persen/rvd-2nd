@@ -7,12 +7,7 @@
     <div class="home-hero"><div class="shell hero-grid">
       <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }}  </span><h1>Platform Voting Digital<br>Untuk Berbagai Event<br></h1><p>Digital, Transparan, Simple</p><div class="hero-actions"><a href="/events" class="button button-gold">Lihat Event {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat Peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Untuk Beragam Event</span></div></div>
       {% include "partials/trophy_art.html" %}
-      <p>Seni &amp; Kreativitas <i>âœ¦</i> Pendidikan <i>âœ¦</i> Olahraga <i>âœ¦</i> Komunitas</p>
     </div>
-      <div class="hero-bottom shell">
-        <span>Temukan Event</span>
-        <a class="text-link" href="/events">Semua event {{ icon('arrow') }}</a>
-      </div>
     </div>
   </div>
 </section>
@@ -28,6 +23,10 @@
   </div>
   {% else %}<div class="empty-state">{{ icon('spark') }}<h3>Cerita berikutnya segera hadir.</h3><p>Event akan tampil di sini setelah dipublikasikan.</p></div>{% endif %}
 </section>
+<section id="cara-voting" class="shell how-section"><div class="section-heading"><div><h2>Cara Vote<br><span class="eyebrow">4 Langkah Simple dan Mudah</span></h2></div></div><div class="steps-grid">
+{% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
+<article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
+{% endfor %}</div></section>
 {% if all_events %}
 <section class="shell section-space">
   <div class="section-heading"><h2>Daftar <em>Event</em></h2></div>
@@ -41,9 +40,5 @@
   </div>
 </section>
 {% endif %}
-<section id="cara-voting" class="shell how-section"><div class="section-heading"><div><h2>Cara Vote<br><span class="eyebrow">4 Langkah Simple dan Mudah</span></h2></div></div><div class="steps-grid">
-{% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
-<article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
-{% endfor %}</div></section>
 {% endblock %}
 {% block scripts %}<script src="/static/js/leaderboard.js?v={{ tailwind_css_version | default("preview", true) }}"></script><script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
