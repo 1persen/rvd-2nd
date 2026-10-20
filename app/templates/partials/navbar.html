@@ -5,9 +5,10 @@
       <span>Raja Voting<span class="brand-subtitle">Digital Platform</span></span>
     </a>
     <nav class="desktop-nav" aria-label="Navigasi utama">
-      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
+      <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Home</a>
       <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
       <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
+      <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     </nav>
     <a href="/admin/login" class="organizer-link">Masuk dashboard panitia</a>
     <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Aktifkan tema gelap">
@@ -25,9 +26,10 @@
     <button type="button" class="btn btn-secondary mobile-menu-button" @click="open = !open" :aria-expanded="open" aria-controls="mobile-navigation" x-text="open ? 'Tutup' : 'Menu'">Menu</button>
   </div>
   <nav id="mobile-navigation" class="mobile-nav" aria-label="Navigasi seluler" x-show="open" x-cloak>
-    <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
+    <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Home</a>
     <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
     <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
+    <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     <a href="/admin/login">Masuk panitia</a>
   </nav>
 </header>
