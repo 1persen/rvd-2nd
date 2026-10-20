@@ -1,11 +1,10 @@
 {% extends "public_base.html" %}
 {% from "macros/public.html" import icon, podium, stage_header %}
-{% block title %}Jelajahi Event — Raja Voting Digital{% endblock %}
+{% block title %}Daftar Event — Raja Voting Digital{% endblock %}
 {% block content %}
 <div x-data='eventsPage({{ event | tojson }}, {{ all_events | tojson }})' x-cloak>
   <div x-show="!event">
-    <section class="page-hero"><div class="shell"><span class="eyebrow">{{ icon('spark') }} TEMUKAN MOMEN BERIKUTNYA</span><h1>Banyak talenta.<br><em>Satu dukungan berarti.</em></h1><p>Temukan kompetisi, kenali pesertanya, dan dukung pilihanmu.</p><div class="hero-line">SENI <span>✦</span> PRESTASI <span>✦</span> KREATIVITAS <span>✦</span> KOMUNITAS</div></div><div class="hero-watermark" aria-hidden="true">{{ icon('spark') }}</div></section>
-    <section class="shell section-space"><div class="section-heading"><h2>Jelajahi <em>event.</em></h2><span class="subtle" x-text="filteredEvents.length + ' event tersedia'"></span></div>
+    <section class="shell section-space"><div class="section-heading"><h2>Daftar <em>Event</em></h2><span class="subtle" x-text="filteredEvents.length + ' event tersedia'"></span></div>
 <div class="discovery-filters"><div class="field"><label for="event-search">Cari event</label><input id="event-search" type="search" x-model="eventQuery" placeholder="Nama atau kategori event"></div><label><input type="checkbox" x-model="openOnly"> Voting dibuka</label></div>
       <div class="event-grid"><template x-for="(ev, index) in filteredEvents" :key="ev.id"><a :href="'/events?event_id=' + encodeURIComponent(ev.id)" class="event-card" @click.prevent="switchEvent(ev)">
         <div class="event-cover" :data-color="index % 3"><span class="cover-shape" aria-hidden="true">{{ icon('spark') }}</span><template x-if="ev.banner_url"><img :src="ev.banner_url" :alt="'Poster ' + ev.name" loading="lazy" @error="$el.style.display = 'none'"></template><span class="cover-index" x-text="'EVENT / ' + String(index + 1).padStart(2, '0')"></span><span class="cover-title" x-text="ev.name"></span><span class="cover-arrow">{{ icon('arrow') }}</span></div>
