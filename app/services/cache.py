@@ -184,12 +184,14 @@ async def publish(payload: dict[str, Any]) -> None:
         logger.warning("publish failed", exc_info=True)
 
 
-def _leaderboard_key(event_id: str) -> str:
+def _leaderboard_key(event_id: str, level: str | None = None) -> str:
+    if level:
+        return f"wvc:leaderboard:{event_id}:{level}"
     return f"wvc:leaderboard:{event_id}:all"
 
 
-async def get_cached_leaderboard(event_id: str) -> Optional[dict]:
-    raw = await cache_get(_leaderboard_key(event_id))
+async def get_cached_leaderboard(event_id: str, level: str | None = None) -> Optional[dict]:
+    raw = await cache_get(_leaderboard_key(event_id, level))
     if raw is None:
         return None
     try:
@@ -198,5 +200,5 @@ async def get_cached_leaderboard(event_id: str) -> Optional[dict]:
         return None
 
 
-async def set_cached_leaderboard(event_id: str, payload: dict) -> None:
-    await cache_set(_leaderboard_key(event_id), dumps(payload))
+async def set_cached_leaderboard(event_id: str, payload: dict, level: str | None = None) -> None:
+    await cache_set(_leaderboard_key(event_id, level), dumps(payload))

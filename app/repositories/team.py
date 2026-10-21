@@ -40,13 +40,33 @@ async def stats_by_event(
 
 
 async def get_teams_with_votes(
-    session: AsyncSession, event_id: str
+    session: AsyncSession, event_id: str, level: str | None = None
 ) -> Sequence[tuple[Team, int]]:
     """Return (team, total_votes) pairs ordered by votes DESC, then name."""
     stmt = (
         select(Team, Team.total_votes)
         .where(Team.event_id == event_id, Team.deleted_at.is_(None))
-        .order_by(Team.total_votes.desc(), Team.name.asc())
     )
+    if level:
+        stmt = stmt.where(Team.education_level == level)
+    stmt = stmt.order_by(Team.total_votes.desc(), Team.name.asc())
     result = await session.execute(stmt)
     return result.all()
+
+
+async def get_available_levels(session: AsyncSession, event_id: str) -> list[str]:
+    stmt = (
+        select(Team.education_level)
+        .where(
+            Team.event_id == event_id,
+            Team.deleted_at.is_(None),
+            Team.education_level.is_not(None),
+        )
+        .distinct()
+    )
+    result = await session.execute(stmt)
+    levels = [row[0] for row in result.all() if row[0]]
+    # Keep consistent order
+    order = {"smp-mts": 0, "sma-smk": 1}
+    levels_sorted = sorted(set(levels), key=lambda x: order.get(x, 99))
+    return levels_sorted

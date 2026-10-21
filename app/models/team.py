@@ -24,6 +24,7 @@ class Team(TimestampMixin, SoftDeleteMixin, UUIDMixin, Base):
     )
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     school: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    education_level: Mapped[Optional[str]] = mapped_column(String(50), nullable=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)

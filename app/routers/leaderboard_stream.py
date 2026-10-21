@@ -31,20 +31,18 @@ def _encode_sse(data: dict) -> str:
 @router.get("/leaderboard/stream")
 async def leaderboard_stream(
     event_id: str = Query(..., description="ID event"),
+    level: str | None = Query(default=None),
 ):
     async def event_source() -> AsyncGenerator[str, None]:
-        # Spread browser reconnects (e.g. after a restart) over 2-7 s instead of
-        # every viewer reconnecting in the same second.
         yield f"retry: {random.randint(2000, 7000)}\n\n"
         async with cache.subscription(event_id) as queue:
-            # Queue registered before reading the initial ranking, so no push that
-            # reaches this worker is lost in between.
-            initial = await _load_initial(event_id)
+            initial = await _load_initial(event_id, level)
             if initial:
-                yield _encode_sse({"type": "leaderboard", "event_id": event_id, "data": initial})
+                yield _encode_sse({"type": "leaderboard", "event_id": event_id, "level": level, "data": initial})
             while True:
                 try:
-                    yield await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_SECONDS)
+                    frame = await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_SECONDS)
+                    yield frame
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
 
@@ -59,14 +57,10 @@ async def leaderboard_stream(
     )
 
 
-async def _load_initial(event_id: str):
-    """Ranking for the first message. Uses its own short-lived session: a request-scoped
-    one would stay checked out for as long as the stream is open (one pooled connection
-    per viewer)."""
+async def _load_initial(event_id: str, level: str | None = None):
     try:
         async with async_session() as session:
-            return await leaderboard_service.get_leaderboard(session, event_id)
+            return await leaderboard_service.get_leaderboard(session, event_id, level=level)
     except Exception as exc:
-        # The stream still works (pushes arrive); the viewer just starts empty.
         logger.warning("SSE initial leaderboard failed for %s: %s", event_id, exc)
         return None

@@ -17,6 +17,8 @@ from app.schemas.event import EventCreate, EventUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
 from app.utils import new_id
 
+ALLOWED_EDUCATION_LEVELS = {"smp-mts", "sma-smk"}
+
 
 async def get_active_event(session: AsyncSession) -> Event:
     event = await event_repo.get_active_event(session)
@@ -139,11 +141,16 @@ def new_datetime():
 # --- Admin: Team CRUD -------------------------------------------------------
 async def create_team(session: AsyncSession, payload: TeamCreate) -> Team:
     await get_event_or_404(session, payload.event_id)
+    if payload.education_level is None:
+        raise HTTPException(status_code=400, detail="Kategori pendidikan wajib dipilih")
+    if payload.education_level not in ALLOWED_EDUCATION_LEVELS:
+        raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
     team = Team(
         id=new_id("tm"),
         event_id=payload.event_id,
         name=payload.name,
         school=payload.school,
+        education_level=payload.education_level,
         description=payload.description,
         logo_url=payload.logo_url,
         sort_order=payload.sort_order,
@@ -156,8 +163,12 @@ async def create_team(session: AsyncSession, payload: TeamCreate) -> Team:
 async def update_team(session: AsyncSession, event_id: str, team_id: str, payload: TeamUpdate) -> Team:
     team = await get_team_or_404(session, team_id, event_id)
     data = payload.model_dump(exclude_unset=True)
+    if "education_level" in data:
+        level = data.get("education_level")
+        if level is not None and level not in ALLOWED_EDUCATION_LEVELS:
+            raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
     for field, value in data.items():
-        if value is not None or field in ("school", "description", "logo_url"):
+        if value is not None or field in ("school", "description", "logo_url", "education_level"):
             setattr(team, field, value)
     await session.flush()
     return team

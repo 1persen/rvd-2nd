@@ -36,10 +36,10 @@ def _trend(team: Team) -> str:
 
 
 async def build_leaderboard(
-    session: AsyncSession, event_id: str, limit: Optional[int] = None
+    session: AsyncSession, event_id: str, level: Optional[str] = None, limit: Optional[int] = None
 ) -> dict:
     """Return leaderboard payload ordered by votes desc, with ranking (uncached)."""
-    pairs = await team_repo.get_teams_with_votes(session, event_id)
+    pairs = await team_repo.get_teams_with_votes(session, event_id, level=level)
     entries = [
         {
             "id": team.id,
@@ -60,12 +60,12 @@ async def build_leaderboard(
     }
 
 
-async def get_leaderboard(session: AsyncSession, event_id: str) -> dict:
+async def get_leaderboard(session: AsyncSession, event_id: str, level: Optional[str] = None) -> dict:
     """Full ranking for public reads, served from cache when warm."""
-    payload = await cache.get_cached_leaderboard(event_id)
+    payload = await cache.get_cached_leaderboard(event_id, level=level)
     if payload is None:
-        payload = await build_leaderboard(session, event_id)
-        await cache.set_cached_leaderboard(event_id, payload)
+        payload = await build_leaderboard(session, event_id, level=level)
+        await cache.set_cached_leaderboard(event_id, payload, level=level)
     return payload
 
 

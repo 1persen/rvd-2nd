@@ -53,9 +53,9 @@ async def get_event(event_id: str, session: AsyncSession = Depends(get_db)):
 
 
 @router.get("/events/{event_id}/teams")
-async def list_teams(event_id: str, session: AsyncSession = Depends(get_db)):
+async def list_teams(event_id: str, level: str | None = Query(default=None), session: AsyncSession = Depends(get_db)):
     await event_service.get_event_or_404(session, event_id)
-    pairs = await team_repo.get_teams_with_votes(session, event_id)
+    pairs = await team_repo.get_teams_with_votes(session, event_id, level=level)
     result = []
     for rank, (team, votes) in enumerate(pairs, start=1):
         data = TeamOut.model_validate(team).model_dump()
@@ -82,15 +82,16 @@ async def list_donors(
 @router.get("/leaderboard")
 async def leaderboard(
     event_id: str = Query(..., description="ID event"),
+    level: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     session: AsyncSession = Depends(get_db),
 ):
     # One cache entry per event holding the full ranking; `limit` only trims the
     # response. A warm cache answers without touching the database.
-    payload = await cache.get_cached_leaderboard(event_id)
+    payload = await cache.get_cached_leaderboard(event_id, level=level)
     if not payload:
         await event_service.get_event_or_404(session, event_id)
-        payload = await leaderboard_service.get_leaderboard(session, event_id)
+        payload = await leaderboard_service.get_leaderboard(session, event_id, level=level)
     return ok({
         **payload,
         "entries": payload["entries"][:limit],

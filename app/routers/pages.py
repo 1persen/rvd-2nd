@@ -211,22 +211,43 @@ async def vote_page(
     )
 
 
-@router.get("/leaderboard")
-async def leaderboard(
+@router.get("/leaderboard/{event_slug}")
+async def leaderboard_detail(
     request: Request,
-    event_id: str | None = Query(default=None),
+    event_slug: str,
+    level: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ):
-    event = await _get_event_by_id_or_active(session, event_id)
-    entries = []
-    if event:
-        entries = (await leaderboard_service.get_leaderboard(session, event.id))["entries"]
+    event = await event_repo.get_by_slug(session, event_slug)
+    if not event or event.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    available_levels = await team_repo.get_available_levels(session, event.id)
+    chosen_level = level
+    if not available_levels:
+        # No valid categorized teams
+        return templates.TemplateResponse(
+            request,
+            "pages/leaderboard.html",
+            {
+                "event": _event_dict(event),
+                "leaderboard": [],
+                "available_levels": [],
+                "level": None,
+            },
+        )
+    if chosen_level not in available_levels:
+        # default order: smp-mts first, then sma-smk, else first
+        order = {"smp-mts": 0, "sma-smk": 1}
+        chosen_level = sorted(available_levels, key=lambda x: order.get(x, 99))[0]
+    entries = (await leaderboard_service.get_leaderboard(session, event.id, level=chosen_level))["entries"]
     return templates.TemplateResponse(
         request,
         "pages/leaderboard.html",
         {
-            "event": _event_dict(event) if event else None,
+            "event": _event_dict(event),
             "leaderboard": entries,
+            "available_levels": available_levels,
+            "level": chosen_level,
         },
     )
 
