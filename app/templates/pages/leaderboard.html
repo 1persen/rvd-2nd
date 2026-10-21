@@ -3,14 +3,41 @@
 {% block title %}Leaderboard — Raja Voting Digital{% endblock %}
 {% block content %}
 <section class="shell leaderboard-page">
-<a class="back-link" href="/events">← Daftar event</a>
-{% if event %}
-<div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>{{ event.name }}</h1></div><a href="/events?event_id={{ event.id }}" class="button button-outline">Lihat Peserta {{ icon('arrow') }}</a></div>
-<div x-data='scoreboard({{ leaderboard | tojson }}, { eventId: {{ event.id | tojson }} })'>
-<div class="award-stage">{{ stage_header('Panggung untuk yang terdepan.') }}{{ podium('teams') }}<div x-show="!teams.length" class="empty-state"><h3>Jadilah dukungan pertama.</h3><p>Peringkat peserta akan muncul di sini.</p></div><div class="stage-footer"><span>Peringkat sementara · bukan pengumuman pemenang</span><span class="live-status">{{ icon('trophy') }} LEADERBOARD</span></div></div>
-<div class="section-heading ranking-heading" x-show="teams.length > 3"><h2>Perjalanan <em>berlanjut.</em></h2><span class="subtle">Peringkat berikutnya</span></div>
-<div class="ranking-list"><template x-for="team in teams.slice(3)" :key="team.id"><article class="ranking-row" :class="{ 'score-updated': team.justUpdated }"><span class="row-rank" x-text="String(team.rank).padStart(2, '0')"></span><div class="row-avatar"><span x-text="(team.name || '?').slice(0, 1)"></span><template x-if="team.logo_url"><img :src="team.logo_url" :alt="team.name" @error="$el.style.display = 'none'"></template></div><div class="row-person"><h3 x-text="team.name"></h3><p x-text="team.school || 'Peserta kompetisi'"></p><div class="vote-bar"><span :style="{ width: Math.min(100, (team.votes / (teams[0]?.votes || 1)) * 100) + '%' }"></span></div></div><div class="row-votes"><strong x-text="formatVotes(team.votes)"></strong><small>vote</small></div>{% if event.is_voting_open %}<a :href="'/events/{{ event.id }}/vote/' + encodeURIComponent(team.id)" class="row-action" :aria-label="'Dukung ' + team.name">{{ icon('arrow') }}</a>{% endif %}</article></template></div>
-</div>
+{% if all_events is defined and all_events and event is none %}
+  <a class="back-link" href="/events">← Daftar event</a>
+  <div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>Leaderboard</h1></div></div>
+  <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;">
+    {% for ev in all_events %}
+      <article class="card" style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;background:#fff;">
+        {% if ev.banner_url %}<img src="{{ ev.banner_url }}" alt="{{ ev.name }}" style="width:100%;height:160px;object-fit:cover;">{% endif %}
+        <div style="padding:1rem 1.25rem;">
+          <h3 style="margin:0 0 .25rem 0;">{{ ev.name }}</h3>
+          <p style="margin:0 0 .75rem 0;color:#6b7280;">{{ ev.status }}</p>
+          <a href="/leaderboard/{{ ev.slug or ev.id }}" class="button button-dark">Lihat Leaderboard {{ icon('arrow') }}</a>
+        </div>
+      </article>
+    {% endfor %}
+  </div>
+  {% if all_events|length == 0 %}
+  <div class="empty-state">{{ icon('trophy') }}<h1>Belum ada event.</h1><p>Leaderboard tersedia setelah event dipublikasikan.</p><a class="button button-dark" href="/events">Daftar Event</a></div>
+  {% endif %}
+{% elif event %}
+  <a class="back-link" href="/leaderboard">← Daftar event</a>
+  <div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>{{ event.name }}</h1></div><a href="/events?event_id={{ event.id }}" class="button button-outline">Lihat Peserta {{ icon('arrow') }}</a></div>
+  {% if available_levels is defined and available_levels and available_levels|length > 1 %}
+  <div class="tabs" style="display:flex;gap:.5rem;margin:1rem 0;">
+    {% for lvl in available_levels %}
+      <a href="/leaderboard/{{ event.slug or event.id }}?level={{ lvl }}" class="button {% if level == lvl %}button-dark{% else %}button-outline{% endif %}">{{ 'SMP/MTs' if lvl == 'smp-mts' else ('SMA/SMK' if lvl == 'sma-smk' else lvl) }}</a>
+    {% endfor %}
+  </div>
+  {% elif available_levels is defined and available_levels and available_levels|length == 1 %}
+  <div style="margin:1rem 0;color:#6b7280;">Kategori: <strong>{{ 'SMP/MTs' if available_levels[0] == 'smp-mts' else ('SMA/SMK' if available_levels[0] == 'sma-smk' else available_levels[0]) }}</strong></div>
+  {% endif %}
+  <div x-data='scoreboard({{ leaderboard | tojson }}, { eventId: {{ event.id | tojson }}, level: {{ level | default(none, true) | tojson }} })'>
+  <div class="award-stage">{{ stage_header('Panggung untuk yang terdepan.') }}{{ podium('teams') }}<div x-show="!teams.length" class="empty-state"><h3>{% if available_levels is defined and available_levels|length == 0 %}Belum ada kategori yang valid.{% else %}Jadilah dukungan pertama.{% endif %}</h3><p>{% if available_levels is defined and available_levels|length == 0 %}Tim lama perlu diklasifikasikan kategori pendidikan di admin.{% else %}Peringkat peserta akan muncul di sini.{% endif %}</p></div><div class="stage-footer"><span>Peringkat sementara · bukan pengumuman pemenang</span><span class="live-status">{{ icon('trophy') }} LEADERBOARD</span></div></div>
+  <div class="section-heading ranking-heading" x-show="teams.length > 3"><h2>Perjalanan <em>berlanjut.</em></h2><span class="subtle">Peringkat berikutnya</span></div>
+  <div class="ranking-list"><template x-for="team in teams.slice(3)" :key="team.id"><article class="ranking-row" :class="{ 'score-updated': team.justUpdated }"><span class="row-rank" x-text="String(team.rank).padStart(2, '0')"></span><div class="row-avatar"><span x-text="(team.name || '?').slice(0, 1)"></span><template x-if="team.logo_url"><img :src="team.logo_url" :alt="team.name" @error="$el.style.display = 'none'"></template></div><div class="row-person"><h3 x-text="team.name"></h3><p x-text="team.school || 'Peserta kompetisi'"></p><div class="vote-bar"><span :style="{ width: Math.min(100, (team.votes / (teams[0]?.votes || 1)) * 100) + '%' }"></span></div></div><div class="row-votes"><strong x-text="formatVotes(team.votes)"></strong><small>vote</small></div>{% if event.is_voting_open %}<a :href="'/events/{{ event.id }}/vote/' + encodeURIComponent(team.id)" class="row-action" :aria-label="'Dukung ' + team.name">{{ icon('arrow') }}</a>{% endif %}</article></template></div>
+  </div>
 {% else %}<div class="empty-state">{{ icon('trophy') }}<h1>Panggung berikutnya segera hadir.</h1><p>Leaderboard tersedia setelah event dipublikasikan.</p><a class="button button-dark" href="/events">Daftar Event</a></div>{% endif %}
 </section>
 {% endblock %}

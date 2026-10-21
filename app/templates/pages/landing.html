@@ -5,7 +5,7 @@
 <section class="landing-slide" data-slide="hero">
   <div class="landing-section-inner section-visible">
     <div class="home-hero"><div class="shell hero-grid">
-      <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }}  </span><h1>Platform Voting Digital<br>Untuk Berbagai Event<br></h1><p>Digital, Transparan, Simple</p><div class="hero-actions"><a href="/events" class="button button-gold">Lihat Event {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat Peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Untuk Beragam Event</span></div></div>
+      <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }}  </span><h1>Platform Voting Digital</h1><p>Untuk Berbagai Event</p><div class="hero-actions"><a href="/events" class="button button-gold">Lihat Event {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat Peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Simpel & Transparan</span></div></div>
       {% include "partials/trophy_art.html" %}
     </div>
     </div>
@@ -14,7 +14,7 @@
 <section class="shell featured-section">
   {% if event %}
   <div class="featured-event">
-    <div class="event-artwork">{% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" onerror="this.style.display='none'">{% endif %}<span class="event-art-kicker">LKBB<br><br>SAGARA SAKTI</span><span class="art-stamp">{{ icon('spark') }} Tingkat SMK/SMA/MA Sederajat.</span></div>
+    <div class="event-artwork">{% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" onerror="this.style.display='none'">{% endif %}<span class="event-art-kicker"><br>SAGARA SAKTI</span><span class="art-stamp">{{ icon('spark') }} Tingkat SMK/SMA/MA Sederajat.</span></div>
     <div class="featured-content"><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><span></span>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span><h3>{{ event.name }}</h3><p>{{ event.description or 'SMK Muhammadiyah 3 Klaten Utara Se- Jawa Tengah' }}</p>
     <p class="event-service-desc">Ayo Vote Tim Favoritmu.</p>
     {% if event.price_per_vote %}<p class="event-price-info">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} per vote</p>{% endif %}
@@ -28,7 +28,7 @@
 <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
 {% endfor %}</div></section>
 {% if all_events %}
-<section class="shell section-space">
+<!-- <section class="shell section-space">
   <div class="section-heading"><h2>Daftar Event</h2></div>
   <div class="event-grid">
     {% for ev in all_events %}
@@ -38,7 +38,7 @@
     </a>
     {% endfor %}
   </div>
-</section>
+</section> -->
 {% endif %}
 {% endblock %}
 {% block scripts %}<script src="/static/js/leaderboard.js?v={{ tailwind_css_version | default("preview", true) }}"></script><script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}

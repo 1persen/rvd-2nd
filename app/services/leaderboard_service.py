@@ -36,10 +36,10 @@ def _trend(team: Team) -> str:
 
 
 async def build_leaderboard(
-    session: AsyncSession, event_id: str, limit: Optional[int] = None
+    session: AsyncSession, event_id: str, level: Optional[str] = None, limit: Optional[int] = None
 ) -> dict:
     """Return leaderboard payload ordered by votes desc, with ranking (uncached)."""
-    pairs = await team_repo.get_teams_with_votes(session, event_id)
+    pairs = await team_repo.get_teams_with_votes(session, event_id, level=level)
     entries = [
         {
             "id": team.id,
@@ -60,12 +60,12 @@ async def build_leaderboard(
     }
 
 
-async def get_leaderboard(session: AsyncSession, event_id: str) -> dict:
+async def get_leaderboard(session: AsyncSession, event_id: str, level: Optional[str] = None) -> dict:
     """Full ranking for public reads, served from cache when warm."""
-    payload = await cache.get_cached_leaderboard(event_id)
+    payload = await cache.get_cached_leaderboard(event_id, level=level)
     if payload is None:
-        payload = await build_leaderboard(session, event_id)
-        await cache.set_cached_leaderboard(event_id, payload)
+        payload = await build_leaderboard(session, event_id, level=level)
+        await cache.set_cached_leaderboard(event_id, payload, level=level)
     return payload
 
 
@@ -85,13 +85,21 @@ async def refresh_team_ranks(session: AsyncSession, event_id: str) -> None:
 async def publish_leaderboard(event_id: str) -> None:
     """Rebuild from committed data, refresh the cache and push to SSE clients.
 
-    The message must carry the full ranking: leaderboard.js only applies pushes
-    that contain ``data.entries``.
+    One message per view: the event-wide ranking (level=None) and one ranking
+    per category that has teams. Every message carries its level, so a viewer
+    of one category never receives the ranking of another category.
     """
     async with async_session() as session:
-        fresh = await build_leaderboard(session, event_id)
-    await cache.set_cached_leaderboard(event_id, fresh)
-    await cache.publish({"type": "leaderboard", "event_id": event_id, "data": fresh})
+        levels = await team_repo.get_available_levels(session, event_id)
+        views = [None, *levels]
+        payloads = {}
+        for level in views:
+            payloads[level] = await build_leaderboard(session, event_id, level=level)
+    for level, fresh in payloads.items():
+        await cache.set_cached_leaderboard(event_id, fresh, level=level)
+        await cache.publish(
+            {"type": "leaderboard", "event_id": event_id, "level": level, "data": fresh}
+        )
 
 
 async def _push_later(event_id: str, delay: float) -> None:

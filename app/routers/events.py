@@ -22,6 +22,18 @@ from app.utils import dumps
 router = APIRouter(prefix="/api/v1", tags=["events"])
 
 
+def _require_education_level(level: str | None) -> None:
+    """Kategori pendidikan wajib dipilih dan valid — hanya untuk admin team CRUD.
+
+    Alur publik (voting, checkout, webhook, settlement) tidak pernah memanggil
+    validasi ini, sehingga tidak akan gagal karena kategori belum dikirim.
+    """
+    if level is None or not level.strip():
+        raise HTTPException(status_code=400, detail="Kategori pendidikan wajib dipilih")
+    if level not in event_service.ALLOWED_EDUCATION_LEVELS:
+        raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
+
+
 def _event_out(event) -> dict:
     data = EventOut.model_validate(event).model_dump()
     data["status_label"] = {
@@ -53,9 +65,9 @@ async def get_event(event_id: str, session: AsyncSession = Depends(get_db)):
 
 
 @router.get("/events/{event_id}/teams")
-async def list_teams(event_id: str, session: AsyncSession = Depends(get_db)):
+async def list_teams(event_id: str, level: str | None = Query(default=None), session: AsyncSession = Depends(get_db)):
     await event_service.get_event_or_404(session, event_id)
-    pairs = await team_repo.get_teams_with_votes(session, event_id)
+    pairs = await team_repo.get_teams_with_votes(session, event_id, level=level)
     result = []
     for rank, (team, votes) in enumerate(pairs, start=1):
         data = TeamOut.model_validate(team).model_dump()
@@ -82,15 +94,16 @@ async def list_donors(
 @router.get("/leaderboard")
 async def leaderboard(
     event_id: str = Query(..., description="ID event"),
+    level: str | None = Query(default=None),
     limit: int = Query(default=100, ge=1, le=500),
     session: AsyncSession = Depends(get_db),
 ):
     # One cache entry per event holding the full ranking; `limit` only trims the
     # response. A warm cache answers without touching the database.
-    payload = await cache.get_cached_leaderboard(event_id)
+    payload = await cache.get_cached_leaderboard(event_id, level=level)
     if not payload:
         await event_service.get_event_or_404(session, event_id)
-        payload = await leaderboard_service.get_leaderboard(session, event_id)
+        payload = await leaderboard_service.get_leaderboard(session, event_id, level=level)
     return ok({
         **payload,
         "entries": payload["entries"][:limit],
@@ -143,6 +156,7 @@ async def create_team(
     _: AdminUserJwt,
 ):
     payload.event_id = event_id
+    _require_education_level(payload.education_level)
     team = await event_service.create_team(session, payload)
     await _audit(session, request, "team.create", "team", team.id)
     await session.commit()
@@ -158,6 +172,8 @@ async def update_team(
     session: DbSession,
     _: AdminUserJwt,
 ):
+    if payload.education_level is not None:
+        _require_education_level(payload.education_level)
     team = await event_service.update_team(session, event_id, team_id, payload)
     await _audit(session, request, "team.update", "team", team.id)
     await session.commit()
