@@ -4,7 +4,7 @@
 {% block fonts %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;800&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 {% endblock %}
 {% block head %}
 <link rel="stylesheet" href="/static/css/public.css?v={{ tailwind_css_version | default("preview", true) }}">
@@ -16,7 +16,10 @@
     <a href="/" class="wordmark" aria-label="Raja Voting Digital — Home"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a>
     <nav class="desktop-nav" aria-label="Navigasi utama">
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
-      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
+      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Event</a>
+      <a class="nav-coming-soon" href="/#produk">Ticketing <span>SEGERA</span></a>
+      <a class="nav-coming-soon" href="/#produk">Marketplace <span>SEGERA</span></a>
+      <a class="nav-coming-soon" href="/#produk">Paket <span>SEGERA</span></a>
       <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
       <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     </nav>
@@ -35,7 +38,7 @@
     </button>
     <button class="menu-toggle" @click="open = !open" :aria-expanded="open" aria-controls="mobile-nav" aria-label="Buka navigasi"><span x-text="open ? 'Tutup' : 'Menu'"></span></button>
   </div>
-  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Daftar Event</a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
+  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Event</a><a href="/#produk">Ticketing <span>Segera hadir</span></a><a href="/#produk">Marketplace <span>Segera hadir</span></a><a href="/#produk">Paket <span>Segera hadir</span></a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
 </header>
 {% if payment_sandbox_enabled() %}
 <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
