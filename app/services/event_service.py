@@ -16,8 +16,22 @@ from app.repositories import team as team_repo
 from app.schemas.event import EventCreate, EventUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
 from app.utils import new_id
+import re
 
 ALLOWED_EDUCATION_LEVELS = {"smp-mts", "sma-smk"}
+ALLOWED_EVENT_CATEGORIES = {"sma-smk-ma", "smp-mts", "sd-mi", "purna-klub"}
+
+def _slugify(value: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
+    return slug or "event"
+
+async def _unique_slug(session: AsyncSession, value: str) -> str:
+    base = _slugify(value)
+    candidate, suffix = base, 2
+    while await event_repo.get_by_slug(session, candidate):
+        candidate = f"{base}-{suffix}"
+        suffix += 1
+    return candidate
 
 
 async def get_active_event(session: AsyncSession) -> Event:
@@ -98,11 +112,14 @@ async def build_donors(session: AsyncSession, event_id: str) -> dict:
 
 # --- Admin: Event CRUD ------------------------------------------------------
 async def create_event(session: AsyncSession, payload: EventCreate) -> Event:
+    if payload.category is not None and payload.category not in ALLOWED_EVENT_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Kategori event tidak valid")
     event = Event(
         id=new_id("evt"),
         name=payload.name,
         description=payload.description,
-        slug=payload.slug,
+        slug=await _unique_slug(session, payload.name),
+        category=payload.category,
         banner_url=payload.banner_url,
         timezone=payload.timezone,
         currency=payload.currency,
@@ -120,6 +137,16 @@ async def create_event(session: AsyncSession, payload: EventCreate) -> Event:
 async def update_event(session: AsyncSession, event_id: str, payload: EventUpdate) -> Event:
     event = await get_event_or_404(session, event_id)
     data = payload.model_dump(exclude_unset=True)
+    if "slug" in data and data["slug"] is None:
+        data.pop("slug")
+    if "category" in data and data["category"] is None:
+        raise HTTPException(status_code=400, detail="Kategori event wajib dipilih")
+    if data.get("category") is not None and data["category"] not in ALLOWED_EVENT_CATEGORIES:
+        raise HTTPException(status_code=400, detail="Kategori event tidak valid")
+    if "slug" in data:
+        requested = data.pop("slug")
+        if requested and requested != event.slug:
+            data["slug"] = await _unique_slug(session, requested)
     for field, value in data.items():
         if value is not None or field in ("description", "opens_at", "closes_at", "slug", "banner_url", "timezone", "currency", "max_vote_per_transaction"):
             setattr(event, field, value)

@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.team import Team
+from app.models.event import Event
 
 
 async def get_team(session: AsyncSession, team_id: str) -> Optional[Team]:
@@ -22,6 +23,30 @@ async def list_teams(session: AsyncSession, event_id: str) -> Sequence[Team]:
     )
     result = await session.execute(stmt)
     return result.scalars().all()
+
+async def list_all_with_events(session: AsyncSession, event_id: str | None = None):
+    stmt = (
+        select(Team, Event.name)
+        .join(Event, Event.id == Team.event_id)
+        .where(Team.deleted_at.is_(None), Event.deleted_at.is_(None))
+        .order_by(Event.created_at.desc(), Team.name.asc())
+    )
+    if event_id:
+        stmt = stmt.where(Team.event_id == event_id)
+    result = await session.execute(stmt)
+    return result.all()
+
+async def list_all_with_events(session: AsyncSession, event_id: str | None = None):
+    stmt = (
+        select(Team, Event.name)
+        .join(Event, Event.id == Team.event_id)
+        .where(Team.deleted_at.is_(None), Event.deleted_at.is_(None))
+        .order_by(Event.created_at.desc(), Team.name.asc())
+    )
+    if event_id:
+        stmt = stmt.where(Team.event_id == event_id)
+    result = await session.execute(stmt)
+    return result.all()
 
 
 async def stats_by_event(

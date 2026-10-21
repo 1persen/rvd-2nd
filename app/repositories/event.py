@@ -16,7 +16,9 @@ async def get_event(session: AsyncSession, event_id: str) -> Optional[Event]:
 
 
 async def get_by_slug(session: AsyncSession, slug: str) -> Optional[Event]:
-    stmt = select(Event).where(Event.slug == slug, Event.deleted_at.is_(None))
+    # Slugs remain unique even for soft-deleted events because the database
+    # unique index covers those rows too.
+    stmt = select(Event).where(Event.slug == slug)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 

@@ -1,0 +1,27 @@
+{% extends "admin_base.html" %}
+{% block title %}Peserta Admin{% endblock %}
+{% block admin_content %}
+<div class="space-y-6">
+  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+    <div><h2 class="text-lg font-semibold text-gray-800">Peserta</h2><p class="text-sm text-gray-500">Kelola peserta berdasarkan event.</p></div>
+    <select id="participant-event" class="px-3 py-2 border rounded-lg text-sm"><option value="">Semua event</option></select>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4"><form id="participant-form" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+    <input type="hidden" id="participant-id"><div><label class="block text-xs text-gray-500 mb-1">Event</label><select id="participant-form-event" required class="w-full px-3 py-2 border rounded-lg text-sm"></select></div>
+    <div><label class="block text-xs text-gray-500 mb-1">Nama peserta</label><input id="participant-name" required class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+    <div><label class="block text-xs text-gray-500 mb-1">Sekolah/organisasi</label><input id="participant-school" class="w-full px-3 py-2 border rounded-lg text-sm"></div>
+    <div><label class="block text-xs text-gray-500 mb-1">Jenjang</label><select id="participant-level" required class="w-full px-3 py-2 border rounded-lg text-sm"><option value="">Pilih</option><option value="smp-mts">SMP/MTs</option><option value="sma-smk">SMA/SMK</option></select></div>
+    <button class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Simpan</button>
+  </form><p id="participant-feedback" class="text-sm mt-3"></p></div>
+  <div class="bg-white rounded-xl shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-gray-500 border-b"><th class="px-5 py-3">Peserta</th><th class="px-5 py-3">Event</th><th class="px-5 py-3">Jenjang</th><th class="px-5 py-3 text-right">Aksi</th></tr></thead><tbody id="participants-body"><tr><td colspan="4" class="px-5 py-8 text-center text-gray-400">Memuat peserta...</td></tr></tbody></table></div></div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+(function(){const esc=window.adminEscapeHTML, apiBase='/api/v1';let events=[];
+async function api(path,opt={}){const h={'Content-Type':'application/json','Authorization':'Bearer '+(localStorage.getItem('wvc_admin_token')||'')};const r=await fetch(apiBase+path,{...opt,headers:{...h,...(opt.headers||{})}});const d=await r.json().catch(()=>({}));if(!r.ok)throw Error(d.message||'Gagal memuat data');return d;}
+function eventOptions(target,all){target.innerHTML=(all?'<option value="">Semua event</option>':'')+events.map(e=>'<option value="'+esc(e.id)+'">'+esc(e.name)+'</option>').join('');}
+async function load(){const selected=document.getElementById('participant-event').value;const d=await api('/admin/teams'+(selected?'?event_id='+encodeURIComponent(selected):''));const body=document.getElementById('participants-body');const rows=d.data||[];body.innerHTML=rows.length?rows.map(t=>'<tr class="border-b"><td class="px-5 py-3 font-medium">'+esc(t.name)+'<div class="text-xs text-gray-500">'+esc(t.school||'')+'</div></td><td class="px-5 py-3">'+esc(t.event_name)+'</td><td class="px-5 py-3">'+esc(t.education_level||'-')+'</td><td class="px-5 py-3 text-right"><button data-edit="'+esc(t.id)+'" data-event="'+esc(t.event_id)+'" class="text-blue-600 mr-3">Ubah</button><button data-delete="'+esc(t.id)+'" data-event="'+esc(t.event_id)+'" class="text-red-600">Hapus</button></td></tr>').join(''):'<tr><td colspan="4" class="px-5 py-8 text-center text-gray-400">Belum ada peserta.</td></tr>';}
+async function init(){const d=await api('/events');events=d.data||[];eventOptions(document.getElementById('participant-event'),true);eventOptions(document.getElementById('participant-form-event'),false);await load();}
+ document.getElementById('participant-event').onchange=load;document.getElementById('participant-form').onsubmit=async e=>{e.preventDefault();const id=document.getElementById('participant-id').value,event=document.getElementById('participant-form-event').value;const body={name:document.getElementById('participant-name').value.trim(),school:document.getElementById('participant-school').value.trim()||null,education_level:document.getElementById('participant-level').value};try{await api('/admin/events/'+event+'/teams'+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(body)});e.target.reset();document.getElementById('participant-id').value='';document.getElementById('participant-feedback').textContent='Peserta tersimpan.';await load();}catch(err){document.getElementById('participant-feedback').textContent=err.message;}};
+document.getElementById('participants-body').onclick=async e=>{const b=e.target;if(b.dataset.edit){const d=await api('/events/'+b.dataset.event+'/teams').catch(()=>null);const t=(d?.data||[]).find(x=>x.id===b.dataset.edit);if(!t)return;document.getElementById('participant-id').value=t.id;document.getElementById('participant-form-event').value=t.event_id;document.getElementById('participant-name').value=t.name;document.getElementById('participant-school').value=t.school||'';document.getElementById('participant-level').value=t.education_level||'';}if(b.dataset.delete&&confirm('Hapus peserta ini?')){await api('/admin/events/'+b.dataset.event+'/teams/'+b.dataset.delete,{method:'DELETE'});await load();}};init().catch(e=>document.getElementById('participant-feedback').textContent=e.message);})();
+</script>{% endblock %}

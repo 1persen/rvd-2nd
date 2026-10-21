@@ -322,6 +322,10 @@ async def admin_events(request: Request, session: AsyncSession = Depends(get_db)
         {},
     )
 
+@router.get("/admin/participants")
+async def admin_participants(request: Request, session: AsyncSession = Depends(get_db)):
+    return templates.TemplateResponse(request, "pages/admin_participants.html", {})
+
 
 @router.get("/admin/transactions")
 async def admin_transactions(request: Request, session: AsyncSession = Depends(get_db)):

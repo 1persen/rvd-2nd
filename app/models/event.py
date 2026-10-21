@@ -23,6 +23,7 @@ class Event(TimestampMixin, SoftDeleteMixin, UUIDMixin, Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     slug: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True, index=True)
+    category: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
     banner_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="UTC", nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="IDR", nullable=False)
