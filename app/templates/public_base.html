@@ -16,8 +16,8 @@
     <a href="/" class="wordmark" aria-label="Raja Voting Digital — Home"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a>
     <nav class="desktop-nav" aria-label="Navigasi utama">
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
-      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Jelajahi Event</a>
-      <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Leaderboard</a>
+      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
+      <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
       <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     </nav>
     <a href="/events" class="button button-dark header-cta">Mulai Voting {{ icon('arrow') }}</a>
@@ -35,7 +35,7 @@
     </button>
     <button class="menu-toggle" @click="open = !open" :aria-expanded="open" aria-controls="mobile-nav" aria-label="Buka navigasi"><span x-text="open ? 'Tutup' : 'Menu'"></span></button>
   </div>
-  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Home</a><a href="/events">Daftar Event</a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
+  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Daftar Event</a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
 </header>
 {% if payment_sandbox_enabled() %}
 <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
