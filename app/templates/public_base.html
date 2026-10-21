@@ -35,7 +35,7 @@
     </button>
     <button class="menu-toggle" @click="open = !open" :aria-expanded="open" aria-controls="mobile-nav" aria-label="Buka navigasi"><span x-text="open ? 'Tutup' : 'Menu'"></span></button>
   </div>
-  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Jelajahi Event</a><a href="/leaderboard">Leaderboard</a><a href="/support">Bantuan</a></nav>
+  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Home</a><a href="/events">Daftar Event</a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
 </header>
 {% if payment_sandbox_enabled() %}
 <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
