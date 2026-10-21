@@ -31,8 +31,9 @@ _redis: Optional[Redis] = None
 _memory_cache: dict[str, tuple[float, str]] = {}
 _memory_locks: dict[str, float] = {}
 
-# event_id -> queues of this process's SSE clients (each holds SSE frames).
-_subscribers: dict[str, set[asyncio.Queue]] = defaultdict(set)
+# (event_id, level) -> queues of this process's SSE clients (each holds SSE frames).
+# The level keeps a category leaderboard from receiving the event-wide ranking.
+_subscribers: dict[tuple[str, Optional[str]], set[asyncio.Queue]] = defaultdict(set)
 _listener: Optional[asyncio.Task] = None
 
 CACHE_TTL = 10  # detik
@@ -97,7 +98,7 @@ async def try_lock(key: str, ttl_seconds: float) -> bool:
 
 # --- Pub/sub broadcast ------------------------------------------------------
 def _fan_out(raw: str) -> None:
-    """Deliver one published message to this process's SSE clients of its event."""
+    """Deliver one published message to this process's SSE clients of its event+level."""
     try:
         message = json.loads(raw)
     except (TypeError, ValueError):
@@ -105,7 +106,8 @@ def _fan_out(raw: str) -> None:
     if not isinstance(message, dict) or message.get("type") != "leaderboard":
         return
     frame = f"data: {raw}\n\n"
-    for queue in list(_subscribers.get(message.get("event_id"), ())):
+    key = (message.get("event_id"), message.get("level"))
+    for queue in list(_subscribers.get(key, ())):
         if queue.full():
             # A slow client only needs the newest ranking; drop the stale one.
             try:
@@ -154,19 +156,22 @@ def _ensure_listener() -> None:
 
 
 @asynccontextmanager
-async def subscription(event_id: str, maxsize: int = 4) -> AsyncIterator[asyncio.Queue]:
-    """Queue of ready-to-send SSE frames for one client of one event."""
+async def subscription(
+    event_id: str, level: Optional[str] = None, maxsize: int = 4
+) -> AsyncIterator[asyncio.Queue]:
+    """Queue of ready-to-send SSE frames for one client of one event and category."""
     _ensure_listener()
+    key = (event_id, level)
     queue: asyncio.Queue = asyncio.Queue(maxsize=maxsize)
-    _subscribers[event_id].add(queue)
+    _subscribers[key].add(queue)
     try:
         yield queue
     finally:
-        subs = _subscribers.get(event_id)
+        subs = _subscribers.get(key)
         if subs is not None:
             subs.discard(queue)
             if not subs:
-                _subscribers.pop(event_id, None)
+                _subscribers.pop(key, None)
 
 
 def subscriber_count() -> int:

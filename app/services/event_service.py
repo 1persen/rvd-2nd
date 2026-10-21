@@ -141,9 +141,10 @@ def new_datetime():
 # --- Admin: Team CRUD -------------------------------------------------------
 async def create_team(session: AsyncSession, payload: TeamCreate) -> Team:
     await get_event_or_404(session, payload.event_id)
-    if payload.education_level is None:
-        raise HTTPException(status_code=400, detail="Kategori pendidikan wajib dipilih")
-    if payload.education_level not in ALLOWED_EDUCATION_LEVELS:
+    # education_level boleh kosong: tim tanpa kategori tetap valid dan tidak
+    # pernah masuk leaderboard kategori mana pun. Wajibnya kategori hanya
+    # ditegakkan pada endpoint admin (lihat routers/events.py).
+    if payload.education_level is not None and payload.education_level not in ALLOWED_EDUCATION_LEVELS:
         raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
     team = Team(
         id=new_id("tm"),

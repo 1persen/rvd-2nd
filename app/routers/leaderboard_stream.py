@@ -35,7 +35,7 @@ async def leaderboard_stream(
 ):
     async def event_source() -> AsyncGenerator[str, None]:
         yield f"retry: {random.randint(2000, 7000)}\n\n"
-        async with cache.subscription(event_id) as queue:
+        async with cache.subscription(event_id, level=level) as queue:
             initial = await _load_initial(event_id, level)
             if initial:
                 yield _encode_sse({"type": "leaderboard", "event_id": event_id, "level": level, "data": initial})

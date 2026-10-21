@@ -22,6 +22,18 @@ from app.utils import dumps
 router = APIRouter(prefix="/api/v1", tags=["events"])
 
 
+def _require_education_level(level: str | None) -> None:
+    """Kategori pendidikan wajib dipilih dan valid — hanya untuk admin team CRUD.
+
+    Alur publik (voting, checkout, webhook, settlement) tidak pernah memanggil
+    validasi ini, sehingga tidak akan gagal karena kategori belum dikirim.
+    """
+    if level is None or not level.strip():
+        raise HTTPException(status_code=400, detail="Kategori pendidikan wajib dipilih")
+    if level not in event_service.ALLOWED_EDUCATION_LEVELS:
+        raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
+
+
 def _event_out(event) -> dict:
     data = EventOut.model_validate(event).model_dump()
     data["status_label"] = {
@@ -144,6 +156,7 @@ async def create_team(
     _: AdminUserJwt,
 ):
     payload.event_id = event_id
+    _require_education_level(payload.education_level)
     team = await event_service.create_team(session, payload)
     await _audit(session, request, "team.create", "team", team.id)
     await session.commit()
@@ -159,6 +172,8 @@ async def update_team(
     session: DbSession,
     _: AdminUserJwt,
 ):
+    if payload.education_level is not None:
+        _require_education_level(payload.education_level)
     team = await event_service.update_team(session, event_id, team_id, payload)
     await _audit(session, request, "team.update", "team", team.id)
     await session.commit()

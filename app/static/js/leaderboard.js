@@ -97,12 +97,13 @@ function eventPage(initialEvents = [], initialEvent = null, initialTeams = [], i
 }
 
 function scoreboard(initial, opts = {}) {
-  const { live = true, eventId = null } = opts;
+  const { live = true, eventId = null, level = null } = opts;
   return {
     teams: initial.map((t) => ({ ...t, justUpdated: false })),
     _source: null,
     _pollTimer: null,
     _eventId: eventId,
+    _level: level,
     _live: live,
 
     init() {
@@ -130,7 +131,8 @@ function scoreboard(initial, opts = {}) {
 
     _connectSSE() {
       this._disconnect();
-      const url = `/api/v1/leaderboard/stream?event_id=${encodeURIComponent(this._eventId)}`;
+      const url = `/api/v1/leaderboard/stream?event_id=${encodeURIComponent(this._eventId)}` +
+        (this._level ? `&level=${encodeURIComponent(this._level)}` : '');
       const source = new EventSource(url);
       this._source = source;
 
@@ -154,7 +156,8 @@ function scoreboard(initial, opts = {}) {
       // Fallback only: while SSE is connected the result would be discarded anyway.
       if (this._source?.readyState !== EventSource.CLOSED) return;
       try {
-        const res = await fetch(`/api/v1/leaderboard?event_id=${encodeURIComponent(this._eventId)}`);
+        const res = await fetch(`/api/v1/leaderboard?event_id=${encodeURIComponent(this._eventId)}` +
+          (this._level ? `&level=${encodeURIComponent(this._level)}` : ''));
         if (!res.ok) return;
         const body = await res.json();
         if (body.success && Array.isArray(body.data?.entries) && this._source?.readyState === EventSource.CLOSED) {

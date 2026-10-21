@@ -141,6 +141,22 @@ async def test_push_reaches_only_viewers_of_that_event():
     assert cache.subscriber_count() == 0
 
 
+@pytest.mark.asyncio
+async def test_push_reaches_only_viewers_of_the_same_level():
+    async with (
+        cache.subscription("evt_c", level="smp-mts") as mts,
+        cache.subscription("evt_c", level="sma-smk") as smk,
+        cache.subscription("evt_c") as overall,
+    ):
+        await cache.publish(
+            {"type": "leaderboard", "event_id": "evt_c", "level": "smp-mts", "data": {"entries": []}}
+        )
+        frame = mts.get_nowait()
+        assert '"smp-mts"' in frame
+        assert smk.empty() and overall.empty()
+    assert cache.subscriber_count() == 0
+
+
 def test_payment_status_polling_is_not_limited_as_invoice_creation():
     assert _bucket_name("POST", "/api/v1/payments") == "payment"
     assert _bucket_name("GET", "/api/v1/payments/pay_123/status") == "public"
