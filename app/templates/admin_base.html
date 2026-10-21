@@ -2,7 +2,8 @@
 {% from "macros/public.html" import icon %}
 {% set admin_pages = [
   ('/admin', 'Dashboard', 'Gambaran menyeluruh untuk setiap momen kompetisi.', 'grid'),
-  ('/admin/events', 'Event & Peserta', 'Kelola panggung, peserta, dan perjalanan kompetisi.', 'calendar'),
+  ('/admin/events', 'Event', 'Kelola panggung dan periode kompetisi.', 'calendar'),
+  ('/admin/participants', 'Peserta', 'Kelola peserta dan kategori jenjangnya.', 'users'),
   ('/admin/leaderboard', 'Leaderboard', 'Pantau perolehan suara dan posisi peserta.', 'trophy'),
   ('/admin/transactions', 'Transaksi', 'Telusuri pembayaran dan dukungan yang tercatat.', 'wallet'),
   ('/admin/audit-logs', 'Audit Log', 'Jejak aktivitas untuk pengelolaan yang transparan.', 'shield'),

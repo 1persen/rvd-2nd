@@ -119,6 +119,8 @@ async def create_event(
     session: DbSession,
     _: AdminUserJwt,
 ):
+    if not payload.category:
+        raise HTTPException(status_code=400, detail="Kategori event wajib dipilih")
     event = await event_service.create_event(session, payload)
     await _audit(session, request, "event.create", "event", event.id)
     await session.commit()
@@ -133,6 +135,8 @@ async def update_event(
     session: DbSession,
     _: AdminUserJwt,
 ):
+    if "category" in payload.model_fields_set and payload.category is None:
+        raise HTTPException(status_code=400, detail="Kategori event wajib dipilih")
     event = await event_service.update_event(session, event_id, payload)
     await _audit(session, request, "event.update", "event", event.id)
     await session.commit()
@@ -192,6 +196,20 @@ async def delete_team(
     await _audit(session, request, "team.delete", "team", team_id)
     await session.commit()
     return ok(message="Tim berhasil dihapus")
+
+@router.get("/admin/teams")
+async def list_admin_teams(
+    session: DbSession,
+    _: AdminUserJwt,
+    event_id: str | None = Query(default=None),
+):
+    rows = await team_repo.list_all_with_events(session, event_id)
+    result = []
+    for team, event_name in rows:
+        item = TeamOut.model_validate(team).model_dump()
+        item["event_name"] = event_name
+        result.append(item)
+    return ok(result)
 
 
 async def _audit(session, request, action, entity_type, entity_id):

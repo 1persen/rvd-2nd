@@ -2,6 +2,8 @@
 from datetime import datetime
 from typing import Optional
 
+from typing import Literal, Optional
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums.event_status import EventStatus
@@ -11,6 +13,7 @@ class EventBase(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: Optional[str] = None
     slug: Optional[str] = Field(default=None, max_length=100)
+    category: Optional[Literal["sma-smk-ma", "smp-mts", "sd-mi", "purna-klub"]] = None
     banner_url: Optional[str] = Field(default=None, max_length=500)
     timezone: str = Field(default="UTC", max_length=50)
     currency: str = Field(default="IDR", max_length=3)
