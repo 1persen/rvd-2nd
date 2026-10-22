@@ -89,6 +89,22 @@ def test_support_template_renders_without_placeholders():
     assert 'Kebijakan Privasi' not in html
 
 
+def test_support_page_has_content_anchors_and_accessible_faq():
+    html = pages.templates.get_template('pages/support.html').render(
+        request=request('/support'), support_email='', support_phone='', support_hours='')
+    for section_id in ('tentang', 'kontak', 'syarat', 'refund', 'faq'):
+        assert f'id="{section_id}"' in html
+        assert f'href="#{section_id}"' in html
+    assert 'mailto:rajadigital.group@gmail.com' in html
+    assert 'https://wa.me/6285602623817' in html
+    assert '+62 856-0262-3817' in html
+    assert 'Kebijikan' not in html
+    assert 'Refund Guaranteed' not in html
+    assert html.count('role="region"') == 13
+    assert html.count('aria-controls="faq-') == 13
+    assert 'x-cloak' in html
+
+
 @pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard'])
 def test_public_empty_states_render(name):
     html = pages.templates.get_template(f'pages/{name}.html').render(
