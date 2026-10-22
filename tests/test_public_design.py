@@ -56,6 +56,19 @@ def test_public_templates_render(name):
     assert '/static/images/raja-voting-logo.png' in html
     assert 'via Midtrans' not in html
     assert 'id="main-content"' in html
+    if name == 'landing':
+        assert 'Satu suara.' in html
+        assert 'Event unggulan' in html
+        assert 'Ticketing' in html and 'Marketplace' in html and 'Paket' in html
+        assert 'Event &amp; Peserta' not in html
+
+
+def test_public_navigation_has_live_events_and_coming_soon_sections():
+    html = pages.templates.get_template('public_base.html').render(request=request())
+    assert 'href="/events"' in html
+    assert '>Ticketing <span>SEGERA</span>' in html
+    assert '>Marketplace <span>SEGERA</span>' in html
+    assert '>Paket <span>SEGERA</span>' in html
 
 
 def test_support_template_renders_without_placeholders():

@@ -1,17 +1,21 @@
 {% extends "public_base.html" %}
 {% from "macros/public.html" import icon, podium %}
-{% block title %}Raja Voting Digital{% endblock %}
+{% block title %}Raja Voting Digital — Satu Suara, Penentu Juara{% endblock %}
+{% block head %}{{ super() }}
+<meta name="description" content="Temukan event, dukung peserta favoritmu, dan pantau hasil voting secara transparan di Raja Voting Digital.">
+{% endblock %}
 {% block content %}
 <section class="landing-slide" data-slide="hero">
   <div class="landing-section-inner section-visible">
     <div class="home-hero"><div class="shell hero-grid">
-      <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }}  </span><h1>Platform Voting Digital</h1><p>Untuk Berbagai Event</p><div class="hero-actions"><a href="/events" class="button button-gold">Lihat Event {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat Peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Simpel & Transparan</span></div></div>
+      <div class="hero-copy"><span class="eyebrow hero-kicker"><i></i> RAJA VOTING DIGITAL <b>•</b> DUKUNGANMU BERARTI</span><h1>Satu suara.<br><em>Penentu juara.</em></h1><p>Temukan kompetisi yang kamu dukung, pilih peserta favorit, dan ikuti peringkatnya secara transparan.</p><div class="hero-actions"><a href="/events" class="button button-gold">{{ 'Pilih Peserta' if event else 'Jelajahi Event' }} {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Hasil transparan</span></div></div>
       {% include "partials/trophy_art.html" %}
     </div>
     </div>
   </div>
 </section>
-<section class="shell featured-section">
+<section class="shell featured-section" id="event-unggulan">
+  <div class="section-heading"><div><span class="eyebrow">{{ icon('spark') }} PANGGUNG YANG SEDANG BERLANGSUNG</span><h2>Event unggulan</h2></div><a href="/events" class="text-link">Semua event {{ icon('arrow') }}</a></div>
   {% if event %}
   <div class="featured-event">
     <div class="event-artwork">{% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" onerror="this.style.display='none'">{% endif %}<span class="event-art-kicker"><br>SAGARA SAKTI</span><span class="art-stamp">{{ icon('spark') }} Tingkat SMK/SMA/MA Sederajat.</span></div>
@@ -23,7 +27,8 @@
   </div>
   {% else %}<div class="empty-state">{{ icon('spark') }}<h3>Cerita berikutnya segera hadir.</h3><p>Event akan tampil di sini setelah dipublikasikan.</p></div>{% endif %}
 </section>
-<section id="cara-voting" class="shell how-section"><div class="section-heading"><div><h2>Cara Vote<br><span class="eyebrow">4 Langkah Simple dan Mudah</span></h2></div></div><div class="steps-grid">
+<section id="produk" class="shell product-lineup"><div class="section-heading"><div><span class="eyebrow">SATU TEMPAT UNTUK SELURUH EKOSISTEM EVENT</span><h2>Mulai dari voting.<br>Fitur lain segera menyusul.</h2></div><p>Gunakan voting hari ini. Ticketing, Marketplace, dan Paket akan tersedia berikutnya.</p></div><div class="product-tabs" role="list" aria-label="Fitur platform"><a role="listitem" class="product-tab is-live" href="/events"><span class="product-tab-index">01</span><span><b>Voting</b><small>Tersedia sekarang</small></span><i aria-hidden="true">↗</i></a><div role="listitem" class="product-tab is-planned"><span class="product-tab-index">02</span><span><b>Ticketing</b><small>Segera hadir</small></span><i aria-hidden="true">02</i></div><div role="listitem" class="product-tab is-planned"><span class="product-tab-index">03</span><span><b>Marketplace</b><small>Segera hadir</small></span><i aria-hidden="true">03</i></div><div role="listitem" class="product-tab is-planned"><span class="product-tab-index">04</span><span><b>Paket</b><small>Segera hadir</small></span><i aria-hidden="true">04</i></div></div></section>
+<section id="cara-voting" class="shell how-section"><div class="section-heading"><div><span class="eyebrow">DUKUNG PESERTA DALAM EMPAT LANGKAH</span><h2>Cara voting</h2></div></div><div class="steps-grid">
 {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
 <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
 {% endfor %}</div></section>
