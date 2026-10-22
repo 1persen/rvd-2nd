@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.enums.education_level import ALLOWED_EDUCATION_LEVELS
 from app.enums.event_status import EventStatus
 from app.repositories import event as event_repo
 from app.repositories import team as team_repo
@@ -30,7 +31,7 @@ def _require_education_level(level: str | None) -> None:
     """
     if level is None or not level.strip():
         raise HTTPException(status_code=400, detail="Kategori pendidikan wajib dipilih")
-    if level not in event_service.ALLOWED_EDUCATION_LEVELS:
+    if level not in ALLOWED_EDUCATION_LEVELS:
         raise HTTPException(status_code=400, detail="Kategori pendidikan tidak valid")
 
 
