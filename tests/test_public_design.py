@@ -43,11 +43,11 @@ def request(path='/'):
                     'server': ('test', 80)})
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard', 'vote', 'voting_closed'])
+@pytest.mark.parametrize('name', ['landing', 'events', 'vote', 'voting_closed'])
 def test_public_templates_render(name):
     event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
-             'is_voting_open': True, 'status': 'Voting Open', 'banner_url': None,
-             'closes_at': None}
+             'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,
+             'closes_at': None, 'price_per_vote': 1000}
     team = {'id': 'participant-example', 'name': 'Example Participant', 'votes': 12}
     html = pages.templates.get_template(f'pages/{name}.html').render(
         request=request(), event=event, all_events=[event], leaderboard=[], team=team)
@@ -57,23 +57,27 @@ def test_public_templates_render(name):
     assert 'via Midtrans' not in html
     assert 'id="main-content"' in html
     if name == 'landing':
-        assert 'Satu suara.' in html
-        assert 'Event unggulan' in html
-        assert 'Ticketing' in html and 'Marketplace' in html and 'Paket' in html
+        assert 'class="public-header shell"' in html
+        assert 'home-product-track' in html
+        assert 'class="home-product-item is-upcoming"' in html
+        assert 'Temukan event' in html
+        assert '<h1>Platform Voting Digital</h1>' not in html
+        assert 'Satu suara.' not in html
+        assert 'Event yang sedang berjalan' in html
+        assert all(label in html for label in ('Ticketing', 'Marketplace', 'Paket'))
         assert 'Event &amp; Peserta' not in html
 
 
-def test_public_navigation_has_live_events_and_coming_soon_sections():
+def test_public_navigation_uses_routes_supported_by_current_app():
     html = pages.templates.get_template('public_base.html').render(request=request())
     assert 'href="/events"' in html
-    assert '>Ticketing <span>SEGERA</span>' in html
-    assert '>Marketplace <span>SEGERA</span>' in html
-    assert '>Paket <span>SEGERA</span>' in html
+    assert 'href="/support"' in html
+    assert 'href="/leaderboard"' not in html
 
 
 def test_support_template_renders_without_placeholders():
     html = pages.templates.get_template('pages/support.html').render(
-        request=request(), support_email='', support_phone='', support_hours='')
+        request=request('/support'), support_email='', support_phone='', support_hours='')
     assert '/static/css/public.css' in html
     assert 'public-site' in html
     assert '/static/images/raja-voting-logo.png' in html
@@ -105,7 +109,7 @@ def test_support_page_has_content_anchors_and_accessible_faq():
     assert 'x-cloak' in html
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard'])
+@pytest.mark.parametrize('name', ['landing', 'events'])
 def test_public_empty_states_render(name):
     html = pages.templates.get_template(f'pages/{name}.html').render(
         request=request(), event=None, all_events=[], leaderboard=[])

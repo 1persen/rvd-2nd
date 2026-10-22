@@ -2,6 +2,6 @@
 {% from "macros/public.html" import icon %}
 {% block title %}Voting Ditutup — Raja Voting Digital{% endblock %}
 {% block content %}
-<section class="shell closed-page"><div class="closed-illustration">{{ icon('clock') }}<span>✦</span></div><span class="eyebrow">SETIAP MOMEN PUNYA WAKTUNYA</span><h1>Panggungnya masih di sini.<br><em>Voting sedang ditutup.</em></h1><p>Periode voting untuk <strong>{{ event.name }}</strong> belum dibuka atau sudah berakhir. Kamu tetap bisa melihat para peserta dan peringkat mereka.</p><div class="hero-actions"><a href="/leaderboard?event_id={{ event.id }}" class="button button-dark">Lihat Peringkat {{ icon('arrow') }}</a><a 
+<section class="shell closed-page"><div class="closed-illustration">{{ icon('clock') }}<span>✦</span></div><span class="eyebrow">SETIAP MOMEN PUNYA WAKTUNYA</span><h1>Panggungnya masih di sini.<br><em>Voting sedang ditutup.</em></h1><p>Periode voting untuk <strong>{{ event.name }}</strong> belum dibuka atau sudah berakhir. Kamu tetap bisa melihat para peserta dan peringkat mereka.</p><div class="hero-actions"><a href="/events?event_id={{ event.id }}" class="button button-dark">Lihat Peringkat Event {{ icon('arrow') }}</a><a
 href="/events" class="text-link">Daftar Event</a></div></section>
 {% endblock %}

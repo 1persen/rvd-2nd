@@ -11,35 +11,28 @@
 {% endblock %}
 {% block navbar %}
 <a class="skip-link" href="#main-content">Lewati</a>
-<header class="public-header" x-data="{ open: false }">
-  <div class="shell header-inner">
+<div class="public-header-layer {{ 'public-header-layer--home' if request.url.path == '/' else '' }}" x-data="{ open: false }">
+  <header class="public-header shell">
+   <div class="header-inner">
     <a href="/" class="wordmark" aria-label="Raja Voting Digital — Home"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a>
     <nav class="desktop-nav" aria-label="Navigasi utama">
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
-      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Event</a>
-      <a class="nav-coming-soon" href="/#produk">Ticketing <span>SEGERA</span></a>
-      <a class="nav-coming-soon" href="/#produk">Marketplace <span>SEGERA</span></a>
-      <a class="nav-coming-soon" href="/#produk">Paket <span>SEGERA</span></a>
-      <a href="/leaderboard" {% if request.url.path == '/leaderboard' %}aria-current="page"{% endif %}>Peringkat</a>
+      <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
       <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     </nav>
-    <a href="/events" class="button button-dark header-cta">Mulai Voting {{ icon('arrow') }}</a>
-    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Aktifkan tema gelap">
-      <svg class="theme-toggle-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-        <path d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z"/>
-        <path d="M4.22 3.22a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/>
-        <path d="M15.36 4.28a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/>
-        <path d="M10 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/>
-        <path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z"/>
-        <path d="M16 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1Z"/>
-        <path d="M4.22 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/>
-        <path d="M14.95 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/>
-      </svg>
-    </button>
-    <button class="menu-toggle" @click="open = !open" :aria-expanded="open" aria-controls="mobile-nav" aria-label="Buka navigasi"><span x-text="open ? 'Tutup' : 'Menu'"></span></button>
-  </div>
-  <nav id="mobile-nav" class="mobile-nav shell" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Event</a><a href="/#produk">Ticketing <span>Segera hadir</span></a><a href="/#produk">Marketplace <span>Segera hadir</span></a><a href="/#produk">Paket <span>Segera hadir</span></a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a></nav>
-</header>
+    <div class="header-actions">
+      <a href="/events" class="button button-dark header-cta">Mulai Voting {{ icon('arrow') }}</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Aktifkan tema gelap">
+        <svg class="theme-toggle-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1Z"/><path d="M4.22 3.22a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/><path d="M15.36 4.28a.75.75 0 0 1 1.06 0l.75.75a.75.75 0 1 1-1.06 1.06l-.75-.75a.75.75 0 0 1 0-1.06Z"/><path d="M10 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"/><path d="M2 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2H3a1 1 0 0 1-1-1Z"/><path d="M16 10a1 1 0 0 1 1-1h1a1 1 0 1 1 0 2h-1a1 1 0 0 1-1-1Z"/><path d="M4.22 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/><path d="M14.95 15.78a.75.75 0 0 1 0-1.06l.75-.75a.75.75 0 1 1 1.06 1.06l-.75.75a.75.75 0 0 1-1.06 0Z"/>
+        </svg>
+      </button>
+      <button class="menu-toggle" @click="open = !open" :aria-expanded="open" aria-controls="mobile-nav" aria-label="Buka navigasi"><span x-text="open ? 'Tutup' : 'Menu'"></span></button>
+    </div>
+    <nav id="mobile-nav" class="mobile-nav" x-show="open" x-cloak aria-label="Navigasi ponsel"><a href="/">Beranda</a><a href="/events">Daftar Event</a><a href="/support">Bantuan</a><a href="/admin/login">Masuk panitia</a></nav>
+   </div>
+  </header>
+</div>
 {% if payment_sandbox_enabled() %}
 <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
 {% endif %}
@@ -48,7 +41,7 @@
 {% block footer %}
 <footer class="public-footer"><div class="shell footer-grid">
   <div><a class="wordmark" href="/"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a><p>Panggung untuk setiap talenta.<br>Ruang untuk setiap dukungan.</p></div>
-  <div><a href="/events">Daftar Event</a><a href="/leaderboard">Peringkat</a><a href="/support">Bantuan</a><a href="/#cara-voting">Cara Voting</a></div>
+  <div><a href="/events">Daftar Event</a><a href="/support">Bantuan</a><a href="/#cara-voting">Cara Voting</a></div>
   <div>
     <span class="eyebrow">Hubungi Kami</span>
     <a href="mailto:rajadigital.group@gmail.com" style="display:flex; align-items:center; gap:8px; font-size:12px; margin-top:15px; color:var(--muted);">
