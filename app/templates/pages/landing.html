@@ -1,6 +1,9 @@
 {% extends "public_base.html" %}
 {% from "macros/public.html" import icon %}
-{% block title %}Raja Voting Digital{% endblock %}
+{% block title %}Raja Voting Digital — Panggung untuk Setiap Dukungan{% endblock %}
+{% block head %}{{ super() }}
+<meta name="description" content="Temukan event, dukung peserta favoritmu, dan pantau hasil voting secara transparan di Raja Voting Digital.">
+{% endblock %}
 {% block content %}
 <div class="home-page">
   <section class="landing-slide home-hero" data-slide="hero">
@@ -21,10 +24,10 @@
     </div>
   </section>
 
-  <nav class="home-product-nav shell" aria-label="Fitur Raja Voting Digital" x-data="{ active: 'voting' }">
+  <nav class="home-product-nav shell" aria-label="Fitur Raja Voting Digital">
     <div class="home-product-track" role="group" aria-label="Layanan RVD">
       <span class="home-product-indicator is-voting" aria-hidden="true"></span>
-      <a href="/events" class="home-product-item" :class="{ 'is-active': active === 'voting' }" aria-current="page">{{ icon('trophy') }}<span>Voting</span></a>
+      <a href="/events" class="home-product-item is-active" aria-current="page">{{ icon('trophy') }}<span>Voting</span></a>
       <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('calendar') }}<span>Ticketing</span></span><small>Segera hadir</small></div>
       <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('grid') }}<span>Marketplace</span></span><small>Segera hadir</small></div>
       <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('wallet') }}<span>Paket</span></span><small>Segera hadir</small></div>
@@ -72,21 +75,11 @@
   <section id="layanan-mendatang" class="shell home-how-section">
     <div class="home-section-heading"><div><p class="eyebrow">MULAI DENGAN MUDAH</p><h2>Bagaimana voting bekerja</h2></div><p>Ikuti empat langkah dari memilih event hingga dukungan tercatat.</p></div>
     <div class="steps-grid">
-{% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
-<article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
-{% endfor %}</div></section>
-{% if all_events %}
-<!-- <section class="shell section-space">
-  <div class="section-heading"><h2>Daftar Event</h2></div>
-  <div class="event-grid">
-    {% for ev in all_events %}
-    <a href="/events?event_id={{ ev.id }}" class="event-card">
-      <div class="event-cover"><span class="cover-title">{{ ev.name }}</span></div>
-      <div class="event-card-body"><h3>{{ ev.name }}</h3></div>
-    </a>
-    {% endfor %}
-  </div>
-</section> -->
-{% endif %}
+      {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
+      <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
+      {% endfor %}
+    </div>
+  </section>
+</div>
 {% endblock %}
 {% block scripts %}<script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}

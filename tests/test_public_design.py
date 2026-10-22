@@ -46,8 +46,8 @@ def request(path='/'):
 @pytest.mark.parametrize('name', ['landing', 'events', 'vote', 'voting_closed'])
 def test_public_templates_render(name):
     event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
-             'is_voting_open': True, 'status': 'Voting Open', 'banner_url': None,
-             'closes_at': None}
+             'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,
+             'closes_at': None, 'price_per_vote': 1000}
     team = {'id': 'participant-example', 'name': 'Example Participant', 'votes': 12}
     html = pages.templates.get_template(f'pages/{name}.html').render(
         request=request(), event=event, all_events=[event], leaderboard=[], team=team)
@@ -61,13 +61,23 @@ def test_public_templates_render(name):
         assert 'home-product-track' in html
         assert 'class="home-product-item is-upcoming"' in html
         assert 'Temukan event' in html
-        assert 'href="/events"' in html
         assert '<h1>Platform Voting Digital</h1>' not in html
+        assert 'Satu suara.' not in html
+        assert 'Event yang sedang berjalan' in html
+        assert all(label in html for label in ('Ticketing', 'Marketplace', 'Paket'))
+        assert 'Event &amp; Peserta' not in html
+
+
+def test_public_navigation_uses_routes_supported_by_current_app():
+    html = pages.templates.get_template('public_base.html').render(request=request())
+    assert 'href="/events"' in html
+    assert 'href="/support"' in html
+    assert 'href="/leaderboard"' not in html
 
 
 def test_support_template_renders_without_placeholders():
     html = pages.templates.get_template('pages/support.html').render(
-        request=request(), support_email='', support_phone='', support_hours='')
+        request=request('/support'), support_email='', support_phone='', support_hours='')
     assert '/static/css/public.css' in html
     assert 'public-site' in html
     assert '/static/images/raja-voting-logo.png' in html
@@ -81,6 +91,22 @@ def test_support_template_renders_without_placeholders():
     assert 'Tentukan apakah pesanan' not in html
     assert 'Ketentuan final yang perlu ditetapkan' not in html
     assert 'Kebijakan Privasi' not in html
+
+
+def test_support_page_has_content_anchors_and_accessible_faq():
+    html = pages.templates.get_template('pages/support.html').render(
+        request=request('/support'), support_email='', support_phone='', support_hours='')
+    for section_id in ('tentang', 'kontak', 'syarat', 'refund', 'faq'):
+        assert f'id="{section_id}"' in html
+        assert f'href="#{section_id}"' in html
+    assert 'mailto:rajadigital.group@gmail.com' in html
+    assert 'https://wa.me/6285602623817' in html
+    assert '+62 856-0262-3817' in html
+    assert 'Kebijikan' not in html
+    assert 'Refund Guaranteed' not in html
+    assert html.count('role="region"') == 13
+    assert html.count('aria-controls="faq-') == 13
+    assert 'x-cloak' in html
 
 
 @pytest.mark.parametrize('name', ['landing', 'events'])
