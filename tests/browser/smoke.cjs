@@ -38,17 +38,25 @@ const zlib = require('node:zlib');
       await page.locator('.landing-section-inner.section-visible').first().waitFor({ state: 'visible' });
       assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), false);
       await layout(`landing ${width}`);
-      const header = await page.locator('.header-inner').boundingBox();
-      const title = await page.locator('.hero-copy h1').boundingBox();
-      assert.ok(header.height >= 70 && header.height <= 90, `header height ${header.height}`);
-      assert.ok(title.y >= header.y + header.height, 'header overlaps hero');
+      const header = await page.locator('.public-header').boundingBox();
+      const title = await page.locator('.home-hero-copy h1').boundingBox();
+      assert.ok(header.height >= 54 && header.height <= 100, `header height ${header.height}`);
+      assert.ok(title.y >= header.y + header.height - 100, 'hero title is unexpectedly obscured by header');
       assert.ok(title.height < 300, `hero copy became a display-sized paragraph at ${width}px: ${JSON.stringify(title)}`);
-      const logo = await page.locator('.header-inner .wordmark').boundingBox();
+      const logo = await page.locator('.public-header .wordmark').boundingBox();
       const theme = await page.locator('.theme-toggle').boundingBox();
       assert.ok(logo.x + logo.width <= theme.x, 'brand overlaps theme control');
+      if (width > 700) {
+        assert.equal(await page.locator('.desktop-nav').isVisible(), true, `desktop nav visible at ${width}px`);
+        assert.equal(await page.locator('#mobile-nav').isVisible(), false, `mobile nav hidden at ${width}px`);
+      } else {
+        assert.equal(await page.locator('.desktop-nav').isVisible(), false, `desktop nav hidden at ${width}px`);
+        await page.getByRole('button', { name: 'Buka navigasi', exact: true }).click();
+        assert.equal(await page.locator('#mobile-nav').isVisible(), true, `mobile nav opens at ${width}px`);
+        assert.equal(await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).isVisible(), true);
+      }
       await capture('landing', width);
       if (width <= 700) {
-        await page.getByRole('button', { name: 'Buka navigasi', exact: true }).click();
         await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).click();
       } else {
         await page.locator('.desktop-nav').getByRole('link', { name: 'Bantuan' }).click();
@@ -60,7 +68,7 @@ const zlib = require('node:zlib');
       await page.getByText('Cakrawala', { exact: true }).first().waitFor({ state: 'visible' });
       await layout(`event ${width}`);
       await capture('event', width);
-      await page.goto(`${baseURL}/leaderboard?event_id=${fixture.event_id}`);
+      await page.getByRole('button', { name: 'Leaderboard', exact: true }).click();
       await page.locator('.podium-person[data-place="3"]').waitFor({ state: 'visible' });
       assert.equal(await page.locator('.podium-person').count(), 3);
       const first = await page.locator('.podium-person[data-place="1"]').boundingBox();
@@ -149,7 +157,7 @@ const zlib = require('node:zlib');
     console.log('PASS ivory default, responsive header, navigation, centered premium podium, checkout, direct Duitku payment URL navigation, theme, admin login and seven admin pages; widths 320/390/820/1440; no JavaScript errors.');
   } catch (error) {
     if (page) {
-      console.error('Layout diagnostics:', await page.locator('.hero-copy h1').evaluateAll(elements => elements.map(el => ({ text: el.textContent, width: el.clientWidth, font: getComputedStyle(el).font, lineHeight: getComputedStyle(el).lineHeight }))));
+      console.error('Layout diagnostics:', await page.locator('.home-hero-copy h1').evaluateAll(elements => elements.map(el => ({ text: el.textContent, width: el.clientWidth, font: getComputedStyle(el).font, lineHeight: getComputedStyle(el).lineHeight }))));
       // A compressed failure image is recoverable from CI logs without runtime credentials.
       const png = await page.screenshot();
       console.error('RVD_FAILURE_PNG_GZIP:' + zlib.gzipSync(png).toString('base64'));
