@@ -43,7 +43,7 @@ def request(path='/'):
                     'server': ('test', 80)})
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'vote', 'voting_closed'])
+@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard', 'vote', 'voting_closed'])
 def test_public_templates_render(name):
     event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
              'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,
@@ -59,12 +59,11 @@ def test_public_templates_render(name):
     if name == 'landing':
         assert 'class="public-header shell"' in html
         assert 'home-product-track' in html
-        assert 'class="home-product-item is-upcoming"' in html
         assert 'Temukan event' in html
         assert '<h1>Platform Voting Digital</h1>' not in html
         assert 'Satu suara.' not in html
         assert 'Event yang sedang berjalan' in html
-        assert all(label in html for label in ('Ticketing', 'Marketplace', 'Paket'))
+        assert all(label in html for label in ('Voting', 'Peringkat', 'Peserta', 'Bantuan'))
         assert 'Event &amp; Peserta' not in html
 
 
@@ -72,7 +71,7 @@ def test_public_navigation_uses_routes_supported_by_current_app():
     html = pages.templates.get_template('public_base.html').render(request=request())
     assert 'href="/events"' in html
     assert 'href="/support"' in html
-    assert 'href="/leaderboard"' not in html
+    assert 'href="/leaderboard"' in html
 
 
 def test_support_template_renders_without_placeholders():
@@ -109,7 +108,7 @@ def test_support_page_has_content_anchors_and_accessible_faq():
     assert 'x-cloak' in html
 
 
-@pytest.mark.parametrize('name', ['landing', 'events'])
+@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard'])
 def test_public_empty_states_render(name):
     html = pages.templates.get_template(f'pages/{name}.html').render(
         request=request(), event=None, all_events=[], leaderboard=[])

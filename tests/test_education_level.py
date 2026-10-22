@@ -47,7 +47,7 @@ async def test_admin_team_create_rejects_unknown_level(async_client, admin_heade
 
 @pytest.mark.asyncio
 async def test_admin_team_create_accepts_allowed_levels(async_client, admin_headers, test_data):
-    for level in ("smp-mts", "sma-smk"):
+    for level in ("sma-smk-ma", "smp-mts", "sd-mi", "purna-klub"):
         response = await async_client.post(
             f"/api/v1/admin/events/{test_data['event'].id}/teams",
             json={"name": f"Tim {level}", "school": "Sekolah", "education_level": level},

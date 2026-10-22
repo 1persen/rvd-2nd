@@ -1,0 +1,31 @@
+{% extends "public_base.html" %}
+{% from "macros/public.html" import icon, podium, stage_header %}
+{% block title %}Peringkat — Raja Voting Digital{% endblock %}
+{% block content %}
+{% if not event %}
+<section class="shell section-space"><div class="section-heading"><h2>Daftar Event</h2><span class="subtle">Pilih event untuk melihat peringkat</span></div>
+  <div class="event-grid">{% for ev in all_events %}<a href="/leaderboard/{{ ev.slug or ev.id }}" class="event-card"><div class="event-cover"><span class="cover-title">{{ ev.name }}</span></div><div class="event-card-body"><h3>{{ ev.name }}</h3><p class="event-description">{{ ev.description or 'Lihat peringkat peserta.' }}</p></div></a>{% endfor %}</div>
+  {% if not all_events %}<div class="empty-state">{{ icon('spark') }}<h3>Belum ada event.</h3></div>{% endif %}
+</section>
+{% else %}
+<section class="shell event-content">
+  <a class="back-link" href="/leaderboard">← Daftar event</a>
+  <div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>{{ event.name }}</h1></div><a href="/events?event_id={{ event.id }}" class="button button-outline">Lihat Peserta {{ icon('arrow') }}</a></div>
+  {% if available_levels|length > 1 %}
+  <nav class="event-tabs" aria-label="Kategori peringkat"><template></template>
+    <div class="category-tabs">{% for lvl in available_levels %}<a href="/leaderboard/{{ event.slug or event.id }}?level={{ lvl }}" class="button {% if level == lvl %}button-dark{% else %}button-outline{% endif %}">{{ labels.get(lvl, lvl) }}</a>{% endfor %}</div>
+  </nav>
+  {% endif %}
+  {% if not available_levels %}
+  <div class="empty-state"><h3>Belum ada kategori yang valid.</h3><p>Tim perlu diklasifikasikan kategori pendidikan di admin.</p></div>
+  {% else %}
+  <div x-data='scoreboard({{ leaderboard | tojson }}, { eventId: {{ event.id | tojson }}, level: {{ level | default(none, true) | tojson }} })'>
+    <div class="award-stage">{{ stage_header('Panggung untuk yang terdepan.') }}{{ podium('teams') }}<div x-show="!teams.length" class="empty-state"><h3>Jadilah dukungan pertama.</h3><p>Peringkat peserta akan muncul di sini.</p></div><div class="stage-footer"><span>Peringkat sementara · bukan pengumuman pemenang</span><span class="live-status">{{ icon('trophy') }} LEADERBOARD</span></div></div>
+    <div class="section-heading ranking-heading" x-show="teams.length > 3"><h2>Perjalanan <em>berlanjut.</em></h2><span class="subtle">Peringkat berikutnya</span></div>
+    <div class="ranking-list"><template x-for="team in teams.slice(3)" :key="team.id"><article class="ranking-row" :class="{ 'score-updated': team.justUpdated }"><span class="row-rank" x-text="String(team.rank).padStart(2, '0')"></span><div class="row-avatar"><span x-text="(team.name || '?').slice(0, 1)"></span><template x-if="team.logo_url"><img :src="team.logo_url" :alt="team.name" @error="$el.style.display = 'none'"></template></div><div class="row-person"><h3 x-text="team.name"></h3><p x-text="team.school || 'Peserta kompetisi'"></p><div class="vote-bar"><span :style="{ width: Math.min(100, (team.votes / (teams[0]?.votes || 1)) * 100) + '%' }"></span></div></div><div class="row-votes"><strong x-text="formatVotes(team.votes)"></strong><small>vote</small></div>{% if event.is_voting_open %}<a :href="'/events/{{ event.id }}/vote/' + encodeURIComponent(team.id)" class="row-action" :aria-label="'Dukung ' + team.name">{{ icon('arrow') }}</a>{% endif %}</article></template></div>
+  </div>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="/static/js/leaderboard.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}

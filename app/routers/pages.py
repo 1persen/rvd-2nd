@@ -19,6 +19,7 @@ from app.repositories import event as event_repo
 from app.repositories import payment as payment_repo
 from app.repositories import system_settings as settings_repo
 from app.repositories import team as team_repo
+from app.enums.education_level import EDUCATION_LABELS, LEVEL_ORDER
 from app.services import event_service, leaderboard_service
 from app.services.public_page_cache import cache_discovery_page
 
@@ -208,6 +209,60 @@ async def vote_page(
         {
             "event": _event_dict(event),
             "team": _team_dict(team, votes, rank),
+        },
+    )
+
+
+@router.get("/leaderboard")
+async def leaderboard_list(request: Request, session: AsyncSession = Depends(get_db)):
+    all_events_raw = [ev for ev in await event_repo.list_events(session, limit=100)
+                      if ev.status not in (EventStatus.DRAFT, EventStatus.ARCHIVED)]
+    return templates.TemplateResponse(
+        request,
+        "pages/leaderboard.html",
+        {
+            "all_events": [_event_dict(ev) for ev in all_events_raw],
+            "event": None,
+            "leaderboard": [],
+            "available_levels": [],
+            "level": None,
+            "labels": EDUCATION_LABELS,
+        },
+    )
+
+
+@router.get("/leaderboard/{event_slug}")
+async def leaderboard_detail(
+    request: Request,
+    event_slug: str,
+    level: str | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+):
+    event = await event_repo.get_by_slug(session, event_slug)
+    if not event:
+        candidate = await event_repo.get_event(session, event_slug)
+        if candidate and candidate.deleted_at is None:
+            event = candidate
+    if not event or event.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+
+    available_levels = await team_repo.get_available_levels(session, event.id)
+    available_levels = sorted(set(available_levels), key=lambda x: LEVEL_ORDER.get(x, 99))
+    chosen_level = level if level in available_levels else None
+    if available_levels and chosen_level is None:
+        chosen_level = available_levels[0]
+    entries = (await leaderboard_service.get_leaderboard(session, event.id, level=chosen_level))["entries"] if available_levels else []
+
+    return templates.TemplateResponse(
+        request,
+        "pages/leaderboard.html",
+        {
+            "event": _event_dict(event),
+            "all_events": [],
+            "leaderboard": entries,
+            "available_levels": available_levels,
+            "level": chosen_level,
+            "labels": EDUCATION_LABELS,
         },
     )
 

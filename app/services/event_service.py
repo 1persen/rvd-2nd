@@ -18,8 +18,15 @@ from app.schemas.team import TeamCreate, TeamUpdate
 from app.utils import new_id
 import re
 
-ALLOWED_EDUCATION_LEVELS = {"smp-mts", "sma-smk"}
-ALLOWED_EVENT_CATEGORIES = {"sma-smk-ma", "smp-mts", "sd-mi", "purna-klub"}
+from app.enums.education_level import (
+    ALLOWED_EDUCATION_LEVELS,
+    ALLOWED_EVENT_CATEGORIES,
+    LEVEL_ORDER,
+)
+
+# Backwards-compatible aliases kept for existing callers/tests.
+ALLOWED_EDUCATION_LEVELS = ALLOWED_EDUCATION_LEVELS
+ALLOWED_EVENT_CATEGORIES = ALLOWED_EVENT_CATEGORIES
 
 def _slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")

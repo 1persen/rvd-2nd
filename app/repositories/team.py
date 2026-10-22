@@ -7,6 +7,7 @@ from typing import Optional, Sequence
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.enums.education_level import LEVEL_ORDER
 from app.models.team import Team
 from app.models.event import Event
 
@@ -92,6 +93,6 @@ async def get_available_levels(session: AsyncSession, event_id: str) -> list[str
     result = await session.execute(stmt)
     levels = [row[0] for row in result.all() if row[0]]
     # Keep consistent order
-    order = {"smp-mts": 0, "sma-smk": 1}
+    order = LEVEL_ORDER
     levels_sorted = sorted(set(levels), key=lambda x: order.get(x, 99))
     return levels_sorted

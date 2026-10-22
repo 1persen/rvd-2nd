@@ -7,6 +7,7 @@
     <nav class="desktop-nav" aria-label="Navigasi utama">
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Home</a>
       <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
+      <a href="/leaderboard" {% if request.url.path.startswith('/leaderboard') %}aria-current="page"{% endif %}>Peringkat</a>
       <a href="/support" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
     </nav>
     <a href="/admin/login" class="organizer-link">Masuk dashboard panitia</a>

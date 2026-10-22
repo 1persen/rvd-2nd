@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("path", ["/", "/events", "/support", "/admin/login"])
+@pytest.mark.parametrize("path", ["/", "/events", "/leaderboard", "/support", "/admin/login"])
 async def test_public_pages_render(path):
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(path)
@@ -23,10 +23,10 @@ async def test_public_pages_render(path):
 
 
 @pytest.mark.asyncio
-async def test_standalone_leaderboard_page_is_removed():
+async def test_leaderboard_page_renders():
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/leaderboard")
-    assert response.status_code == 404
+    assert response.status_code == 200
 
 
 def test_every_template_named_in_routers_exists():
