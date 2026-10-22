@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("path", ["/", "/events", "/leaderboard", "/support", "/admin/login"])
+@pytest.mark.parametrize("path", ["/", "/events", "/support", "/admin/login"])
 async def test_public_pages_render(path):
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get(path)
@@ -23,22 +23,10 @@ async def test_public_pages_render(path):
 
 
 @pytest.mark.asyncio
-async def test_leaderboard_page_honours_event_id(db_session):
-    older = await event_service.create_event(
-        db_session,
-        event_service.EventCreate(name=f"Older {uuid.uuid4().hex[:8]}", status=EventStatus.VOTING_OPEN, price_per_vote=1000),
-    )
-    await event_service.create_event(  # newer, so it is the "active" fallback
-        db_session,
-        event_service.EventCreate(name=f"Newer {uuid.uuid4().hex[:8]}", status=EventStatus.VOTING_OPEN, price_per_vote=1000),
-    )
-    await db_session.commit()
-
+async def test_standalone_leaderboard_page_is_removed():
     async with httpx.AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get("/leaderboard", params={"event_id": older.id})
-
-    assert response.status_code == 200
-    assert older.name in response.text
+        response = await client.get("/leaderboard")
+    assert response.status_code == 404
 
 
 def test_every_template_named_in_routers_exists():

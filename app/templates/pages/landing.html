@@ -1,29 +1,77 @@
 {% extends "public_base.html" %}
-{% from "macros/public.html" import icon, podium %}
+{% from "macros/public.html" import icon %}
 {% block title %}Raja Voting Digital{% endblock %}
 {% block content %}
-<section class="landing-slide" data-slide="hero">
-  <div class="landing-section-inner section-visible">
-    <div class="home-hero"><div class="shell hero-grid">
-      <div class="hero-copy"><span class="eyebrow">{{ icon('spark') }}  </span><h1>Platform Voting Digital</h1><p>Untuk Berbagai Event</p><div class="hero-actions"><a href="/events" class="button button-gold">Lihat Event {{ icon('arrow') }}</a><a href="/leaderboard" class="text-link">Lihat Peringkat {{ icon('arrow') }}</a></div><div class="hero-assurance"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Simpel & Transparan</span></div></div>
-      {% include "partials/trophy_art.html" %}
+<div class="home-page">
+  <section class="landing-slide home-hero" data-slide="hero">
+    <div class="landing-section-inner section-visible">
+      <div class="shell home-hero-inner">
+        <div class="home-hero-copy">
+          <p class="home-hero-kicker"><span></span> RAJA VOTING DIGITAL</p>
+          <h1>Panggung untuk<br><em>setiap dukungan.</em></h1>
+          <p class="home-hero-lead">Pilih kompetisi, temukan peserta favorit, lalu dukung mereka lewat voting online yang mudah dan transparan.</p>
+          <div class="hero-actions"><a href="/events" class="button button-gold">Temukan event {{ icon('arrow') }}</a><a href="#event-unggulan" class="home-secondary-link">Lihat event unggulan</a></div>
+          <div class="home-proof-line"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Hasil voting terbuka</span></div>
+        </div>
+        <div class="home-hero-visual">
+          {% include "partials/trophy_art.html" %}
+          {% if event %}<a class="hero-event-chip" href="/events?event_id={{ event.id }}"><span class="hero-event-chip__status"><i></i>{{ 'Voting berlangsung' if event.is_voting_open else event.status }}</span><strong>{{ event.name }}</strong><span>Buka event {{ icon('arrow') }}</span></a>{% endif %}
+        </div>
+      </div>
     </div>
+  </section>
+
+  <nav class="home-product-nav shell" aria-label="Fitur Raja Voting Digital" x-data="{ active: 'voting' }">
+    <div class="home-product-track" role="group" aria-label="Layanan RVD">
+      <span class="home-product-indicator is-voting" aria-hidden="true"></span>
+      <a href="/events" class="home-product-item" :class="{ 'is-active': active === 'voting' }" aria-current="page">{{ icon('trophy') }}<span>Voting</span></a>
+      <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('calendar') }}<span>Ticketing</span></span><small>Segera hadir</small></div>
+      <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('grid') }}<span>Marketplace</span></span><small>Segera hadir</small></div>
+      <div class="home-product-item is-upcoming"><span class="product-item-label">{{ icon('wallet') }}<span>Paket</span></span><small>Segera hadir</small></div>
     </div>
-  </div>
-</section>
-<section class="shell featured-section">
-  {% if event %}
-  <div class="featured-event">
-    <div class="event-artwork">{% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" onerror="this.style.display='none'">{% endif %}<span class="event-art-kicker"><br>SAGARA SAKTI</span><span class="art-stamp">{{ icon('spark') }} Tingkat SMK/SMA/MA Sederajat.</span></div>
-    <div class="featured-content"><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><span></span>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span><h3>{{ event.name }}</h3><p>{{ event.description or 'SMK Muhammadiyah 3 Klaten Utara Se- Jawa Tengah' }}</p>
-    <p class="event-service-desc">Ayo Vote Tim Favoritmu.</p>
-    {% if event.price_per_vote %}<p class="event-price-info">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} per vote</p>{% endif %}
-    {% if event.is_voting_open and event.closes_at %}<div class="countdown" x-data='eventCountdown({{ event | tojson }})'><span>{{ icon('clock') }} Voting berakhir dalam</span><div><b x-text="countdown.days">00</b><small>hari</small><b x-text="countdown.hours">00</b><small>jam</small><b x-text="countdown.minutes">00</b><small>menit</small></div></div>{% endif %}
-    <a href="/events?event_id={{ event.id }}" class="button button-dark">Lihat Peserta {{ icon('arrow') }}</a></div>
-  </div>
-  {% else %}<div class="empty-state">{{ icon('spark') }}<h3>Cerita berikutnya segera hadir.</h3><p>Event akan tampil di sini setelah dipublikasikan.</p></div>{% endif %}
-</section>
-<section id="cara-voting" class="shell how-section"><div class="section-heading"><div><h2>Cara Vote<br><span class="eyebrow">4 Langkah Simple dan Mudah</span></h2></div></div><div class="steps-grid">
+  </nav>
+
+  <section id="event-unggulan" class="shell home-featured-section">
+    <div class="home-section-heading"><div><p class="eyebrow">PILIH PANGGUNG BERIKUTNYA</p><h2>Event yang sedang berjalan</h2></div><a class="home-section-link" href="/events">Semua event {{ icon('arrow') }}</a></div>
+    {% if event %}
+    <article class="home-featured-event">
+      <a href="/events?event_id={{ event.id }}" class="home-event-poster" aria-label="Buka event {{ event.name }}">
+        {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" loading="lazy" onerror="this.style.display='none'">{% endif %}
+        <span class="home-poster-top"><span class="home-poster-mark">RVD</span><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span></span>
+        <span class="home-poster-title">{{ event.name }}</span><span class="home-poster-bottom">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</span>
+      </a>
+      <div class="home-event-details">
+        <p class="eyebrow">DUKUNG PESERTA FAVORITMU</p>
+        <h3>{{ event.name }}</h3>
+        <p>{{ event.description or 'Temukan peserta, berikan dukungan, dan ikuti perolehan suara di halaman event.' }}</p>
+        {% if event.price_per_vote %}<p class="home-event-price">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} <span>per vote</span></p>{% endif %}
+        {% if event.is_voting_open and event.closes_at %}<div class="countdown" x-data='eventCountdown({{ event | tojson }})'><span>{{ icon('clock') }} Voting berakhir dalam</span><div><b x-text="countdown.days">00</b><small>hari</small><b x-text="countdown.hours">00</b><small>jam</small><b x-text="countdown.minutes">00</b><small>menit</small></div></div>{% endif %}
+        <a href="/events?event_id={{ event.id }}" class="button button-dark">Jelajahi peserta {{ icon('arrow') }}</a>
+      </div>
+    </article>
+    {% else %}
+    <div class="home-no-event"><div><p class="eyebrow">BELUM ADA EVENT AKTIF</p><h3>Panggung berikutnya sedang disiapkan.</h3><p>Event akan tampil di sini setelah dipublikasikan.</p></div><a href="/events" class="button button-dark">Lihat semua event {{ icon('arrow') }}</a></div>
+    {% endif %}
+  </section>
+
+  {% if all_events|length > 1 and event %}
+  <section class="home-more-events">
+    <div class="shell">
+      <div class="home-section-heading"><div><p class="eyebrow">KOMPETISI LAINNYA</p><h2>Temukan event pilihanmu</h2></div><a class="home-section-link" href="/events">Jelajahi semua {{ icon('arrow') }}</a></div>
+      {% set other_events = all_events|rejectattr('id', 'equalto', event.id)|list %}
+      <div class="home-event-list">
+        {% for ev in other_events[:4] %}
+        <a class="home-event-row" href="/events?event_id={{ ev.id }}"><span class="home-event-row__date">{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
+        {% endfor %}
+      </div>
+      {% if other_events|length > 4 %}<a class="home-event-list-more" href="/events">Lihat {{ other_events|length - 4 }} event lainnya {{ icon('arrow') }}</a>{% endif %}
+    </div>
+  </section>
+  {% endif %}
+
+  <section id="layanan-mendatang" class="shell home-how-section">
+    <div class="home-section-heading"><div><p class="eyebrow">MULAI DENGAN MUDAH</p><h2>Bagaimana voting bekerja</h2></div><p>Ikuti empat langkah dari memilih event hingga dukungan tercatat.</p></div>
+    <div class="steps-grid">
 {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
 <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
 {% endfor %}</div></section>
@@ -41,4 +89,4 @@
 </section> -->
 {% endif %}
 {% endblock %}
-{% block scripts %}<script src="/static/js/leaderboard.js?v={{ tailwind_css_version | default("preview", true) }}"></script><script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}

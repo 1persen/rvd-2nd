@@ -43,7 +43,7 @@ def request(path='/'):
                     'server': ('test', 80)})
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard', 'vote', 'voting_closed'])
+@pytest.mark.parametrize('name', ['landing', 'events', 'vote', 'voting_closed'])
 def test_public_templates_render(name):
     event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
              'is_voting_open': True, 'status': 'Voting Open', 'banner_url': None,
@@ -56,6 +56,13 @@ def test_public_templates_render(name):
     assert '/static/images/raja-voting-logo.png' in html
     assert 'via Midtrans' not in html
     assert 'id="main-content"' in html
+    if name == 'landing':
+        assert 'class="public-header shell"' in html
+        assert 'home-product-track' in html
+        assert 'class="home-product-item is-upcoming"' in html
+        assert 'Temukan event' in html
+        assert 'href="/events"' in html
+        assert '<h1>Platform Voting Digital</h1>' not in html
 
 
 def test_support_template_renders_without_placeholders():
@@ -76,7 +83,7 @@ def test_support_template_renders_without_placeholders():
     assert 'Kebijakan Privasi' not in html
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard'])
+@pytest.mark.parametrize('name', ['landing', 'events'])
 def test_public_empty_states_render(name):
     html = pages.templates.get_template(f'pages/{name}.html').render(
         request=request(), event=None, all_events=[], leaderboard=[])
