@@ -52,7 +52,9 @@ const zlib = require('node:zlib');
       } else {
         assert.equal(await page.locator('.desktop-nav').isVisible(), false, `desktop nav hidden at ${width}px`);
         await page.getByRole('button', { name: 'Buka navigasi', exact: true }).click();
-        assert.equal(await page.locator('#mobile-nav').isVisible(), true, `mobile nav opens at ${width}px`);
+        await page.locator('#mobile-nav').waitFor({ state: 'visible' });
+        const mobileNav = await page.locator('#mobile-nav').boundingBox();
+        assert.ok(mobileNav.width >= width - 80, `mobile nav width at ${width}px: ${JSON.stringify(mobileNav)}`);
         assert.equal(await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).isVisible(), true);
       }
       await capture('landing', width);
