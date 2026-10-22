@@ -657,7 +657,8 @@ html.dark .landing-slide .absolute.inset-0.flex.flex-col.justify-end .hero-botto
 .public-site .support-hero .lead { font-size: 14px; line-height: 1.8; color: var(--muted); max-width: 68ch; }
 .public-site .support-section { padding-block: 40px; border-top: 1px solid var(--line); }
 .public-site .support-section:first-child { border-top: 0; }
-.public-site .support-section .section-heading h2 { font-size: 32px; line-height: 1.2; margin-top: 10px; }
+.public-site .support-section .section-heading h2 { font-size: 32px; line-height: 1.2; margin-top: 10px; display: flex; align-items: baseline; gap: 12px; }
+.public-site .support-section-number { color: #8b744a; font: 700 13px Rajdhani, sans-serif; letter-spacing: .12em; }
 .public-site .support-section .section-heading { margin-bottom: 24px; }
 .public-site .support-content { max-width: 720px; }
 .public-site .support-content p { font-size: 14px; line-height: 1.8; color: var(--ink); margin-bottom: 16px; }
