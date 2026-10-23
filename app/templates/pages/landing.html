@@ -18,7 +18,7 @@
         </div>
         <div class="home-hero-visual">
           {% include "partials/trophy_art.html" %}
-          {% if event %}<a class="hero-event-chip" href="/events?event_id={{ event.id }}"><span class="hero-event-chip__status"><i></i>{{ 'Voting berlangsung' if event.is_voting_open else event.status }}</span><strong>{{ event.name }}</strong><span>Buka event {{ icon('arrow') }}</span></a>{% endif %}
+          {% if event %}<a class="hero-event-chip" href="{{ event.invite_path }}"><span class="hero-event-chip__status"><i></i>{{ 'Voting berlangsung' if event.is_voting_open else event.status }}</span><strong>{{ event.name }}</strong><span>Buka event {{ icon('arrow') }}</span></a>{% endif %}
         </div>
       </div>
     </div>
@@ -38,7 +38,7 @@
     <div class="home-section-heading"><div><p class="eyebrow">PILIH PANGGUNG BERIKUTNYA</p><h2>Event yang sedang berjalan</h2></div><a class="home-section-link" href="/events">Semua event {{ icon('arrow') }}</a></div>
     {% if event %}
     <article class="home-featured-event">
-      <a href="/events?event_id={{ event.id }}" class="home-event-poster" aria-label="Buka event {{ event.name }}">
+      <a href="{{ event.invite_path }}" class="home-event-poster" aria-label="Buka event {{ event.name }}">
         {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" loading="lazy" onerror="this.style.display='none'">{% endif %}
         <span class="home-poster-top"><span class="home-poster-mark">RVD</span><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span></span>
         <span class="home-poster-title">{{ event.name }}</span><span class="home-poster-bottom">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</span>
@@ -49,7 +49,7 @@
         <p>{{ event.description or 'Temukan peserta, berikan dukungan, dan ikuti perolehan suara di halaman event.' }}</p>
         {% if event.price_per_vote %}<p class="home-event-price">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} <span>per vote</span></p>{% endif %}
         {% if event.is_voting_open and event.closes_at %}<div class="countdown" x-data='eventCountdown({{ event | tojson }})'><span>{{ icon('clock') }} Voting berakhir dalam</span><div><b x-text="countdown.days">00</b><small>hari</small><b x-text="countdown.hours">00</b><small>jam</small><b x-text="countdown.minutes">00</b><small>menit</small></div></div>{% endif %}
-        <a href="/events?event_id={{ event.id }}" class="button button-dark">Jelajahi peserta {{ icon('arrow') }}</a>
+        <a href="{{ event.invite_path }}" class="button button-dark">Jelajahi peserta {{ icon('arrow') }}</a>
       </div>
     </article>
     {% else %}
@@ -64,7 +64,7 @@
       {% set other_events = all_events|rejectattr('id', 'equalto', event.id)|list %}
       <div class="home-event-list">
         {% for ev in other_events[:4] %}
-        <a class="home-event-row" href="/events?event_id={{ ev.id }}"><span class="home-event-row__date">{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
+        <a class="home-event-row" href="{{ ev.invite_path }}"><span class="home-event-row__date">{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
         {% endfor %}
       </div>
       {% if other_events|length > 4 %}<a class="home-event-list-more" href="/events">Lihat {{ other_events|length - 4 }} event lainnya {{ icon('arrow') }}</a>{% endif %}

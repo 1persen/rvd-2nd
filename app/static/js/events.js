@@ -2,30 +2,35 @@ function eventsPage(event, allEvents) {
   return {
     event: event || null,
     allEvents: allEvents || [],
-    tab: 'peserta',
+    tab: 'beranda',
     eventQuery: '', openOnly: false, participantQuery: '',
     dataPeserta: [],
-    dataLeaderboard: [],
-    dataDonatur: [],
+    dataKlasemen: [],
+    dataSultan: [],
     participantPage: 1,
     participantsPerPage: 12,
     loadedTabs: {},
-    loading: { peserta: false, leaderboard: false, donatur: false },
-    error: { peserta: null, leaderboard: null, donatur: null },
+    loading: { beranda: false, peserta: false, klasemen: false, sultan: false },
+    error: { beranda: null, peserta: null, klasemen: null, sultan: null },
     isTransitioning: false,
+    now: Date.now(),
+    countdownTimer: null,
+    qrUrl: '',
+    qrOpen: false,
 
     init() {
-      const params = new URLSearchParams(window.location.search);
-      const eventId = params.get('event_id');
-      if (eventId) {
-        const found = this.allEvents.find(e => e.id == eventId);
-        if (found) {
-          this.event = found;
-        } else {
-          this.event = null;
+      // SSR /invite/{slug} sudah mengirim event; /events?event_id= dicari di klien.
+      if (!this.event) {
+        const params = new URLSearchParams(window.location.search);
+        const eventId = params.get('event_id');
+        if (eventId) {
+          this.event = this.allEvents.find(e => e.id == eventId) || null;
         }
-      } else {
-        this.event = null;
+      }
+
+      const hash = (window.location.hash || '').replace('#', '');
+      if (['beranda', 'peserta', 'klasemen', 'sultan'].includes(hash)) {
+        this.tab = hash;
       }
 
       window.addEventListener('popstate', () => {
@@ -33,14 +38,10 @@ function eventsPage(event, allEvents) {
         const eventId = params.get('event_id');
         if (eventId) {
           const found = this.allEvents.find(e => e.id == eventId);
-          if (found) {
-            this.switchEvent(found, false);
-          } else {
-            this.event = null;
-          }
-        } else {
-          this.event = null;
+          if (found) this.switchEvent(found, false);
+          return;
         }
+        if (!window.location.pathname.startsWith('/invite/')) this.event = null;
       });
 
       this.$watch('tab', (value) => {
@@ -49,6 +50,48 @@ function eventsPage(event, allEvents) {
 
       if (this.event) {
         this.fetchIfNeeded(this.tab);
+        this.startCountdown();
+        this.generateQrUrl();
+      }
+    },
+
+    destroy() {
+      if (this.countdownTimer) clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    },
+
+    startCountdown() {
+      if (this.countdownTimer) clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+      if (!this.event || !this.event.opens_at) return;
+      this.now = Date.now();
+      this.countdownTimer = setInterval(() => {
+        this.now = Date.now();
+      }, 1000);
+    },
+
+    get countdown() {
+      if (!this.event || !this.event.opens_at) return null;
+      const diff = new Date(this.event.opens_at).getTime() - this.now;
+      if (!Number.isFinite(diff) || diff <= 0) return null;
+      const total = Math.floor(diff / 1000);
+      return {
+        days: Math.floor(total / 86400),
+        hours: Math.floor((total % 86400) / 3600),
+        minutes: Math.floor((total % 3600) / 60),
+        seconds: total % 60,
+      };
+    },
+
+    setTab(tabName) {
+      this.tab = tabName;
+      // Pathname event tidak berubah; hash hanya penanda tab.
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState(
+          null,
+          '',
+          window.location.pathname + window.location.search + '#' + tabName
+        );
       }
     },
 
@@ -61,37 +104,45 @@ function eventsPage(event, allEvents) {
         this.event = ev;
 
         if (updateUrl) {
-          history.pushState({}, '', `/events?event_id=${ev.id}`);
+          history.pushState({}, '', ev.invite_path || `/events?event_id=${ev.id}`);
         }
 
-        this.tab = 'peserta';
+        this.tab = 'beranda';
         this.loadedTabs = {};
         this.dataPeserta = [];
-        this.dataLeaderboard = [];
-        this.dataDonatur = [];
-        this.error = { peserta: null, leaderboard: null, donatur: null };
+        this.dataKlasemen = [];
+        this.dataSultan = [];
+        this.error = { peserta: null, klasemen: null, sultan: null };
         this.participantPage = 1;
         this.participantQuery = '';
 
-        this.fetchIfNeeded('peserta');
+        this.startCountdown();
+        this.generateQrUrl();
 
         this.isTransitioning = false;
       }, 300);
     },
 
+    generateQrUrl() {
+      if (!this.event) return;
+      const invitePath = this.event.invite_path || window.location.pathname;
+      const fullUrl = window.location.origin + invitePath;
+      this.qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullUrl)}`;
+    },
+
     async fetchIfNeeded(tabName) {
-      if (!this.event || this.loadedTabs[tabName]) return;
+      if (!this.event || tabName === 'beranda' || this.loadedTabs[tabName]) return;
 
       const endpoints = {
         peserta: `/api/v1/events/${this.event.id}/teams`,
-        leaderboard: `/api/v1/leaderboard?event_id=${this.event.id}`,
-        donatur: `/api/v1/events/${this.event.id}/donors`
+        klasemen: `/api/v1/leaderboard?event_id=${this.event.id}`,
+        sultan: `/api/v1/events/${this.event.id}/donors`
       };
 
       const dataMap = {
         peserta: 'dataPeserta',
-        leaderboard: 'dataLeaderboard',
-        donatur: 'dataDonatur'
+        klasemen: 'dataKlasemen',
+        sultan: 'dataSultan'
       };
 
        try {
@@ -156,8 +207,8 @@ function eventsPage(event, allEvents) {
     get currentData() {
       return {
         peserta: this.dataPeserta,
-        leaderboard: this.dataLeaderboard,
-        donatur: this.dataDonatur
+        klasemen: this.dataKlasemen,
+        sultan: this.dataSultan
       }[this.tab];
     },
 

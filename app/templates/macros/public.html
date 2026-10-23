@@ -1,6 +1,7 @@
 {% macro icon(name, class='') -%}
 <svg class="icon {{ class }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-{% if name == 'crown' %}<path d="m3 6 4 4 5-7 5 7 4-4-2 12H5L3 6Z"/><path d="M7 21h10M5 14h14"/>
+{% if name == 'home' %}<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/>
+{% elif name == 'crown' %}<path d="m3 6 4 4 5-7 5 7 4-4-2 12H5L3 6Z"/><path d="M7 21h10M5 14h14"/>
 {% elif name == 'trophy' %}<path d="M8 3h8v7a4 4 0 0 1-8 0V3Zm0 2H4v3a4 4 0 0 0 4 4m8-7h4v3a4 4 0 0 1-4 4M12 14v5m-5 2h10l-1-2H8l-1 2Z"/>
 {% elif name == 'arrow' %}<path d="M4 12h16m-6-6 6 6-6 6"/>
 {% elif name == 'star' %}<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/>

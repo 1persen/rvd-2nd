@@ -74,6 +74,7 @@ def _event_dict(event) -> dict:
         "id": event.id,
         "name": event.name,
         "slug": getattr(event, "slug", None),
+        "invite_path": f"/invite/{getattr(event, 'slug', None) or event.id}",
         "status": status,
         "status_code": event.status.value,
         "is_voting_open": is_voting_open,
@@ -167,6 +168,39 @@ async def events_list(
             "event": _event_dict(event) if event else None,
             "all_events": events_with_stats,
         },
+    )
+
+
+@router.get("/invite/{event_slug}")
+@cache_discovery_page
+async def invite_event(
+    request: Request,
+    event_slug: str,
+    session: AsyncSession = Depends(get_db),
+):
+    """Portal event: satu route, tab internal dikelola state frontend."""
+    event = await event_repo.get_by_slug(session, event_slug)
+    if not event:
+        candidate = await event_repo.get_event(session, event_slug)
+        if candidate and candidate.deleted_at is None:
+            event = candidate
+    if not event or event.deleted_at is not None:
+        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+
+    team_count, total_votes = (await team_repo.stats_by_event(session, [event.id])).get(
+        event.id, (0, 0)
+    )
+    donor_counts = await payment_repo.count_donors_by_event(session, [event.id])
+    payload = _event_with_stats_dict(
+        event,
+        total_teams=team_count,
+        total_votes=total_votes,
+        total_supporters=donor_counts.get(event.id, 0),
+    )
+    return templates.TemplateResponse(
+        request,
+        "pages/events.html",
+        {"event": payload, "all_events": [payload]},
     )
 
 

@@ -3,7 +3,7 @@
 {% block title %}Dukung {{ team.name }} | Raja Voting Digital{% endblock %}
 {% block content %}
 <div class="rv-public page-shell rv-page" x-data='votePage({{ team | tojson }}, {{ event | tojson }}, "/api/v1/payments", "/api/v1/payments")'>
-  <a href="/events?event_id={{ event.id }}" class="btn btn-quiet rv-back">← Peserta event</a>
+  <a href="{{ event.invite_path }}" class="btn btn-quiet rv-back">← Peserta event</a>
   <div class="rv-detail-heading"><div><p class="rv-kicker">{{ event.name }}</p><h1 class="page-heading">Berikan dukunganmu.</h1><p class="lead">Dukungan untuk {{ team.name }}. Periksa pilihanmu sebelum membayar.</p></div></div>
   <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
   <div class="rv-checkout">
