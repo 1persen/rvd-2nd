@@ -10,7 +10,7 @@
 {% else %}
 <section class="shell event-content">
   <a class="back-link" href="/leaderboard">← Daftar event</a>
-  <div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>{{ event.name }}</h1></div><a href="/events?event_id={{ event.id }}" class="button button-outline">Lihat Peserta {{ icon('arrow') }}</a></div>
+  <div class="section-heading"><div><span class="eyebrow">SETIAP SUARA MEMBUAT PERBEDAAN</span><h1>{{ event.name }}</h1></div><a href="{{ event.invite_path }}" class="button button-outline">Lihat Peserta {{ icon('arrow') }}</a></div>
   {% if available_levels|length > 1 %}
   <nav class="event-tabs" aria-label="Kategori peringkat"><template></template>
     <div class="category-tabs">{% for lvl in available_levels %}<a href="/leaderboard/{{ event.slug or event.id }}?level={{ lvl }}" class="button {% if level == lvl %}button-dark{% else %}button-outline{% endif %}">{{ labels.get(lvl, lvl) }}</a>{% endfor %}</div>
