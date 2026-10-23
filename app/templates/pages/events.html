@@ -1,4 +1,4 @@
-{% extends "public_base.html" %}
+{% extends "event_base.html" %}
 {% from "macros/public.html" import icon, podium, stage_header %}
 {% block title %}{{ event.name if event else "Event" }} — Raja Voting Digital{% endblock %}
 {% block content %}
@@ -37,6 +37,10 @@
           </div>
         </div>
       </header>
+
+      {% if payment_sandbox_enabled() %}
+      <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
+      {% endif %}
 
       <!-- QR code panel -->
       <div x-show="qrOpen" x-cloak class="qr-panel" role="dialog" aria-modal="true" aria-label="QR code event">

@@ -957,9 +957,10 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, #fff 85%, transparent);
+  background: #fff;
   border-bottom: 1px solid var(--line);
   backdrop-filter: blur(12px);
+  box-shadow: 0 1px 3px rgba(20, 43, 50, 0.08);
 }
 .public-site .event-header-inner {
   display: flex;
@@ -1068,6 +1069,37 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
 .public-site .event-actions .button-outline .icon {
   width: 16px;
   height: 16px;
+}
+
+/* Sandbox banner: jangan tumpang tindih dengan event header yang sticky */
+.public-site .sandbox-banner {
+  margin-top: 0;
+}
+.public-site .event-header + .sandbox-banner {
+  margin-top: 0;
+}
+
+/* Event content: padding atas agar tidak tertutup header sticky */
+.public-site .event-content {
+  padding-top: 76px;
+  padding-bottom: 20px;
+}
+
+/* Mobile: header lebih pendek, sesuaikan padding */
+@media (max-width: 700px) {
+  .public-site .event-header {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .public-site .event-header-inner {
+    padding: 8px 0;
+  }
+  .public-site .event-content {
+    padding-top: 60px;
+  }
+  .public-site .event-tabs {
+    display: none;
+  }
 }
 
 /* ===== QR code panel ===== */
@@ -1219,7 +1251,7 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
     display: none;
   }
   .public-site .event-content {
-    padding-top: 8px;
+    padding-top: 76px;
   }
 }
 
