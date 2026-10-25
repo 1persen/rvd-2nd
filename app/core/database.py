@@ -17,6 +17,15 @@ from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
+# Normalize the runtime DB URL to an async driver. Supabase/Vercel may provide
+# a plain `postgresql://` (or psycopg2) URL; the async engine requires asyncpg.
+_db_url = settings.DATABASE_URL
+if _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgresql+psycopg2://"):
+    _db_url = _db_url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+
+
 class Base(DeclarativeBase):
     """Declarative base for all ORM models."""
 
@@ -39,7 +48,7 @@ logging.getLogger("app.core.database").warning(
 # SQLite uses NullPool, which rejects the queue-pool sizing arguments.
 # Supabase transaction pooler (PgBouncer) does not support prepared statements,
 # so disable asyncpg's statement cache when running against it.
-_is_postgres = settings.DATABASE_URL.startswith("postgresql")
+_is_postgres = _db_url.startswith("postgresql")
 _connect_args = {
     "timeout": 10,  # connect timeout
     "command_timeout": settings.DB_STATEMENT_TIMEOUT_SECONDS,
@@ -64,7 +73,7 @@ _pool_sizing = {} if settings.is_sqlite else {
 }
 
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    _db_url,
     echo=settings.DEBUG and not settings.is_sqlite,
     **_pool_sizing,
 )
