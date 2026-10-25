@@ -84,7 +84,7 @@
 .public-site .button { display:inline-flex; align-items:center; justify-content:center; gap:22px; min-height:49px; padding:13px 23px; border:1px solid transparent; border-radius:7px; font-size:13px; font-weight:600; transition:transform .2s,box-shadow .2s,background .2s; }
 .public-site .button:hover { transform:translateY(-2px); box-shadow:0 7px 22px #142b3214; }
 .public-site .button .icon { width:17px; height:17px; }
-.public-site .button-dark { background:var(--ink); color:#fff; }
+.public-site .button-dark { background:#17343b; color:#fff; }
 .public-site .button-gold { background:linear-gradient(110deg,#f2dfb2,#dbb977); color:#283330; border-color:#ecce94; }
 .public-site .button-outline { border-color:#cbd1c9; }
 .public-site .text-link { display:inline-flex; align-items:center; gap:15px; font-size:13px; font-weight:600; }
