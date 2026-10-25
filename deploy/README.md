@@ -26,3 +26,11 @@ The current release passed 70 Python checks on the isolated server database and 
 Production mock payments remain disabled. New invoices use Duitku; see the [current payment configuration runbook](auto-deploy.md#duitku-configuration). Without gateway credentials, checkout stays unavailable. Sandbox must be visibly labeled and tested on a dedicated test event; never run demo seeding or load tests against production.
 
 The previous same-host restore drill succeeded. The fresh visual-release backup has a validated archive listing but was not independently restored. Scheduled/off-site backups are still outstanding. Earlier high-volume independent-connection tests exposed unresolved transport limits; this visual release does not claim a new throughput SLA or repeat sustained/distributed load testing.
+
+## Vercel (Hobby) migration
+- Entry point: api/index.py
+- Config: vercel.json (maxDuration 10s)
+- DB: Supabase pooler port 6543; DB_POOL_SIZE=1, DB_MAX_OVERFLOW=0
+- Redis: Upstash rediss://
+- Leaderboard polling 10s (no SSE)
+- Migrations manual: alembic upgrade head
