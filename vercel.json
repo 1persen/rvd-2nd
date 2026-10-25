@@ -1,13 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" }
-  ],
+  "functions": {
+    "api/index.py": { "maxDuration": 10, "memory": 1024 }
+  },
   "routes": [
     { "src": "/static/(.*)", "dest": "/app/static/$1" },
     { "src": "/(.*)", "dest": "api/index.py" }
-  ],
-  "functions": {
-    "api/index.py": { "maxDuration": 10, "memory": 1024 }
-  }
+  ]
 }
