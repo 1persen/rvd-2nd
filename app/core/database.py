@@ -37,21 +37,30 @@ logging.getLogger("app.core.database").warning(
 )
 
 # SQLite uses NullPool, which rejects the queue-pool sizing arguments.
+# Supabase transaction pooler (PgBouncer) does not support prepared statements,
+# so disable asyncpg's statement cache when running against it.
+_is_postgres = settings.DATABASE_URL.startswith("postgresql")
+_connect_args = {
+    "timeout": 10,  # connect timeout
+    "command_timeout": settings.DB_STATEMENT_TIMEOUT_SECONDS,
+    "server_settings": {
+        "statement_timeout": str(settings.DB_STATEMENT_TIMEOUT_SECONDS * 1000),
+        # A crashed request must not leave a row lock held forever.
+        "idle_in_transaction_session_timeout": "30000",
+    },
+}
+if _is_postgres:
+    # Required for Supabase/Upstash-style transaction poolers (PgBouncer).
+    _connect_args["statement_cache_size"] = 0
+    _connect_args["prepared_statement_cache_size"] = 0
+
 _pool_sizing = {} if settings.is_sqlite else {
     "pool_size": settings.DB_POOL_SIZE,
     "max_overflow": settings.DB_MAX_OVERFLOW,
     "pool_timeout": settings.DB_POOL_TIMEOUT,
     "pool_recycle": 1800,
     "pool_pre_ping": True,
-    "connect_args": {
-        "timeout": 10,  # connect timeout
-        "command_timeout": settings.DB_STATEMENT_TIMEOUT_SECONDS,
-        "server_settings": {
-            "statement_timeout": str(settings.DB_STATEMENT_TIMEOUT_SECONDS * 1000),
-            # A crashed request must not leave a row lock held forever.
-            "idle_in_transaction_session_timeout": "30000",
-        },
-    },
+    "connect_args": _connect_args,
 }
 
 engine = create_async_engine(

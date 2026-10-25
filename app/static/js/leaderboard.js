@@ -109,13 +109,16 @@ function scoreboard(initial, opts = {}) {
     init() {
       if (!this._live) return;
       if (this._eventId) {
-        this._connectSSE();
-        this._pollTimer = setInterval(() => this._poll(), 30000);
+        this._pollTimer = setInterval(() => {
+          if (document.visibilityState === 'visible') this._poll();
+        }, 10000);
+        this._poll();
       }
     },
 
     destroy() {
-      this._disconnect();
+      this._disconnectPolling();
+      clearInterval(this._countdownTimer);
     },
 
     _disconnect() {
@@ -284,7 +287,7 @@ function leaderboardPage(initialEvent = null, initialLeaderboard = []) {
       try {
         await this.loadEvent();
         await this.loadLeaderboard();
-        this.startSSE();
+        this.startPolling();
         this._startCountdown();
         this.loading = false;
         this.isEmpty = !this.rankings.length;
@@ -400,78 +403,40 @@ function leaderboardPage(initialEvent = null, initialLeaderboard = []) {
       });
     },
 
-    startSSE() {
+    startPolling() {
       if (!this._eventId) return;
-      this._disconnectSSE();
-      const url = `/api/v1/leaderboard/stream?event_id=${encodeURIComponent(this._eventId)}`;
-      this._sse = new EventSource(url);
-      this._sse.onopen = () => {
-        this.connectionStatus = 'Peringkat diperbarui langsung';
-        this._sseRetry = 0;
-      };
-
-      this._sse.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === 'leaderboard' && Array.isArray(payload.data?.entries)) {
-            this._applyLeaderboard(payload.data.entries);
-          }
-        } catch (e) {
-          // ignore malformed data
-        }
-      };
-
-      this._sse.onerror = () => {
-        this.connectionStatus = 'Koneksi terputus. Menghubungkan kembali...';
-        this._scheduleReconnect();
-      };
-
-      this._pollTimer = setInterval(() => this._poll(), 30000);
-      window.addEventListener('beforeunload', () => this._disconnectSSE(), { once: true });
+      this._disconnectPolling();
+      this.connectionStatus = 'Memperbarui peringkat setiap 10 detik';
+      this._pollTimer = setInterval(() => {
+        if (document.visibilityState === 'visible') this._poll();
+      }, 10000);
+      document.addEventListener('visibilitychange', this._visibilityHandler = () => {
+        if (document.visibilityState === 'visible') this._poll();
+      });
+      window.addEventListener('beforeunload', () => this._disconnectPolling(), { once: true });
     },
 
     async _poll() {
-      // Fallback only: while SSE is connected the result would be discarded anyway.
-      if (this._sse?.readyState !== EventSource.CLOSED) return;
       try {
         const response = await this.fetchJson(`/api/v1/leaderboard?event_id=${encodeURIComponent(this._eventId)}`);
         const data = response.data || response;
-        if (Array.isArray(data.entries) && this._sse?.readyState === EventSource.CLOSED) {
+        if (Array.isArray(data.entries)) {
           this._applyLeaderboard(data.entries);
         }
       } catch (e) {
-        // ignore polling errors
+        this.connectionStatus = 'Gagal memperbarui peringkat.';
       }
     },
 
-    _disconnectSSE() {
-      if (this._sse) {
-        this._sse.close();
-        this._sse = null;
-      }
+    _disconnectPolling() {
       if (this._pollTimer) {
         clearInterval(this._pollTimer);
         this._pollTimer = null;
       }
-      if (this._reconnectTimer) {
-        clearTimeout(this._reconnectTimer);
-        this._reconnectTimer = null;
+      if (this._visibilityHandler) {
+        document.removeEventListener('visibilitychange', this._visibilityHandler);
+        this._visibilityHandler = null;
       }
-    },
-
-    destroy() {
-      this._disconnectSSE();
-      clearInterval(this._countdownTimer);
-    },
-
-    _scheduleReconnect() {
-      if (this._reconnectTimer) return;
-      this._sseRetry = Math.min(this._sseRetry + 1, 6);
-      const delay = 2000 * this._sseRetry;
-      this._reconnectTimer = setTimeout(() => {
-        this._reconnectTimer = null;
-        this.startSSE();
-      }, delay);
     },
 
     _applyLeaderboard(entries) {
