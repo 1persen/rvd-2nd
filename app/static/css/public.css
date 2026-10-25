@@ -84,7 +84,7 @@
 .public-site .button { display:inline-flex; align-items:center; justify-content:center; gap:22px; min-height:49px; padding:13px 23px; border:1px solid transparent; border-radius:7px; font-size:13px; font-weight:600; transition:transform .2s,box-shadow .2s,background .2s; }
 .public-site .button:hover { transform:translateY(-2px); box-shadow:0 7px 22px #142b3214; }
 .public-site .button .icon { width:17px; height:17px; }
-.public-site .button-dark { background:#17343b; color:#fff; }
+.public-site .button-dark { background:var(--ink); color:#fff; }
 .public-site .button-gold { background:linear-gradient(110deg,#f2dfb2,#dbb977); color:#283330; border-color:#ecce94; }
 .public-site .button-outline { border-color:#cbd1c9; }
 .public-site .text-link { display:inline-flex; align-items:center; gap:15px; font-size:13px; font-weight:600; }
@@ -1371,10 +1371,10 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
 /* Event header pill nav */
 .public-site .event-tabs { display:flex; gap:6px; border:1px solid #a58852; border-radius:999px; padding:4px; }
 .public-site .event-tabs button { display:flex; align-items:center; gap:6px; padding:8px 14px; font-size:11px; color:#f5e6c8; border-radius:999px; background:transparent; }
-.public-site .event-tabs button.is-active { background:#a58852; color:#1a1a1a; font-weight:700; }
+.public-site .event-tabs button.is-active { background:#a58852; color:var(--ink); font-weight:700; }
 
 /* ===== Event header: final override (dark gold, 3 area desktop, mobile terpisah) ===== */
-.public-site .event-header { position:sticky; top:0; z-index:50; background:var(--ink); border-bottom:1px solid #5b421c; box-shadow:0 6px 18px rgba(0,0,0,.45); backdrop-filter:none; }
+.public-site .event-header { position:sticky; top:0; z-index:50; background:var(--ink); border-bottom:1px solid var(--ink); box-shadow:0 6px 18px rgba(0,0,0,.45); backdrop-filter:none; }
 .public-site .event-header-inner { display:grid; grid-template-columns:minmax(0,1fr) auto minmax(0,1fr); align-items:center; gap:16px; min-height:80px; padding:12px 0; }
 .public-site .event-identity { display:flex; align-items:center; gap:12px; min-width:0; flex:initial; }
 .public-site .event-identity .group { display:flex; align-items:center; gap:12px; min-width:0; }
