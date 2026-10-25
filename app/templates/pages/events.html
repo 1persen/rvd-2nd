@@ -66,8 +66,11 @@
         <div x-show="!loading[tab] && !error[tab]">
           <div x-show="tab === 'beranda'">
             <div class="event-home">
+              <div class="event-home-aside">
+                <template x-if="event?.banner_url"><img class="event-home-banner" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
+              </div>
               <div class="event-home-main">
-                <span class="eyebrow">PELAKSANAAN ACARA</span>
+                <span class="eyebrow" x-text="event?.is_voting_open ? 'VOTE DIBUKA' : 'COMING SOON VOTE'"></span>
                 <h2 class="event-home-title" x-text="event?.name"></h2>
                 <p class="event-home-desc" x-text="event?.description || 'Dukung peserta dan ikuti perjalanan event ini.'"></p>
                 <div class="event-schedule">
@@ -89,14 +92,11 @@
                   <button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen">{{ icon('qr') }} QR Event</button>
                 </div>
               </div>
-              <aside class="event-home-aside">
-                <template x-if="event?.banner_url"><img class="event-home-banner" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
-                <div class="event-home-stats">
-                  <div><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>Total vote</small></div>
-                  <div><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>Peserta</small></div>
-                  <div><b x-text="Number(event?.total_supporters || 0).toLocaleString('id-ID')"></b><small>Pendukung</small></div>
-                </div>
-              </aside>
+              <div class="event-home-stats">
+                <div><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>Total vote</small></div>
+                <div><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>Peserta</small></div>
+                <div><b x-text="Number(event?.total_supporters || 0).toLocaleString('id-ID')"></b><small>Pendukung</small></div>
+              </div>
             </div>
           </div>
           <div x-show="tab === 'peserta'">
