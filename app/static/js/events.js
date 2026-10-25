@@ -201,9 +201,20 @@ function eventsPage(event, allEvents) {
 
     activeCategory: '',
 
+    educationLevelLabels: {
+      'sma-smk-ma': 'SMA/SMK/MA',
+      'smp-mts': 'SMP/MTs',
+      'sd-mi': 'SD/MI',
+      'purna-klub': 'PURNA/KLUB',
+    },
+
+    categoryLabel(level) {
+      return this.educationLevelLabels[level] || level;
+    },
+
     get participantCategories() {
       const set = new Set();
-      this.dataPeserta.forEach(team => { if (team.category) set.add(team.category); });
+      this.dataPeserta.forEach(team => { if (team.education_level) set.add(team.education_level); });
       return Array.from(set);
     },
 
@@ -229,7 +240,7 @@ function eventsPage(event, allEvents) {
     get filteredParticipants() {
       const query = this.participantQuery.trim().toLocaleLowerCase('id-ID');
       return this.dataPeserta.filter(team =>
-        (!this.activeCategory || team.category === this.activeCategory) &&
+        (!this.activeCategory || team.education_level === this.activeCategory) &&
         `${team.name} ${team.school || ''}`.toLocaleLowerCase('id-ID').includes(query));
     },
 
