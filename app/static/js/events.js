@@ -199,9 +199,38 @@ function eventsPage(event, allEvents) {
         `${event.name} ${event.description || ''}`.toLocaleLowerCase('id-ID').includes(query));
     },
 
+    activeCategory: '',
+
+    get participantCategories() {
+      const set = new Set();
+      this.dataPeserta.forEach(team => { if (team.category) set.add(team.category); });
+      return Array.from(set);
+    },
+
+    setCategory(cat) {
+      this.activeCategory = cat;
+      this.participantPage = 1;
+    },
+
+    get participantCountdown() {
+      const target = this.event?.closes_at || this.event?.opens_at;
+      if (!target) return null;
+      const diff = new Date(target).getTime() - this.now;
+      if (!Number.isFinite(diff) || diff <= 0) return null;
+      const total = Math.floor(diff / 1000);
+      return {
+        days: Math.floor(total / 86400),
+        hours: Math.floor((total % 86400) / 3600),
+        minutes: Math.floor((total % 3600) / 60),
+        seconds: total % 60,
+      };
+    },
+
     get filteredParticipants() {
       const query = this.participantQuery.trim().toLocaleLowerCase('id-ID');
-      return this.dataPeserta.filter(team => `${team.name} ${team.school || ''}`.toLocaleLowerCase('id-ID').includes(query));
+      return this.dataPeserta.filter(team =>
+        (!this.activeCategory || team.category === this.activeCategory) &&
+        `${team.name} ${team.school || ''}`.toLocaleLowerCase('id-ID').includes(query));
     },
 
     get currentData() {
