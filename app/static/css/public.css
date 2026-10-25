@@ -1002,7 +1002,10 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
   letter-spacing: -0.02em;
   margin: 0 0 4px 0;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
+  white-space: normal;
+  min-width: 0;
 }
 .public-site .event-subtitle {
   font-size: 12px;
