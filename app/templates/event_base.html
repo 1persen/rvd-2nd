@@ -7,7 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700;800;900&family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 {% endblock %}
 {% block head %}
-<link rel="stylesheet" href="/static/css/public.css?v={{ tailwind_css_version | default("preview", true) }}">
+<link rel="stylesheet" href="/static/css/public.css?v={{ public_css_version | default("preview", true) }}">
 {% endblock %}
 {% block navbar %}
 <a class="skip-link" href="#main-content">Lewati</a>

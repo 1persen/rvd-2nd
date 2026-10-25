@@ -39,6 +39,13 @@ templates.env.globals["tailwind_css_version"] = (
     int(_TAILWIND_CSS.stat().st_mtime) if _TAILWIND_CSS.exists() else None
 )
 
+# public.css is versioned independently so edits to it bust browser caches even
+# when tailwind.css is not rebuilt (e.g. on platforms that don't run build_css.sh).
+_PUBLIC_CSS = Path("app/static/css/public.css")
+templates.env.globals["public_css_version"] = (
+    int(_PUBLIC_CSS.stat().st_mtime) if _PUBLIC_CSS.exists() else None
+)
+
 
 _STATUS_LABELS = {
     EventStatus.DRAFT: "Draf",
