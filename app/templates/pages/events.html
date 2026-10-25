@@ -22,7 +22,13 @@
             <template x-if="event?.banner_url"><img class="event-banner-thumb" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
             <div>
               <span class="event-eyebrow" x-text="event?.status"></span>
-              <h1 class="event-title" x-text="event?.name"></h1>
+              <div class="group flex items-center gap-3 text-left transition-opacity hover:opacity-90">
+            <img class="h-12 w-auto object-contain" src="/static/images/raja-voting-logo.png" alt="Logo">
+            <div>
+              <span class="block text-[11px] font-black uppercase tracking-[0.25em] text-[#ffd875]">RAJA VOTING</span>
+              <span class="block text-[9px] font-bold uppercase tracking-widest text-[#d8c39d]">DIGITAL VOTING PLATFORM</span>
+            </div>
+          </div>
               <p class="event-subtitle" x-text="event?.description || 'Portal dukungan dan voting event.'"></p>
             </div>
           </div>
