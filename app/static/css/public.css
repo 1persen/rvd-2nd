@@ -1010,6 +1010,10 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
   margin: 0;
   line-height: 1.4;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .public-site .event-tabs {
   display: flex;
@@ -1323,8 +1327,11 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
   .public-site .supporter-list .row-votes strong {
     font-size: 12px;
   }
+  .public-site .event-home-actions {
+    flex-direction: column;
+  }
   .public-site .event-home-actions .button {
-    flex: 1 1 auto;
+    width: 100%;
   }
   html.dark .public-site .qr-panel-content {
     background: var(--surface);
