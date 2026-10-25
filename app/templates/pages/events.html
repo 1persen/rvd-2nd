@@ -27,9 +27,10 @@
             </div>
           </div>
           <nav class="event-tabs" aria-label="Bagian event">
-            <template x-for="(label, key) in { beranda: 'BERANDA', peserta: 'PESERTA', klasemen: 'KLASEMEN', sultan: 'SULTAN' }" :key="key">
-              <button @click="setTab(key)" :aria-current="tab === key ? 'page' : null" :class="{ 'is-active': tab === key }"><span x-text="label"></span><span x-show="tab === key" class="tab-dot"></span></button>
-            </template>
+            <button @click="setTab('beranda')" :aria-current="tab === 'beranda' ? 'page' : null" :class="{ 'is-active': tab === 'beranda' }">{{ icon('home') }}<span>BERANDA</span><span x-show="tab === 'beranda'" class="tab-dot"></span></button>
+            <button @click="setTab('peserta')" :aria-current="tab === 'peserta' ? 'page' : null" :class="{ 'is-active': tab === 'peserta' }">{{ icon('users') }}<span>PESERTA</span><span x-show="tab === 'peserta'" class="tab-dot"></span></button>
+            <button @click="setTab('klasemen')" :aria-current="tab === 'klasemen' ? 'page' : null" :class="{ 'is-active': tab === 'klasemen' }">{{ icon('trophy') }}<span>KLASEMEN</span><span x-show="tab === 'klasemen'" class="tab-dot"></span></button>
+            <button @click="setTab('sultan')" :aria-current="tab === 'sultan' ? 'page' : null" :class="{ 'is-active': tab === 'sultan' }">{{ icon('crown') }}<span>SULTAN</span><span x-show="tab === 'sultan'" class="tab-dot"></span></button>
           </nav>
           <div class="event-actions">
             <button type="button" class="button button-dark" @click="setTab('peserta')" x-show="event?.is_voting_open">DUKUNG SEKARANG {{ icon('arrow') }}</button>
