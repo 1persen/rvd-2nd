@@ -20,16 +20,19 @@
         <div class="event-header-inner shell">
           <div class="event-identity">
             <template x-if="event?.banner_url"><img class="event-banner-thumb" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
-            <div>
-              <span class="event-eyebrow" x-text="event?.status"></span>
-              <h1 class="event-title" x-text="event?.name"></h1>
-              <p class="event-subtitle" x-text="event?.description || 'Portal dukungan dan voting event.'"></p>
+            <div class="group flex items-center gap-3 text-left transition-opacity hover:opacity-90">
+              <img class="h-12 w-auto object-contain" src="/static/images/raja-voting-logo.png" alt="Logo">
+              <div>
+                <span class="block text-[11px] font-black uppercase tracking-[0.25em] text-[#ffd875]" x-text="event?.name || 'RAJA VOTING'"></span>
+                <span class="block text-[9px] font-bold uppercase tracking-widest text-[#d8c39d]" x-text="event?.category || 'DIGITAL VOTING PLATFORM'"></span>
+              </div>
             </div>
           </div>
           <nav class="event-tabs" aria-label="Bagian event">
-            <template x-for="(label, key) in { beranda: 'BERANDA', peserta: 'PESERTA', klasemen: 'KLASEMEN', sultan: 'SULTAN' }" :key="key">
-              <button @click="setTab(key)" :aria-current="tab === key ? 'page' : null" :class="{ 'is-active': tab === key }"><span x-text="label"></span><span x-show="tab === key" class="tab-dot"></span></button>
-            </template>
+            <button @click="setTab('beranda')" :aria-current="tab === 'beranda' ? 'page' : null" :class="{ 'is-active': tab === 'beranda' }">{{ icon('home') }}<span>BERANDA</span><span x-show="tab === 'beranda'" class="tab-dot"></span></button>
+            <button @click="setTab('peserta')" :aria-current="tab === 'peserta' ? 'page' : null" :class="{ 'is-active': tab === 'peserta' }">{{ icon('users') }}<span>PESERTA</span><span x-show="tab === 'peserta'" class="tab-dot"></span></button>
+            <button @click="setTab('klasemen')" :aria-current="tab === 'klasemen' ? 'page' : null" :class="{ 'is-active': tab === 'klasemen' }">{{ icon('trophy') }}<span>KLASEMEN</span><span x-show="tab === 'klasemen'" class="tab-dot"></span></button>
+            <button @click="setTab('sultan')" :aria-current="tab === 'sultan' ? 'page' : null" :class="{ 'is-active': tab === 'sultan' }">{{ icon('crown') }}<span>SULTAN</span><span x-show="tab === 'sultan'" class="tab-dot"></span></button>
           </nav>
           <div class="event-actions">
             <button type="button" class="button button-dark" @click="setTab('peserta')" x-show="event?.is_voting_open">DUKUNG SEKARANG {{ icon('arrow') }}</button>
@@ -63,14 +66,20 @@
         <div x-show="!loading[tab] && !error[tab]">
           <div x-show="tab === 'beranda'">
             <div class="event-home">
-              <div class="event-home-main">
-                <span class="eyebrow">PELAKSANAAN ACARA</span>
-                <h2 class="event-home-title" x-text="event?.name"></h2>
-                <p class="event-home-desc" x-text="event?.description || 'Dukung peserta dan ikuti perjalanan event ini.'"></p>
-                <div class="event-schedule">
-                  <span>{{ icon('calendar') }} <b x-text="event?.opens_at ? formatDate(event.opens_at) : 'Jadwal menyusul'"></b></span>
-                  <span>{{ icon('clock') }} <b x-text="event?.closes_at ? 'Berakhir ' + formatDate(event.closes_at) : 'Sampai selesai'"></b></span>
+              <div class="event-hero-top">
+                <img class="event-home-logo" :src="event?.banner_url || '/static/images/raja-voting-logo.png'" :alt="'Logo ' + (event?.name || 'event')" @error="$el.src = '/static/images/raja-voting-logo.png'">
+                <div class="event-date-card">
+                  <span class="event-date-label">PELAKSANAAN ACARA</span>
+                  <div class="event-date-row">
+                    <span class="event-date-icon">{{ icon('calendar') }}</span>
+                    <div>
+                      <b class="event-date-day" x-text="event?.opens_at ? new Date(event.opens_at).getDate() : '-'"></b>
+                      <small class="event-date-month" x-text="event?.opens_at ? new Date(event.opens_at).toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase() : 'JADWAL MENYUSUL'"></small>
+                    </div>
+                  </div>
                 </div>
+              </div>
+              <div class="event-home-main">
                 <div class="event-countdown" x-show="countdown" x-cloak>
                   <span class="eyebrow">MENUJU HARI PEMBUKAAN</span>
                   <div class="countdown-grid">
@@ -86,14 +95,12 @@
                   <button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen">{{ icon('qr') }} QR Event</button>
                 </div>
               </div>
-              <aside class="event-home-aside">
-                <template x-if="event?.banner_url"><img class="event-home-banner" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
-                <div class="event-home-stats">
-                  <div><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>Total vote</small></div>
-                  <div><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>Peserta</small></div>
-                  <div><b x-text="Number(event?.total_supporters || 0).toLocaleString('id-ID')"></b><small>Pendukung</small></div>
-                </div>
-              </aside>
+              <div class="event-home-stats">
+                <div><span class="event-stat-icon">{{ icon('check') }}</span><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>TOTAL SUARA</small></div>
+                <div><span class="event-stat-icon">{{ icon('users') }}</span><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>KONTINGEN TERDAFTAR</small></div>
+                <div><span class="event-stat-icon">{{ icon('trophy') }}</span><b x-text="Number(event?.total_categories || 0).toLocaleString('id-ID')"></b><small>KATEGORI LOMBA</small></div>
+                <div><span class="event-stat-icon">{{ icon('spark') }}</span><b x-text="event?.category || '-'"></b><small>CAKUPAN WILAYAH</small></div>
+              </div>
             </div>
           </div>
           <div x-show="tab === 'peserta'">
