@@ -1341,3 +1341,8 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
     background: rgba(0, 0, 0, 0.5);
   }
 }
+
+/* Event header pill nav */
+.public-site .event-tabs { display:flex; gap:6px; border:1px solid #a58852; border-radius:999px; padding:4px; }
+.public-site .event-tabs button { display:flex; align-items:center; gap:6px; padding:8px 14px; font-size:11px; color:#f5e6c8; border-radius:999px; background:transparent; }
+.public-site .event-tabs button.is-active { background:#a58852; color:#1a1a1a; font-weight:700; }
