@@ -270,13 +270,13 @@
 .public-site .event-home-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin-top:32px; }
 .public-site .event-hero-top { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:20px; }
 .public-site .event-home-logo { width:110px; height:110px; object-fit:contain; border-radius:50%; flex-shrink:0; filter:drop-shadow(0 15px 30px rgba(0,0,0,.6)); }
-.public-site .event-date-card { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:200px; padding:14px 20px; border:2px solid rgba(212,160,54,.6); border-radius:16px; background:rgba(23,43,50,.85); }
+.public-site .event-date-card { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:200px; padding:14px 20px; border:2px solid rgba(212,160,54,.8); border-radius:16px; background:rgba(23,43,50,1); }
 .public-site .event-date-label { font-size:10px; font-weight:900; letter-spacing:.28em; color:#f5c452; }
 .public-site .event-date-row { display:flex; align-items:center; gap:12px; }
-.public-site .event-date-icon { display:grid; place-items:center; width:40px; height:40px; border:2px solid rgba(212,160,54,.6); border-radius:10px; color:#f5c452; }
+.public-site .event-date-icon { display:grid; place-items:center; width:40px; height:40px; border:2px solid rgba(212,160,54,.8); border-radius:10px; color:#f5c452; }
 .public-site .event-date-icon .icon { width:20px; height:20px; }
 .public-site .event-date-day { display:block; font-size:26px; font-weight:800; line-height:1; color:#f5c452; }
-.public-site .event-date-month { display:block; font-size:10px; font-weight:700; letter-spacing:.08em; color:var(--muted); }
+.public-site .event-date-month { display:block; font-size:10px; font-weight:700; letter-spacing:.08em; color:#e8e9db; }
 .public-site .event-stat-icon { display:block; color:#f5c452; }
 .public-site .event-stat-icon .icon { width:18px; height:18px; }
 .public-site .event-home-actions { flex-wrap:nowrap; }
