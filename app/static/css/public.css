@@ -778,6 +778,15 @@ html.dark .public-site .home-event-row__date,html.dark .public-site .home-event-
 .public-site .support-document li { padding-left:4px; margin-bottom:10px; font-size:14px; line-height:1.8; color:var(--ink); text-align:justify; hyphens:auto; }
 .public-site .support-document li::marker { color:#8b744a; font-weight:600; }
 .public-site .support-document a { text-decoration:underline; text-underline-offset:3px; }
+.public-site .support-terms-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin:14px 0 8px; max-width:960px; }
+.public-site .support-terms-card { display:flex; gap:12px; align-items:flex-start; padding:18px; border:1px solid var(--line); border-radius:12px; background:#fffdf8; }
+.public-site .support-terms-card::before { content:""; width:6px; height:6px; flex:none; margin-top:9px; border-radius:50%; background:#a58852; }
+.public-site .support-terms-card p { margin:0; font-size:14px; line-height:1.75; color:var(--ink); }
+.public-site .support-terms-card a { text-decoration:underline; text-underline-offset:3px; }
+.public-site .support-terms-sub { margin:26px 0 4px; font-size:18px; font-weight:600; letter-spacing:-.02em; color:var(--ink); }
+.public-site .support-terms-sub:first-child { margin-top:0; }
+html.dark .public-site .support-terms-card { background:transparent; }
+html.dark .public-site .support-terms-card::before { background:#d8b36a; }
 .public-site .support-section-lead { max-width:740px; color:var(--muted); font-size:14px; line-height:1.8; text-align:justify; hyphens:auto; }
 .public-site .support-contact-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px; margin:24px 0 18px; max-width:960px; }
 .public-site .support-contact-card { display:flex; flex-direction:column; align-items:flex-start; gap:10px; padding:22px 20px; border:1px solid var(--line); border-radius:14px; background:#fffdf8; transition:border-color .18s, box-shadow .18s, transform .18s; }
@@ -868,6 +877,8 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
   .public-site .support-section .section-heading h2 { font-size: 29px; }
   .public-site .support-document h3 { font-size:18px; margin-top:26px; }
   .public-site .support-document ol,.public-site .support-document ul { padding-left:21px; }
+  .public-site .support-terms-grid { grid-template-columns:1fr; }
+  .public-site .support-terms-card { padding:16px; }
   .public-site .support-contact-grid { grid-template-columns:1fr; gap:16px; }
   .public-site .support-accordion__trigger { padding:14px 4px; font-size:13px; }
   .public-site .support-page { padding-block: 36px 48px; }
