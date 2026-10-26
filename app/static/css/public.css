@@ -73,6 +73,8 @@
 .public-site h1,.public-site h2,.public-site h3 { letter-spacing:-.045em; }
 .public-site h1,.public-site h2 { font-family:Manrope,sans-serif; font-weight:500; }
 .public-site h1 em,.public-site h2 em,.cover-title em { font-family:'Cormorant Garamond',serif; font-weight:500; }
+.public-site .page-heading { font-family:Manrope,sans-serif; font-weight:500; letter-spacing:-.045em; line-height:1.17; overflow-wrap:anywhere; }
+.public-site .lead { color:var(--muted); max-width:62ch; line-height:1.75; }
 .public-site button,.public-site a,.public-site input { -webkit-tap-highlight-color:transparent; }
 .public-site a,.public-site button { touch-action:manipulation; }
 .public-site :focus-visible { outline:3px solid #a67831; outline-offset:5px; }
@@ -776,7 +778,7 @@ html.dark .public-site .home-event-row__date,html.dark .public-site .home-event-
 .public-site .support-document li::marker { color:#8b744a; font-weight:600; }
 .public-site .support-document a { text-decoration:underline; text-underline-offset:3px; }
 .public-site .support-section-lead { max-width:740px; color:var(--muted); font-size:14px; line-height:1.8; }
-.public-site .support-contact-grid { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:760px; }
+.public-site .support-contact-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; margin:24px 0; max-width:760px; }
 .public-site .contact-label { letter-spacing:.08em; text-transform:none; }
 .public-site .contact-value { overflow-wrap:anywhere; text-underline-offset:3px; }
 .public-site .support-location { display:flex; gap:10px; align-items:baseline; color:var(--muted); font-size:13px; margin-block:8px 18px; }
@@ -802,7 +804,6 @@ html.dark .public-site .home-event-row__date,html.dark .public-site .home-event-
 .public-site .support-content ol { margin: 16px 0; padding-left: 24px; }
 .public-site .support-content ol li { font-size: 14px; line-height: 1.8; margin-bottom: 8px; }
 .public-site .support-content h3 { font-size: 20px; font-weight: 600; margin: 32px 0 14px; color: var(--ink); }
-.public-site .support-contact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
 .public-site .support-contact-item { display: flex; flex-direction: column; gap: 4px; }
 .public-site .contact-label { font-size: 11px; font-weight: 700; letter-spacing: .15em; color: var(--muted); text-transform: uppercase; }
 .public-site .contact-value { font-size: 15px; font-weight: 500; color: var(--ink); word-break: break-all; }
@@ -884,7 +885,6 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
 /* Simpaskor-inspired voting storefront; keep the live event flow intact. */
 .public-site { font-family:'DM Sans',sans-serif; }
 .public-site h1,.public-site h2,.public-site h3 { letter-spacing:-.035em; }
-.public-site h1,.public-site h2 { font-family:'Poppins',sans-serif; font-weight:800; }
 .public-site .eyebrow,.public-site .desktop-nav,.public-site .menu-toggle,.public-site .status-pill,.public-site .product-tab small { font-family:'Rajdhani',sans-serif; }
 .public-site .shell { width:min(1220px,calc(100% - 72px)); }
 .public-site .button { border-radius:3px; }
