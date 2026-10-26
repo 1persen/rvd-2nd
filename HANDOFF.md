@@ -11,7 +11,9 @@ The visual release did not change the previously deployed Python backend, schema
 ## Architecture and contracts
 
 - Routers handle HTTP and template context; services contain business logic; repositories perform database access.
-- PostgreSQL migrations are the schema authority. Migration head is `b7c8d9e0f1a2`; it adds `teams.previous_rank`, a unique vote-log payment index and payment lookup indexes. Before applying it elsewhere, resolve any historical duplicate vote-log payment IDs.
+- PostgreSQL migrations are the schema authority. Migration head is `d2f6a8c1e4b7` (adds `events.template_key` and `events.theme_config` for per-event invite templates); its parent `f1a2b3c4d5e6` adds `events.category`, and `b7c8d9e0f1a2` adds `teams.previous_rank`, a unique vote-log payment index and payment lookup indexes. Before applying the earlier revision elsewhere, resolve any historical duplicate vote-log payment IDs.
+- Public visibility is limited to `PUBLISHED`, `VOTING_OPEN`, `VOTING_CLOSED` and `FINISHED`. Drafts/archives and soft-deleted events return 404 on `/invite/{slug}`, the public API, checkout, and the SSE stream; admins read every status through `/api/v1/admin/events*`.
+- Per-event branding is optional: `classic`, `poster` and `cinematic` templates plus a strict `theme_config`. Raster/SVG/WOFF2 assets upload to the Supabase public bucket `event-assets` when `SUPABASE_URL`, `SUPABASE_SECRET_KEY` and `SUPABASE_STORAGE_BUCKET` are set; with all three empty, uploads return 503 while theme-only saves keep working.
 - Admin authentication uses `/api/v1/auth/admin/login` and a signed JWT bearer token. Provision production accounts separately; no account or database snapshot belongs in Git.
 - Successful payments grant the purchased quantity once, with an immutable snapshot. Event/payment locks and atomic updates preserve concurrent totals and ranks.
 - SSE uses Redis to coordinate workers, releases request database sessions before streaming and coalesces updates. Discovery HTML is cached for five seconds per worker.

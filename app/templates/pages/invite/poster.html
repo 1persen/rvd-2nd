@@ -1,0 +1,35 @@
+{% extends "pages/invite/base.html" %}
+{% from "macros/public.html" import icon %}
+{% block hero %}
+<div class="event-poster-hero">
+  <figure class="poster-frame">
+    {% if assets.ornament %}<img class="event-ornament" src="{{ assets.ornament }}" alt="" aria-hidden="true">{% endif %}
+    <img class="poster-image" src="{{ assets.poster }}" alt="Poster {{ event.name }}" width="800" height="1000">
+  </figure>
+  <div class="poster-info">
+    <span class="eyebrow">{{ event.category_label or 'KOMPETISI' }}</span>
+    <h1 class="poster-title">{{ event.name }}</h1>
+    {% if event.description %}<p class="poster-desc">{{ event.description }}</p>{% endif %}
+    <dl class="poster-meta">
+      <div><dt>Pelaksanaan</dt><dd x-text="formatDate(event?.opens_at) || 'Jadwal menyusul'"></dd></div>
+      <div><dt>Kontingen</dt><dd x-text="Number(event?.total_teams || 0).toLocaleString('id-ID') + ' peserta'"></dd></div>
+      <div><dt>Dukungan</dt><dd x-text="Number(event?.total_votes || 0).toLocaleString('id-ID') + ' suara'"></dd></div>
+    </dl>
+    {% if theme.show_countdown %}
+    <div class="event-countdown poster-countdown" x-show="countdown" x-cloak>
+      <span class="eyebrow">MENUJU PEMBUKAAN</span>
+      <div class="countdown-grid">
+        <div><b x-text="String(countdown?.days ?? 0).padStart(2, '0')"></b><small>HARI</small></div>
+        <div><b x-text="String(countdown?.hours ?? 0).padStart(2, '0')"></b><small>JAM</small></div>
+        <div><b x-text="String(countdown?.minutes ?? 0).padStart(2, '0')"></b><small>MENIT</small></div>
+        <div><b x-text="String(countdown?.seconds ?? 0).padStart(2, '0')"></b><small>DETIK</small></div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="event-home-actions">
+      <button type="button" class="button button-dark" @click="setTab('{{ 'peserta' if theme.show_participants else 'klasemen' }}')">Mulai Vote {{ icon('arrow') }}</button>
+      <button type="button" class="button button-outline" @click="setTab('klasemen')">Lihat Klasemen</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

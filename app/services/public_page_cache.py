@@ -32,3 +32,9 @@ def cache_discovery_page(render):
             return response
 
     return cached
+
+
+async def invalidate_discovery_pages() -> None:
+    """Drop rendered discovery HTML after event presentation/visibility changes."""
+    async with _lock:
+        _pages.clear()

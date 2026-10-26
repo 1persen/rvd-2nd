@@ -1,7 +1,13 @@
-function eventsPage(event, allEvents) {
+function eventsPage(event, allEvents, config) {
+  config = config || {};
+  const theme = (event && event.theme) || config.theme || {};
   return {
     event: event || null,
     allEvents: allEvents || [],
+    config: config,
+    theme: theme,
+    preview: !!config.preview,
+    catalog: !!config.catalog,
     tab: 'beranda',
     eventQuery: '', openOnly: false, participantQuery: '',
     dataPeserta: [],
@@ -12,37 +18,49 @@ function eventsPage(event, allEvents) {
     loadedTabs: {},
     loading: { beranda: false, peserta: false, klasemen: false, sultan: false },
     error: { beranda: null, peserta: null, klasemen: null, sultan: null },
-    isTransitioning: false,
     now: Date.now(),
     countdownTimer: null,
     qrUrl: '',
     qrOpen: false,
 
+    get showParticipants() {
+      return this.theme.show_participants !== false;
+    },
+
+    get showCountdown() {
+      return this.theme.show_countdown !== false;
+    },
+
+    get availableTabs() {
+      return ['beranda', 'peserta', 'klasemen', 'sultan'].filter(
+        tabName => tabName !== 'peserta' || this.showParticipants
+      );
+    },
+
     init() {
-      // SSR /invite/{slug} sudah mengirim event; /events?event_id= dicari di klien.
-      if (!this.event) {
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('event_id');
-        if (eventId) {
-          this.event = this.allEvents.find(e => e.id == eventId) || null;
+      if (this.config.collections) {
+        const collections = this.config.collections;
+        if (Array.isArray(collections.peserta)) {
+          this.dataPeserta = collections.peserta;
+          this.loadedTabs.peserta = true;
         }
+        if (Array.isArray(collections.klasemen)) {
+          this.dataKlasemen = collections.klasemen;
+          this.loadedTabs.klasemen = true;
+        }
+        if (Array.isArray(collections.sultan)) {
+          this.dataSultan = collections.sultan;
+          this.loadedTabs.sultan = true;
+        }
+      }
+      if (this.preview) {
+        this.loadedTabs = { beranda: true, peserta: true, klasemen: true, sultan: true };
       }
 
       const hash = (window.location.hash || '').replace('#', '');
-      if (['beranda', 'peserta', 'klasemen', 'sultan'].includes(hash)) {
+      if (this.availableTabs.includes(hash)) {
         this.tab = hash;
       }
-
-      window.addEventListener('popstate', () => {
-        const params = new URLSearchParams(window.location.search);
-        const eventId = params.get('event_id');
-        if (eventId) {
-          const found = this.allEvents.find(e => e.id == eventId);
-          if (found) this.switchEvent(found, false);
-          return;
-        }
-        if (!window.location.pathname.startsWith('/invite/')) this.event = null;
-      });
 
       this.$watch('tab', (value) => {
         this.fetchIfNeeded(value);
@@ -51,7 +69,7 @@ function eventsPage(event, allEvents) {
       if (this.event) {
         this.fetchIfNeeded(this.tab);
         this.startCountdown();
-        this.generateQrUrl();
+        if (!this.preview) this.generateQrUrl();
       }
     },
 
@@ -63,7 +81,7 @@ function eventsPage(event, allEvents) {
     startCountdown() {
       if (this.countdownTimer) clearInterval(this.countdownTimer);
       this.countdownTimer = null;
-      if (!this.event || !this.event.opens_at) return;
+      if (!this.showCountdown || !this.event || !this.event.opens_at) return;
       this.now = Date.now();
       this.countdownTimer = setInterval(() => {
         this.now = Date.now();
@@ -71,7 +89,7 @@ function eventsPage(event, allEvents) {
     },
 
     get countdown() {
-      if (!this.event || !this.event.opens_at) return null;
+      if (!this.showCountdown || !this.event || !this.event.opens_at) return null;
       const diff = new Date(this.event.opens_at).getTime() - this.now;
       if (!Number.isFinite(diff) || diff <= 0) return null;
       const total = Math.floor(diff / 1000);
@@ -84,6 +102,9 @@ function eventsPage(event, allEvents) {
     },
 
     setTab(tabName) {
+      if (tabName === 'peserta' && !this.showParticipants) {
+        tabName = 'klasemen';
+      }
       this.tab = tabName;
       // Pathname event tidak berubah; hash hanya penanda tab.
       if (window.history && window.history.replaceState) {
@@ -95,34 +116,6 @@ function eventsPage(event, allEvents) {
       }
     },
 
-    switchEvent(ev, updateUrl = true) {
-      if (!ev || (this.event && this.event.id === ev.id)) return;
-
-      this.isTransitioning = true;
-
-      setTimeout(() => {
-        this.event = ev;
-
-        if (updateUrl) {
-          history.pushState({}, '', ev.invite_path || `/events?event_id=${ev.id}`);
-        }
-
-        this.tab = 'beranda';
-        this.loadedTabs = {};
-        this.dataPeserta = [];
-        this.dataKlasemen = [];
-        this.dataSultan = [];
-        this.error = { peserta: null, klasemen: null, sultan: null };
-        this.participantPage = 1;
-        this.participantQuery = '';
-
-        this.startCountdown();
-        this.generateQrUrl();
-
-        this.isTransitioning = false;
-      }, 300);
-    },
-
     generateQrUrl() {
       if (!this.event) return;
       const invitePath = this.event.invite_path || window.location.pathname;
@@ -130,8 +123,14 @@ function eventsPage(event, allEvents) {
       this.qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(fullUrl)}`;
     },
 
+    voteHref(team) {
+      if (this.preview || !this.event || !team) return null;
+      return '/events/' + encodeURIComponent(this.event.id) + '/vote/' + encodeURIComponent(team.id);
+    },
+
     async fetchIfNeeded(tabName) {
-      if (!this.event || tabName === 'beranda' || this.loadedTabs[tabName]) return;
+      // Preview renders server-supplied collections and must never hit a public API.
+      if (this.preview || !this.event || tabName === 'beranda' || this.loadedTabs[tabName]) return;
 
       const endpoints = {
         peserta: `/api/v1/events/${this.event.id}/teams`,
@@ -224,6 +223,7 @@ function eventsPage(event, allEvents) {
     },
 
     get participantCountdown() {
+      if (!this.showCountdown) return null;
       const target = this.event?.closes_at || this.event?.opens_at;
       if (!target) return null;
       const diff = new Date(target).getTime() - this.now;
@@ -258,13 +258,6 @@ function eventsPage(event, allEvents) {
 
     get rankingData() {
       return (this.currentData || []).slice(3);
-    },
-
-    activeClass(tabName) {
-      if (this.tab === tabName) {
-        return 'bg-white text-blue-600 font-semibold shadow-md';
-      }
-      return 'text-slate-500 hover:text-slate-700';
     },
 
     formatCurrency(amount) {

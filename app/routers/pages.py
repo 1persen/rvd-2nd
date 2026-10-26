@@ -4,7 +4,6 @@ Frontend page routes (SSR HTML via Jinja2).
 Per CLAUDE.md rules: routers only receive requests and return responses.
 Data berasal dari service + repository (database).
 """
-from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -20,7 +19,7 @@ from app.repositories import payment as payment_repo
 from app.repositories import system_settings as settings_repo
 from app.repositories import team as team_repo
 from app.enums.education_level import EDUCATION_LABELS, LEVEL_ORDER
-from app.services import event_service, leaderboard_service
+from app.services import event_page_service, event_service, leaderboard_service
 from app.services.public_page_cache import cache_discovery_page
 
 router = APIRouter()
@@ -44,6 +43,11 @@ templates.env.globals["tailwind_css_version"] = (
 _PUBLIC_CSS = Path("app/static/css/public.css")
 templates.env.globals["public_css_version"] = (
     int(_PUBLIC_CSS.stat().st_mtime) if _PUBLIC_CSS.exists() else None
+)
+
+_INVITE_CSS = Path("app/static/css/invite.css")
+templates.env.globals["invite_css_version"] = (
+    int(_INVITE_CSS.stat().st_mtime) if _INVITE_CSS.exists() else None
 )
 
 
@@ -71,35 +75,17 @@ async def _get_event_by_id_or_active(session: AsyncSession, event_id: str | None
 
 
 def _event_dict(event) -> dict:
-    is_voting_open = event.is_voting_open
-    status = _STATUS_LABELS.get(event.status, event.status.value)
-    if event.status == EventStatus.VOTING_OPEN and not is_voting_open:
-        status = "Voting ditutup"
-        if event.opens_at and event.opens_at > datetime.now(timezone.utc):
-            status = "Voting belum dimulai"
-    return {
-        "id": event.id,
-        "name": event.name,
-        "slug": getattr(event, "slug", None),
-        "invite_path": f"/invite/{getattr(event, 'slug', None) or event.id}",
-        "status": status,
-        "status_code": event.status.value,
-        "is_voting_open": is_voting_open,
-        "description": event.description or "",
-        "banner_url": event.banner_url,
-        "opens_at": event.opens_at.isoformat() if event.opens_at else None,
-        "closes_at": event.closes_at.isoformat() if event.closes_at else None,
-        "price_per_vote": getattr(event, "price_per_vote", 10000) or 10000,
-    }
+    return event_page_service.event_dict(event)
 
 
 def _event_with_stats_dict(event, total_teams=0, total_votes=0, total_supporters=0, progress=0) -> dict:
-    d = _event_dict(event)
-    d["total_teams"] = total_teams
-    d["total_votes"] = total_votes
-    d["total_supporters"] = total_supporters
-    d["progress"] = progress
-    return d
+    return event_page_service.event_dict(
+        event,
+        total_teams=total_teams,
+        total_votes=total_votes,
+        total_supporters=total_supporters,
+        progress=progress,
+    )
 
 
 def _team_dict(team, votes: int, rank: int) -> dict:
@@ -118,8 +104,7 @@ def _team_dict(team, votes: int, rank: int) -> dict:
 @router.get("/")
 @cache_discovery_page
 async def landing(request: Request, session: AsyncSession = Depends(get_db)):
-    events = [ev for ev in await event_repo.list_events(session, limit=50)
-              if ev.status not in (EventStatus.DRAFT, EventStatus.ARCHIVED)]
+    events = await event_service.list_public_events(session, limit=50)
     event = next((ev for ev in events if ev.is_voting_open), events[0] if events else None)
     leaderboard = []
     if event:
@@ -142,8 +127,7 @@ async def events_list(
     event_id: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ):
-    all_events_raw = [ev for ev in await event_repo.list_events(session, limit=50)
-                      if ev.status not in (EventStatus.DRAFT, EventStatus.ARCHIVED)]
+    all_events_raw = await event_service.list_public_events(session, limit=50)
     event_ids = [ev.id for ev in all_events_raw]
     # Two aggregate queries for all events (was 2 queries + up to 5000 full
     # payment rows per event).
@@ -166,49 +150,48 @@ async def events_list(
             )
         )
 
-    # Teams, leaderboard and donors tabs are fetched lazily by events.js.
-    event = next((ev for ev in all_events_raw if ev.id == event_id), None)
+    # Legacy deep link: the catalog is now the only /events view, so a selected
+    # event continues on its canonical invite URL instead of client-side switching.
+    if event_id:
+        selected = next((ev for ev in all_events_raw if ev.id == event_id), None)
+        if selected is None:
+            raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+        return RedirectResponse(
+            _event_dict(selected)["invite_path"], status_code=302
+        )
+
     return templates.TemplateResponse(
         request,
         "pages/events.html",
-        {
-            "event": _event_dict(event) if event else None,
-            "all_events": events_with_stats,
-        },
+        {"all_events": events_with_stats},
     )
 
 
 @router.get("/invite/{event_slug}")
-@cache_discovery_page
 async def invite_event(
     request: Request,
     event_slug: str,
     session: AsyncSession = Depends(get_db),
 ):
-    """Portal event: satu route, tab internal dikelola state frontend."""
-    event = await event_repo.get_by_slug(session, event_slug)
-    if not event:
-        candidate = await event_repo.get_event(session, event_slug)
-        if candidate and candidate.deleted_at is None:
-            event = candidate
-    if not event or event.deleted_at is not None:
-        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    """One public URL per event; the stored template decides how it renders.
 
-    team_count, total_votes = (await team_repo.stats_by_event(session, [event.id])).get(
-        event.id, (0, 0)
-    )
+    Drafts, archives, and soft-deleted events answer 404 here and in every
+    public API, cache, and stream. Admins preview them through the admin API.
+    """
+    event = await event_service.get_public_event_by_slug_or_404(session, event_slug)
+
+    team_stats = await team_repo.stats_by_event(session, [event.id])
+    team_count, total_votes = team_stats.get(event.id, (0, 0))
     donor_counts = await payment_repo.count_donors_by_event(session, [event.id])
-    payload = _event_with_stats_dict(
+
+    context = event_page_service.build_invite_context(
         event,
         total_teams=team_count,
         total_votes=total_votes,
         total_supporters=donor_counts.get(event.id, 0),
+        collections={},
     )
-    return templates.TemplateResponse(
-        request,
-        "pages/events.html",
-        {"event": payload, "all_events": [payload]},
-    )
+    return templates.TemplateResponse(request, context["template_path"], context)
 
 
 @router.get("/events/{event_id}/vote/{team_id}")
@@ -218,9 +201,7 @@ async def vote_page(
     team_id: str,
     session: AsyncSession = Depends(get_db),
 ):
-    event = await event_repo.get_event(session, event_id)
-    if not event or event.deleted_at is not None:
-        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    event = await event_service.get_public_event_or_404(session, event_id)
     team = await team_repo.get_team(session, team_id)
     if not team or team.deleted_at is not None or team.event_id != event_id:
         raise HTTPException(status_code=404, detail="Tim tidak ditemukan")
@@ -256,8 +237,7 @@ async def vote_page(
 
 @router.get("/leaderboard")
 async def leaderboard_list(request: Request, session: AsyncSession = Depends(get_db)):
-    all_events_raw = [ev for ev in await event_repo.list_events(session, limit=100)
-                      if ev.status not in (EventStatus.DRAFT, EventStatus.ARCHIVED)]
+    all_events_raw = await event_service.list_public_events(session, limit=100)
     return templates.TemplateResponse(
         request,
         "pages/leaderboard.html",
@@ -279,13 +259,7 @@ async def leaderboard_detail(
     level: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ):
-    event = await event_repo.get_by_slug(session, event_slug)
-    if not event:
-        candidate = await event_repo.get_event(session, event_slug)
-        if candidate and candidate.deleted_at is None:
-            event = candidate
-    if not event or event.deleted_at is not None:
-        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    event = await event_service.get_public_event_by_slug_or_404(session, event_slug)
 
     available_levels = await team_repo.get_available_levels(session, event.id)
     available_levels = sorted(set(available_levels), key=lambda x: LEVEL_ORDER.get(x, 99))

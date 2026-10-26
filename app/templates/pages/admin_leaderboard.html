@@ -134,7 +134,7 @@
         showId('leaderboard-content');
         return;
       }
-      const data = await api('/leaderboard?event_id=' + encodeURIComponent(selectedEvent.id));
+      const data = await api('/admin/events/' + encodeURIComponent(selectedEvent.id) + '/leaderboard');
       if (!data || !data.success) {
         throw new Error(data?.message || 'Gagal memuat peringkat');
       }

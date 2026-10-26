@@ -15,7 +15,7 @@ from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
 from app.core.database import async_session
-from app.services import cache, leaderboard_service
+from app.services import cache, event_service, leaderboard_service
 from app.utils import dumps
 
 logger = logging.getLogger(__name__)
@@ -33,6 +33,11 @@ async def leaderboard_stream(
     event_id: str = Query(..., description="ID event"),
     level: str | None = Query(default=None),
 ):
+    # A stream must not open for a draft/archived/soft-deleted event, otherwise
+    # a long-lived connection would keep leaking updates after it stops being public.
+    async with async_session() as session:
+        await event_service.get_public_event_or_404(session, event_id)
+
     async def event_source() -> AsyncGenerator[str, None]:
         yield f"retry: {random.randint(2000, 7000)}\n\n"
         async with cache.subscription(event_id, level=level) as queue:
@@ -43,6 +48,9 @@ async def leaderboard_stream(
                 try:
                     frame = await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_SECONDS)
                     yield frame
+                    if '"event_visibility"' in frame:
+                        # Event stopped being public; close so the client stops.
+                        break
                 except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
 

@@ -24,12 +24,21 @@ Nothing is seeded automatically. Admin accounts are provisioned separately. Demo
 | --- | --- |
 | `/` | Featured event, searchable discovery and live top-three preview |
 | `/events` | Event catalog and open-voting filter |
-| `/events?event_id=...` | Participant search, pagination, rankings and supporters |
-| `/leaderboard?event_id=...` | Event-specific live leaderboard over SSE |
+| `/invite/{event_slug}` | Public event portal; renders the stored `classic`/`poster`/`cinematic` template |
+| `/events?event_id=...` | Legacy deep link: 302 redirect to the event's `/invite/` URL |
+| `/leaderboard/{event_slug}` | Event-specific live leaderboard over SSE |
 | `/events/{event_id}/vote/{team_id}` | Checkout, closed-voting or payment-unavailable state |
 | `/admin/login` | Admin login using a JWT bearer token |
 | `/admin` | Organizer dashboard, with navigation to events, transactions, audit logs, leaderboard and settings |
 | `/health` | Application health response |
+
+## Event templates and asset uploads
+
+Each event stores one invite template (`classic`, `poster`, `cinematic`) and a validated `theme_config` (colors, background mode, overlay, component visibility). Unknown template values fall back to `classic`; unsafe legacy theme JSON is normalized on read instead of raising.
+
+Uploads are optional. To enable them, create a **public** Supabase Storage bucket (default name `event-assets`) and set `SUPABASE_URL`, `SUPABASE_SECRET_KEY` (`sb_secret_...`, sent only in the `apikey` header) and `SUPABASE_STORAGE_BUCKET` in the server environment. A partial configuration fails at startup. With all three empty, the app still runs and theme-only saves work; requests that carry files return 503.
+
+The backend validates and re-encodes every file before upload (JPEG/PNG/WebP → WebP with EXIF stripped, sanitized SVG ornaments, validated WOFF2 fonts with a decoded-size cap), stores a fresh object per change, and deletes replaced objects only after the metadata commit. Save and admin preview accept one `multipart/form-data` request; preview never writes to Storage or PostgreSQL. `requirements.lock` is generated with `uv pip compile requirements.txt --python-version 3.12 --python-platform x86_64-manylinux_2_28 --generate-hashes`; regenerate it whenever the pinned dependencies change.
 
 ## Payment and vote integrity
 
@@ -41,8 +50,8 @@ Admin routes validate bearer tokens; rendered database text is escaped. Public a
 
 ## Validation
 
-- `node --test tests/*.test.cjs`: 18 checks passed in the integrated workspace.
-- Server Python suite: 70 tests passed against the isolated PostgreSQL test database. The suite refuses database names that do not end in `test` and creates real fixtures; never run it against production.
+- `node --test tests/*.test.cjs`: 30 checks passed in the integrated workspace.
+- Server Python suite: 155 passed against the isolated PostgreSQL test database. `tests/test_event_presentation.py` covers templates, visibility guards, uploads with a mocked Storage transport, and preview; `tests/test_event_assets_failures.py` covers partial Storage configuration, Storage 4xx/network failures with compensation, corrupt and oversized images, and preview validation errors. One POSIX-only load-test check is skipped on Windows because the `resource` module is unavailable. The suite refuses database names that do not end in `test` and creates real fixtures; never run it against production.
 - Production browser checks: public HTTPS pages, exact logo asset, admin login, seven admin pages at 320/390/1440 pixels, keyboard navigation and dialogs.
 - Application/migration SHA-256 comparison: 126 files matched the running Tencent release.
 

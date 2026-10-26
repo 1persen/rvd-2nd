@@ -97,24 +97,38 @@ async def try_lock(key: str, ttl_seconds: float) -> bool:
 
 
 # --- Pub/sub broadcast ------------------------------------------------------
+def _deliver(queue: asyncio.Queue, frame: str) -> None:
+    if queue.full():
+        # A slow client only needs the newest message; drop the stale one.
+        try:
+            queue.get_nowait()
+        except asyncio.QueueEmpty:
+            pass
+    queue.put_nowait(frame)
+
+
 def _fan_out(raw: str) -> None:
     """Deliver one published message to this process's SSE clients of its event+level."""
     try:
         message = json.loads(raw)
     except (TypeError, ValueError):
         return
-    if not isinstance(message, dict) or message.get("type") != "leaderboard":
+    if not isinstance(message, dict):
         return
     frame = f"data: {raw}\n\n"
+    if message.get("type") == "event_visibility":
+        # Visibility affects every level stream of that event, so close all of
+        # them instead of only the default (level=None) stream.
+        for (event_id, _level), queues in list(_subscribers.items()):
+            if event_id == message.get("event_id"):
+                for queue in list(queues):
+                    _deliver(queue, frame)
+        return
+    if message.get("type") != "leaderboard":
+        return
     key = (message.get("event_id"), message.get("level"))
     for queue in list(_subscribers.get(key, ())):
-        if queue.full():
-            # A slow client only needs the newest ranking; drop the stale one.
-            try:
-                queue.get_nowait()
-            except asyncio.QueueEmpty:
-                pass
-        queue.put_nowait(frame)
+        _deliver(queue, frame)
 
 
 async def _listen_forever() -> None:
@@ -187,6 +201,11 @@ async def publish(payload: dict[str, Any]) -> None:
         await (await _get_redis()).publish(_CHANNEL, message)
     except Exception:
         logger.warning("publish failed", exc_info=True)
+
+
+async def publish_event_visibility(event_id: str) -> None:
+    """Tell every SSE stream of this event to close (the event stopped being public)."""
+    await publish({"type": "event_visibility", "event_id": event_id, "level": None})
 
 
 def _leaderboard_key(event_id: str, level: str | None = None) -> str:

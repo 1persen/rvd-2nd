@@ -119,7 +119,9 @@ async def create_payment(
         if existing_by_key:
             return _replay_or_raise(existing_by_key, payload)
 
-    event = await event_service.get_event_or_404(session, payload.event_id)
+    # New invoices are only for publicly visible events; replaying an existing
+    # invoice above is intentionally allowed even after the event is archived.
+    event = await event_service.get_public_event_or_404(session, payload.event_id)
     await event_service.require_voting_open(event)
 
     if not event.price_per_vote or event.price_per_vote <= 0:

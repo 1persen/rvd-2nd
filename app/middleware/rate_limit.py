@@ -31,6 +31,7 @@ def _limit(bucket: str) -> int:
         "payment": settings.RATE_LIMIT_PAYMENT_PER_MIN,  # creation and explicit reconciliation
         "webhook": settings.RATE_LIMIT_WEBHOOK_PER_MIN,
         "auth": settings.RATE_LIMIT_AUTH_PER_MIN,
+        "asset": 20,
     }[bucket]
 
 
@@ -42,6 +43,10 @@ def _bucket_name(method: str, path: str) -> str:
     if method == "POST" and (path == "/api/v1/payments" or
                              (path.startswith("/api/v1/payments/") and path.endswith("/reconcile"))):
         return "payment"
+    if path == "/api/v1/admin/events/preview" or (
+        method == "PUT" and path.startswith("/api/v1/admin/events/")
+    ):
+        return "asset"
     # Status polling (GET /payments/{id}/status) is ordinary public traffic.
     return "public"
 

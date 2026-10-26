@@ -1,0 +1,36 @@
+{% extends "pages/invite/base.html" %}
+{% from "macros/public.html" import icon %}
+{% block hero %}
+<div class="cinematic-hero">
+  {% if assets.background %}<img class="cinematic-backdrop" src="{{ assets.background }}" alt="" aria-hidden="true">{% endif %}
+  <div class="cinematic-scrim" aria-hidden="true"></div>
+  <div class="cinematic-inner shell">
+    {% if assets.ornament %}<img class="event-ornament cinematic-ornament" src="{{ assets.ornament }}" alt="" aria-hidden="true">{% endif %}
+    <img class="cinematic-logo" src="{{ assets.logo }}" alt="Logo {{ event.name }}" width="96" height="96">
+    <span class="eyebrow">{{ event.category_label or 'KOMPETISI' }}</span>
+    <h1 class="cinematic-title">{{ event.name }}</h1>
+    {% if event.description %}<p class="cinematic-desc">{{ event.description }}</p>{% endif %}
+    <div class="cinematic-meta">
+      <span x-text="formatDate(event?.opens_at) || 'Jadwal menyusul'"></span>
+      <span aria-hidden="true">·</span>
+      <span x-text="Number(event?.total_teams || 0).toLocaleString('id-ID') + ' peserta'"></span>
+      <span aria-hidden="true">·</span>
+      <span x-text="Number(event?.total_votes || 0).toLocaleString('id-ID') + ' suara'"></span>
+    </div>
+    {% if theme.show_countdown %}
+    <div class="event-countdown cinematic-countdown" x-show="countdown" x-cloak>
+      <div class="countdown-grid">
+        <div><b x-text="String(countdown?.days ?? 0).padStart(2, '0')"></b><small>HARI</small></div>
+        <div><b x-text="String(countdown?.hours ?? 0).padStart(2, '0')"></b><small>JAM</small></div>
+        <div><b x-text="String(countdown?.minutes ?? 0).padStart(2, '0')"></b><small>MENIT</small></div>
+        <div><b x-text="String(countdown?.seconds ?? 0).padStart(2, '0')"></b><small>DETIK</small></div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="event-home-actions cinematic-actions">
+      <button type="button" class="button button-dark" @click="setTab('{{ 'peserta' if theme.show_participants else 'klasemen' }}')">Mulai Vote {{ icon('arrow') }}</button>
+      <button type="button" class="button button-outline" @click="setTab('klasemen')">Lihat Klasemen</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

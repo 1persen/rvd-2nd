@@ -144,6 +144,10 @@ function scoreboard(initial, opts = {}) {
           const msg = JSON.parse(event.data);
           if (msg.type === 'leaderboard' && Array.isArray(msg.data?.entries)) {
             this._apply(msg.data.entries);
+          } else if (msg.type === 'event_visibility') {
+            // The event became a draft/archive: stop receiving and stop polling.
+            this._disconnect();
+            this._disconnectPolling?.();
           }
         } catch (e) {
           // ignore invalid payload
