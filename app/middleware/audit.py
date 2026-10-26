@@ -25,6 +25,9 @@ _SKIP_PATHS = (
     "/api/v1/payments/duitku/callback",
     "/api/v1/admin/events/preview",
 )
+# Import preview parses an uploaded file without writing anything; the confirm
+# endpoint is audited explicitly (action team.import) with counts + hash only.
+_SKIP_SUFFIXES = ("/teams/import/preview",)
 _MUTATING = ("POST", "PUT", "PATCH", "DELETE")
 
 
@@ -38,6 +41,7 @@ class AuditMiddleware:
             or scope["method"] not in _MUTATING
             or not scope["path"].startswith("/api/v1/")
             or scope["path"] in _SKIP_PATHS
+            or scope["path"].endswith(_SKIP_SUFFIXES)
         ):
             await self.app(scope, receive, send)
             return

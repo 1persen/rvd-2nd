@@ -37,18 +37,17 @@ async def list_all_with_events(session: AsyncSession, event_id: str | None = Non
     result = await session.execute(stmt)
     return result.all()
 
-async def list_all_with_events(session: AsyncSession, event_id: str | None = None):
-    stmt = (
-        select(Team, Event.name)
-        .join(Event, Event.id == Team.event_id)
-        .where(Team.deleted_at.is_(None), Event.deleted_at.is_(None))
-        .order_by(Event.created_at.desc(), Team.name.asc())
+async def list_identity_rows(session: AsyncSession, event_id: str) -> Sequence[tuple[str, Optional[str], Optional[str]]]:
+    """(name, school, education_level) of every non-deleted team in the event.
+
+    Inactive teams (is_active = false) are included on purpose: they still occupy
+    the identity for import duplicate checks.
+    """
+    stmt = select(Team.name, Team.school, Team.education_level).where(
+        Team.event_id == event_id, Team.deleted_at.is_(None)
     )
-    if event_id:
-        stmt = stmt.where(Team.event_id == event_id)
     result = await session.execute(stmt)
     return result.all()
-
 
 async def stats_by_event(
     session: AsyncSession, event_ids: Sequence[str]

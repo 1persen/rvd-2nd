@@ -8,6 +8,14 @@ the route.
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.services.event_asset_service import MAX_TOTAL_BODY
+from app.services.team_import_service import MAX_FILE_BYTES, is_import_path
+
+# 1 MiB file plus multipart overhead (boundary, headers, sha256 field).
+IMPORT_TOTAL_BODY = MAX_FILE_BYTES + 64 * 1024
+
+
+def _import_limited(scope: Scope) -> bool:
+    return is_import_path(scope.get("method", ""), scope.get("path", ""))
 
 
 def _is_limited(scope: Scope) -> bool:
@@ -20,8 +28,8 @@ def _is_limited(scope: Scope) -> bool:
     )
 
 
-async def _send_413(send: Send) -> None:
-    body = b'{"success":false,"message":"Ukuran unggahan melebihi 17 MiB","data":null}'
+async def _send_413(send: Send, message: str) -> None:
+    body = f'{{"success":false,"message":"{message}","data":null}}'.encode("utf-8")
     await send({
         "type": "http.response.start",
         "status": 413,
@@ -38,7 +46,13 @@ class BodyLimitMiddleware:
         self.app = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if not _is_limited(scope):
+        if _import_limited(scope):
+            limit = IMPORT_TOTAL_BODY
+            limit_message = "Ukuran unggahan melebihi 1 MiB"
+        elif _is_limited(scope):
+            limit = MAX_TOTAL_BODY
+            limit_message = "Ukuran unggahan melebihi 17 MiB"
+        else:
             await self.app(scope, receive, send)
             return
 
@@ -50,8 +64,8 @@ class BodyLimitMiddleware:
                 return
             chunk = message.get("body", b"")
             total += len(chunk)
-            if total > MAX_TOTAL_BODY:
-                await _send_413(send)
+            if total > limit:
+                await _send_413(send, limit_message)
                 return
             chunks.append(chunk)
             if not message.get("more_body", False):

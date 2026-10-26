@@ -29,6 +29,8 @@ from app.services import (
     leaderboard_service,
 )
 from app.services.public_page_cache import invalidate_discovery_pages
+from app.services import team_import_service
+from app.services.team_import_service import ImportRejected
 from app.utils import dumps
 
 logger = logging.getLogger(__name__)
@@ -428,7 +430,100 @@ async def list_admin_teams(
     return ok(result)
 
 
-async def _audit(session, request, action, entity_type, entity_id):
+# --- Admin: Team Excel import ----------------------------------------------
+@router.get("/admin/events/{event_id}/teams/import/template")
+async def import_template(event_id: str, session: DbSession, _: AdminUserJwt):
+    """Download the import template .xlsx; readable even for events without a category."""
+    event = await event_service.get_event_or_404(session, event_id)
+    content = team_import_service.build_template(event.category)
+    from fastapi.responses import Response
+
+    return Response(
+        content=content,
+        media_type=team_import_service.XLSX_MIME,
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Disposition": 'attachment; filename="template-import-peserta.xlsx"',
+        },
+    )
+
+
+def _import_rejected(exc: ImportRejected):
+    """Same {success, message, data} envelope as the global HTTPException handler,
+    but keeps the per-row problem list in data."""
+    from fastapi.responses import JSONResponse
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"success": False, "message": exc.message, "data": exc.data},
+    )
+
+
+async def _read_import_file(request: Request) -> bytes:
+    form = await request.form()
+    upload = form.get("file")
+    if upload is None or not getattr(upload, "filename", None):
+        raise HTTPException(status_code=422, detail="File Excel wajib diunggah pada field 'file'")
+    content = await upload.read()
+    await upload.close()
+    return content
+
+
+@router.post("/admin/events/{event_id}/teams/import/preview")
+async def import_preview(event_id: str, request: Request, session: DbSession, _: AdminUserJwt):
+    """Parse and validate the uploaded file; never writes teams."""
+    event = await event_service.get_event_or_404(session, event_id)
+    content = await _read_import_file(request)
+    try:
+        report = await team_import_service.preview_import(session, event.id, event.category, content)
+    except ImportRejected as exc:
+        return _import_rejected(exc)
+    return ok(report)
+
+
+@router.post("/admin/events/{event_id}/teams/import/confirm")
+async def import_confirm(event_id: str, request: Request, session: DbSession, _: AdminUserJwt):
+    """All-or-nothing import inside one transaction keyed by an event row lock."""
+    form = await request.form()
+    upload = form.get("file")
+    if upload is None or not getattr(upload, "filename", None):
+        raise HTTPException(status_code=422, detail="File Excel wajib diunggah pada field 'file'")
+    expected_sha = form.get("sha256")
+    if not isinstance(expected_sha, str) or not expected_sha.strip():
+        raise HTTPException(status_code=422, detail="Hash sha256 dari pratinjau wajib dikirim")
+    expected_sha = expected_sha.strip().lower()
+    if len(expected_sha) != 64 or any(c not in "0123456789abcdef" for c in expected_sha):
+        raise HTTPException(status_code=422, detail="Format sha256 tidak valid")
+
+    content = await upload.read()
+    await upload.close()
+
+    event = await event_service.get_event_or_404(session, event_id)
+    try:
+        teams = await team_import_service.confirm_import(session, event.id, content, expected_sha)
+    except ImportRejected as exc:
+        await session.rollback()
+        return _import_rejected(exc)
+
+    await _audit(
+        session, request, "team.import", "event", event.id,
+        detail={
+            "imported_count": len(teams),
+            "sha256": team_import_service.sha256_hex(content),
+        },
+    )
+    await session.commit()
+    await invalidate_discovery_pages()
+    return ok({
+        "imported_count": len(teams),
+        "rows": [{"id": team.id, "nama_tim": team.name} for team in teams],
+    }, "Impor peserta berhasil")
+
+
+async def _audit(session, request, action, entity_type, entity_id, detail=None):
     from app.services.audit_service import record
 
-    await record(session, action=action, request=request, entity_type=entity_type, entity_id=entity_id)
+    await record(
+        session, action=action, request=request, entity_type=entity_type,
+        entity_id=entity_id, detail=detail,
+    )

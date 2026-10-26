@@ -32,6 +32,7 @@ def _limit(bucket: str) -> int:
         "webhook": settings.RATE_LIMIT_WEBHOOK_PER_MIN,
         "auth": settings.RATE_LIMIT_AUTH_PER_MIN,
         "asset": 20,
+        "import": 10,
     }[bucket]
 
 
@@ -47,6 +48,10 @@ def _bucket_name(method: str, path: str) -> str:
         method == "PUT" and path.startswith("/api/v1/admin/events/")
     ):
         return "asset"
+    if method == "POST" and (
+        path.endswith("/teams/import/preview") or path.endswith("/teams/import/confirm")
+    ):
+        return "import"
     # Status polling (GET /payments/{id}/status) is ordinary public traffic.
     return "public"
 

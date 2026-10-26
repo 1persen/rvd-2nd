@@ -274,6 +274,37 @@
             <p class="text-sm text-gray-400">Memuat tim...</p>
           </div>
         </div>
+
+        <!-- Excel Import -->
+        <div class="border-t pt-4">
+          <h4 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Import dari Excel</h4>
+          <div class="flex flex-wrap items-center gap-3">
+            <button type="button" onclick="downloadImportTemplate()" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Download Template</button>
+            <input type="file" id="import-file" accept=".xlsx" class="text-sm">
+            <button type="button" id="import-preview-btn" onclick="previewImportFile()" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Periksa</button>
+          </div>
+          <p class="mt-1 text-xs text-gray-500">File .xlsx maksimal 1 MiB dan 500 baris data. Kategori tiap baris harus sama dengan kategori event.</p>
+          <p id="import-error" class="mt-2 text-sm text-red-600 hidden"></p>
+          <div id="import-summary" class="mt-3 hidden text-sm"></div>
+          <div id="import-preview-wrap" class="mt-3 hidden overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-left text-gray-500 border-b">
+                  <th class="px-2 py-2">Baris</th>
+                  <th class="px-2 py-2">Nama</th>
+                  <th class="px-2 py-2">Sekolah</th>
+                  <th class="px-2 py-2">Kategori</th>
+                  <th class="px-2 py-2">Status</th>
+                  <th class="px-2 py-2">Alasan</th>
+                </tr>
+              </thead>
+              <tbody id="import-preview-body"></tbody>
+            </table>
+          </div>
+          <div class="mt-3 flex justify-end">
+            <button type="button" id="import-confirm-btn" onclick="confirmImportFile()" disabled class="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium">Konfirmasi Import</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -765,6 +796,7 @@
     document.getElementById('team-form').reset();
     document.getElementById('team-id').value = '';
     document.getElementById('team-sort-order').value = '0';
+    resetImportState();
     showId('teams-modal');
     loadTeams(eventId);
   };
@@ -1005,6 +1037,173 @@
       submitBtn.textContent = originalText;
     }
   });
+
+  // --- Excel import ---------------------------------------------------------
+  let importReport = null;
+
+  function resetImportState() {
+    importReport = null;
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-error').classList.add('hidden');
+    document.getElementById('import-summary').classList.add('hidden');
+    document.getElementById('import-preview-wrap').classList.add('hidden');
+    document.getElementById('import-confirm-btn').disabled = true;
+  }
+
+  window.downloadImportTemplate = async function() {
+    if (!currentEventId) return;
+    try {
+      const token = localStorage.getItem('wvc_admin_token') || '';
+      const res = await fetch(API_BASE + '/admin/events/' + currentEventId + '/teams/import/template', {
+        headers: { 'Authorization': 'Bearer ' + token },
+      });
+      if (!res.ok) throw new Error('Gagal mengunduh template');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'template-import-peserta.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      const err = document.getElementById('import-error');
+      err.textContent = e.message;
+      err.classList.remove('hidden');
+    }
+  };
+
+  window.previewImportFile = async function() {
+    const err = document.getElementById('import-error');
+    err.classList.add('hidden');
+    const input = document.getElementById('import-file');
+    const file = input.files && input.files[0];
+    if (!file) {
+      err.textContent = 'Pilih file .xlsx terlebih dahulu.';
+      err.classList.remove('hidden');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      err.textContent = 'Ukuran file melebihi 1 MiB.';
+      err.classList.remove('hidden');
+      return;
+    }
+    const button = document.getElementById('import-preview-btn');
+    button.disabled = true;
+    try {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      const token = localStorage.getItem('wvc_admin_token') || '';
+      const res = await fetch(API_BASE + '/admin/events/' + currentEventId + '/teams/import/preview', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData,
+      });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('wvc_admin_token');
+        window.location.href = '/admin/login';
+        return;
+      }
+      const body = await res.json().catch(function() { return {}; });
+      if (!res.ok || !body.success) {
+        throw new Error((body && body.message) || 'Gagal memeriksa file');
+      }
+      renderImportReport(body.data);
+    } catch (e) {
+      err.textContent = e.message;
+      err.classList.remove('hidden');
+    } finally {
+      button.disabled = false;
+    }
+  };
+
+  function renderImportReport(report) {
+    importReport = report;
+    const statusBadge = {
+      valid: '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">valid</span>',
+      invalid: '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">invalid</span>',
+      duplicate: '<span class="px-2 py-0.5 rounded text-xs bg-amber-100 text-amber-700">duplikat</span>',
+    };
+
+    const summary = document.getElementById('import-summary');
+    const notes = [];
+    if (report.blocking_message) notes.push(esc(report.blocking_message));
+    if (report.skipped_empty_rows && report.skipped_empty_rows.length) {
+      notes.push('Baris kosong dilewati: ' + esc(report.skipped_empty_rows.join(', ')));
+    }
+    (report.warnings || []).forEach(function(w) { notes.push(esc(w)); });
+    summary.innerHTML =
+      'Total baris: <strong>' + report.total_rows + '</strong> · ' +
+      '<span class="text-green-700">valid: ' + report.valid_count + '</span> · ' +
+      '<span class="text-red-700">invalid: ' + report.invalid_count + '</span> · ' +
+      '<span class="text-amber-700">duplikat di file: ' + report.duplicate_in_file_count + '</span> · ' +
+      '<span class="text-amber-700">sudah ada di event: ' + report.duplicate_existing_count + '</span>' +
+      (notes.length ? '<div class="mt-1 text-xs text-gray-500">' + notes.join(' · ') + '</div>' : '');
+    summary.classList.remove('hidden');
+
+    document.getElementById('import-preview-body').innerHTML = (report.rows || []).map(function(row) {
+      const reasons = (row.errors || []).map(function(e) { return esc(e.message); }).join('; ');
+      return '<tr class="border-b last:border-0">' +
+        '<td class="px-2 py-1.5">' + row.row_number + '</td>' +
+        '<td class="px-2 py-1.5">' + esc(row.data.nama_tim) + '</td>' +
+        '<td class="px-2 py-1.5">' + esc(row.data.sekolah || '') + '</td>' +
+        '<td class="px-2 py-1.5">' + esc(row.data.kategori_label || row.data.kategori || '') + '</td>' +
+        '<td class="px-2 py-1.5">' + (statusBadge[row.status] || esc(row.status)) + '</td>' +
+        '<td class="px-2 py-1.5 text-xs text-red-600">' + reasons + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('import-preview-wrap').classList.remove('hidden');
+
+    document.getElementById('import-confirm-btn').disabled = !report.can_confirm;
+  }
+
+  window.confirmImportFile = async function() {
+    if (!importReport || !importReport.can_confirm) return;
+    const input = document.getElementById('import-file');
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (!confirm('Impor ' + importReport.valid_count + ' tim ke event ini?')) return;
+
+    const err = document.getElementById('import-error');
+    err.classList.add('hidden');
+    const button = document.getElementById('import-confirm-btn');
+    button.disabled = true;
+    try {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      formData.append('sha256', importReport.sha256);
+      const token = localStorage.getItem('wvc_admin_token') || '';
+      const res = await fetch(API_BASE + '/admin/events/' + currentEventId + '/teams/import/confirm', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData,
+      });
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem('wvc_admin_token');
+        window.location.href = '/admin/login';
+        return;
+      }
+      const body = await res.json().catch(function() { return {}; });
+      if (!res.ok || !body.success) {
+        if (body && body.data && body.data.rows) {
+          // Re-render with the server-side problem list so the admin can fix the file.
+          importReport = Object.assign({}, importReport, body.data, { can_confirm: false });
+          renderImportReport(importReport);
+        }
+        throw new Error((body && body.message) || 'Impor gagal');
+      }
+      resetImportState();
+      err.textContent = '';
+      err.classList.add('hidden');
+      loadTeams(currentEventId);
+    } catch (e) {
+      err.textContent = e.message;
+      err.classList.remove('hidden');
+    } finally {
+      button.disabled = importReport ? !importReport.can_confirm : true;
+    }
+  };
 
   window.loadEvents = loadEvents;
   loadEvents();
