@@ -644,6 +644,7 @@
             '<td class="px-6 py-3 text-gray-500">' + dateText + '</td>' +
              '<td class="px-6 py-3 text-right">' +
                  viewLink +
+                '<button onclick="openTeamsModal(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Peserta</button>' +
                 '<button onclick="editEvent(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Ubah</button>' +
                 '<button onclick="openEventDetailModal(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Detail</button>' +
                 '<button onclick="deleteEvent(' + esc(JSON.stringify(ev.id)) + ')" class="text-red-600 hover:text-red-700 text-xs font-medium">Hapus</button>' +
