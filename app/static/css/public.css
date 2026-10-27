@@ -784,19 +784,22 @@ html.dark .public-site .home-event-row__date,html.dark .public-site .home-event-
 .public-site .support-terms-card p { margin:0; font-size:14px; line-height:1.75; color:var(--ink); }
 .public-site .support-terms-card a { text-decoration:underline; text-underline-offset:3px; }
 .public-site .support-card-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin:14px 0 8px; max-width:960px; }
-.public-site .support-info-card { display:flex; flex-direction:column; gap:14px; padding:20px; border:1px solid var(--line); border-radius:14px; background:#fffdf8; transition:border-color .18s, box-shadow .18s, transform .18s; }
+.public-site .support-info-card { display:flex; flex-direction:column; gap:12px; padding:20px; border:1px solid var(--line); border-radius:14px; background:#fffdf8; transition:border-color .18s, box-shadow .18s, transform .18s; }
 .public-site .support-info-card:hover,.public-site .support-info-card:focus-within { border-color:#cfc4a6; box-shadow:0 10px 26px rgba(23,43,50,.07); transform:translateY(-2px); }
 .public-site .support-info-card__icon { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border:1px solid var(--line); border-radius:10px; color:#8b744a; background:linear-gradient(180deg,#faf7ef,#f1ecdd); }
 .public-site .support-info-card__icon svg { width:20px; height:20px; }
+.public-site .support-info-card__title { margin:0; font-size:15px; font-weight:600; line-height:1.4; letter-spacing:-.01em; color:var(--ink); }
 .public-site .support-info-card__text { margin:0; font-size:14px; line-height:1.75; color:var(--ink); }
 .public-site .support-info-card__text a { text-decoration:underline; text-underline-offset:3px; }
 .public-site .support-info-card--warn { border-color:#e3c9a0; background:linear-gradient(180deg,#fff8ec,#f6ead4); }
 .public-site .support-info-card--warn .support-info-card__icon { color:#9a6b2a; background:linear-gradient(180deg,#fdf3df,#f3e2c2); }
 .public-site .support-info-card--warn .support-info-card__text { color:#5b3f12; }
-.public-site .support-terms-list { margin:8px 0 18px; padding-left:26px; max-width:760px; }
-.public-site .support-terms-list li { font-size:14px; line-height:1.8; color:var(--ink); margin-bottom:10px; text-align:justify; hyphens:auto; }
+.public-site .support-terms-list { margin:8px 0 18px; padding-left:26px; max-width:760px; list-style:decimal outside; }
+.public-site ul.support-terms-list { list-style:disc outside; }
+.public-site .support-terms-list li { font-size:14px; line-height:1.8; color:var(--ink); margin-bottom:10px; text-align:left; }
 .public-site .support-terms-list li::marker { color:#8b744a; font-weight:600; }
 .public-site .support-terms-list a { text-decoration:underline; text-underline-offset:3px; }
+.public-site .support-terms-note { max-width:760px; margin:12px 0 0; font-size:13px; line-height:1.8; color:var(--muted); }
 .public-site .support-refund-lead { max-width:760px; margin:8px 0 22px; font-size:14px; line-height:1.8; color:var(--muted); }
 .public-site .support-warning { display:flex; gap:16px; align-items:flex-start; padding:20px 22px; margin-top:22px; border:1px solid #e3c9a0; border-radius:14px; background:linear-gradient(180deg,#fff8ec,#f6ead4); max-width:760px; }
 .public-site .support-warning__icon { display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; flex:none; border-radius:10px; color:#9a6b2a; background:linear-gradient(180deg,#fdf3df,#f3e2c2); }
