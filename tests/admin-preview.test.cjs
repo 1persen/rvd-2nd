@@ -23,7 +23,8 @@ function previewHarness() {
     addEventListener() {},
     removeAttribute() {},
     setAttribute() {},
-    querySelector() { return null; },
+    querySelector() { return element(); },
+    querySelectorAll() { return []; },
   });
 
   const previewWindow = {
@@ -73,6 +74,9 @@ function previewHarness() {
   context.window = context;
 
   vm.runInContext(readFileSync(join(__dirname, '../app/static/js/admin.js'), 'utf8'), context);
+  // admin_events.html loads the shared Excel-import controller before its inline
+  // script, so the harness must do the same for the inline init to resolve.
+  vm.runInContext(readFileSync(join(__dirname, '../app/static/js/team_import.js'), 'utf8'), context);
   const source = readFileSync(join(__dirname, '../app/templates/pages/admin_events.html'), 'utf8')
     .match(/<script>([\s\S]*?)<\/script>/)[1];
   vm.runInContext(source, context);
