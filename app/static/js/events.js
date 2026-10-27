@@ -317,5 +317,25 @@ function eventsPage(event, allEvents, config) {
         this.participantPage = page;
       }
     },
+
+    async downloadFile(url, filename) {
+      if (!url) return;
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) throw new Error('Fetch gagal');
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename || 'download';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      } catch (err) {
+        // Fallback: open in new tab if fetch fails (CORS, network, etc.)
+        window.open(url, '_blank');
+      }
+    }
   };
 }
