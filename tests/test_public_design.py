@@ -1,4 +1,5 @@
 """Public rendering and event-specific leaderboard regression checks."""
+import re
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -113,12 +114,27 @@ def test_support_terms_and_refund_follow_scannable_structure():
         request=request('/support'), support_email='', support_phone='', support_hours='')
     terms = html[html.index('<section id="syarat"'):html.index('<section id="refund"')]
     refund = html[html.index('<section id="refund"'):html.index('<section id="faq"')]
-    assert [heading.split('</h3>')[0] for heading in terms.split('<h3 class="support-terms-sub">')[1:4]] == [
-        '1. Ketentuan Penggunaan',
-        '2. Ketentuan Pemesanan dan Pembayaran',
-        '3. Pembatalan Pesanan',
+    headings = [
+        re.sub(r'<[^>]+>', '', block.split('</h3>')[0]).strip()
+        for block in terms.split('<h3 class="support-terms-sub">')[1:4]
     ]
-    usage = terms.split('<ol class="support-terms-list">')[1].split('</ol>')[0]
+    assert headings == [
+        'Ketentuan Penggunaan',
+        'Ketentuan Pemesanan dan Pembayaran',
+        'Pembatalan Pesanan',
+    ]
+    refund_headings = [
+        re.sub(r'<[^>]+>', '', block.split('</h3>')[0]).strip()
+        for block in refund.split('<h3 class="support-terms-sub">')[1:4]
+    ]
+    assert refund_headings == ['Ketentuan Refund', 'Kondisi Pengajuan', 'Cara Mengajukan Refund']
+    assert terms.count('class="support-terms-sub__icon"') == 3
+    assert refund.count('class="support-terms-sub__icon"') == 3
+    assert '<ol' not in html
+    assert 'support-terms-list--checks' in terms
+    assert 'support-terms-list--conditions' in refund
+    assert 'support-terms-list--steps' in refund
+    usage = terms.split('support-terms-list--checks">')[1].split('</ul>')[0]
     assert usage.count('<li>') == 8
     assert terms.count('class="support-info-card"') == 4
     for title in ('Harga dan Rincian Pesanan', 'Verifikasi Pembayaran', 'Bukti Transaksi', 'Hindari Pembayaran Ganda'):
@@ -127,7 +143,7 @@ def test_support_terms_and_refund_follow_scannable_structure():
     assert 'pembatalan mungkin tidak dapat dilakukan' in terms
     assert refund.count('<li><strong>') == 5
     assert '<strong>Pembayaran gagal atau kedaluwarsa.</strong>' in refund
-    steps = refund.split('<h3 class="support-terms-sub">3. Cara Mengajukan Refund</h3>')[1].split('</ol>')[0]
+    steps = refund.split('support-terms-list--steps">')[1].split('</ul>')[0]
     assert steps.count('<li>') == 4
     for step in (
         'Hubungi tim bantuan melalui',
