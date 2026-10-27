@@ -28,6 +28,14 @@ redis==5.2.0
 # Sprint 7 — export
 openpyxl==3.1.5
 
+# Event themes — asset uploads (validate + normalize before Storage).
+# Renovate/pin-review should regenerate requirements.lock at the same time;
+# both packages have wheels for the pinned Python runtime.
+pillow==13.0.0
+fonttools[woff]==4.67.0
+defusedxml==0.7.1
+python-multipart==0.0.20
+
 # testing
 pytest==9.0.3
 pytest-asyncio==1.3.0

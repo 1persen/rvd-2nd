@@ -1,0 +1,6 @@
+<style>
+  {{ theme_css | safe }}
+  {% if assets.ornament %}
+  .event-page[data-template="{{ template_key }}"] .event-ornament { background-image: url('{{ assets.ornament }}'); }
+  {% endif %}
+</style>

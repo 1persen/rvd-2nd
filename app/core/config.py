@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     CLOUDFLARE_API_KEY: str = ""
     MAX_ACTIVE_USER: int = 500
 
+    # Supabase Storage for per-event branding assets. All three empty = feature
+    # disabled (uploads return 503, theme-only saves keep working). A partial
+    # configuration is a deployment mistake and fails at startup.
+    SUPABASE_URL: str = ""
+    SUPABASE_SECRET_KEY: str = ""
+    SUPABASE_STORAGE_BUCKET: str = "event-assets"
+
     JWT_SECRET_KEY: str = "change-this-secret-key"
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
@@ -74,6 +81,22 @@ class Settings(BaseSettings):
             raise RuntimeError("Mock payments cannot be combined with Duitku credentials or production mode")
         if self.MIDTRANS_MOCK_MODE and (self.MIDTRANS_SERVER_KEY or self.MIDTRANS_IS_PRODUCTION):
             raise RuntimeError("MIDTRANS_MOCK_MODE cannot be combined with a Midtrans server key or production mode")
+        _supabase = (self.SUPABASE_URL, self.SUPABASE_SECRET_KEY)
+        if any(_supabase) and not all(_supabase):
+            raise RuntimeError(
+                "SUPABASE_URL and SUPABASE_SECRET_KEY must be set together (or both left empty)"
+            )
+        if self.SUPABASE_URL:
+            if not self.SUPABASE_URL.startswith("https://"):
+                raise RuntimeError("SUPABASE_URL must be an https:// project URL")
+            if not self.SUPABASE_SECRET_KEY.startswith("sb_secret_"):
+                raise RuntimeError("SUPABASE_SECRET_KEY must be a Supabase secret key (sb_secret_...)")
+            if not self.SUPABASE_STORAGE_BUCKET.strip():
+                raise RuntimeError("SUPABASE_STORAGE_BUCKET must name the public asset bucket")
+
+    @property
+    def storage_configured(self) -> bool:
+        return bool(self.SUPABASE_URL and self.SUPABASE_SECRET_KEY and self.SUPABASE_STORAGE_BUCKET)
 
     @property
     def midtrans_mock_enabled(self) -> bool:

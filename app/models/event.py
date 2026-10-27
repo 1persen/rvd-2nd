@@ -5,7 +5,8 @@ Status lifecycle: Draft → Published → Voting Open → Voting Closed → Fini
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, Integer, String, Text
+from sqlalchemy import DateTime, Enum, Integer, JSON, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -25,6 +26,17 @@ class Event(TimestampMixin, SoftDeleteMixin, UUIDMixin, Base):
     slug: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, unique=True, index=True)
     category: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
     banner_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    # Presentation is additive: old rows get the classic template and {} theme.
+    # SQLite dev databases keep working through the JSON variant.
+    template_key: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="classic", server_default="classic"
+    )
+    theme_config: Mapped[dict] = mapped_column(
+        JSON().with_variant(JSONB, "postgresql"),
+        nullable=False,
+        default=dict,
+        server_default="{}",
+    )
     timezone: Mapped[str] = mapped_column(String(50), default="UTC", nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="IDR", nullable=False)
     price_per_vote: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)

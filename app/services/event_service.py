@@ -15,6 +15,7 @@ from app.repositories import event as event_repo
 from app.repositories import team as team_repo
 from app.schemas.event import EventCreate, EventUpdate
 from app.schemas.team import TeamCreate, TeamUpdate
+from app.services import event_page_service
 from app.utils import new_id
 import re
 
@@ -27,6 +28,15 @@ from app.enums.education_level import (
 # Backwards-compatible aliases kept for existing callers/tests.
 ALLOWED_EDUCATION_LEVELS = ALLOWED_EDUCATION_LEVELS
 ALLOWED_EVENT_CATEGORIES = ALLOWED_EVENT_CATEGORIES
+
+# The only statuses whose event data may be served to anonymous visitors.
+# Drafts and archives stay manageable/previewable by admins.
+PUBLIC_EVENT_STATUSES = frozenset({
+    EventStatus.PUBLISHED,
+    EventStatus.VOTING_OPEN,
+    EventStatus.VOTING_CLOSED,
+    EventStatus.FINISHED,
+})
 
 def _slugify(value: str) -> str:
     slug = re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")
@@ -53,6 +63,53 @@ async def get_event_or_404(session: AsyncSession, event_id: str) -> Event:
     if not event or event.deleted_at is not None:
         raise HTTPException(status_code=404, detail="Event tidak ditemukan")
     return event
+
+
+def is_public_event(event: Event) -> bool:
+    return event is not None and event.deleted_at is None and event.status in PUBLIC_EVENT_STATUSES
+
+
+async def get_public_event_or_404(session: AsyncSession, event_id: str) -> Event:
+    """Anonymous guard: drafts, archives, and soft-deleted events look absent."""
+    event = await event_repo.get_event(session, event_id)
+    if not is_public_event(event):
+        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    return event
+
+
+async def get_public_event_by_slug_or_404(session: AsyncSession, slug_or_id: str) -> Event:
+    event = await event_repo.get_by_slug(session, slug_or_id)
+    if not is_public_event(event):
+        event = await event_repo.get_event(session, slug_or_id)
+    if not is_public_event(event):
+        raise HTTPException(status_code=404, detail="Event tidak ditemukan")
+    return event
+
+
+async def list_public_events(session: AsyncSession, limit: int = 50) -> list[Event]:
+    return [
+        event
+        for event in await event_repo.list_events(session, limit=limit)
+        if event.status in PUBLIC_EVENT_STATUSES
+    ]
+
+
+def _validate_theme_payload(event_id: str, theme_config, previous_theme: dict | None = None) -> dict:
+    try:
+        theme = event_page_service.validate_theme_config(theme_config)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    old_assets = (previous_theme or {}).get("assets") or {}
+    for slot, url in (theme.get("assets") or {}).items():
+        if not url or url == old_assets.get(slot):
+            continue
+        if not event_page_service.is_managed_asset_url(url, event_id):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Aset {slot} harus diunggah melalui form event ini",
+            )
+    return theme
 
 
 async def require_voting_open(event: Event) -> None:
@@ -135,7 +192,13 @@ async def create_event(session: AsyncSession, payload: EventCreate) -> Event:
         opens_at=payload.opens_at,
         closes_at=payload.closes_at,
         price_per_vote=payload.price_per_vote,
+        template_key=event_page_service.resolve_template_key(payload.template_key),
+        theme_config=_validate_theme_payload(
+            "evt_pending", payload.theme_config, event_page_service.default_theme()
+        ),
     )
+    # Assets need a stable event id, so a brand-new event starts without any.
+    event.theme_config = {**event.theme_config, "assets": event_page_service.default_theme()["assets"]}
     session.add(event)
     await session.flush()
     return event
@@ -144,6 +207,14 @@ async def create_event(session: AsyncSession, payload: EventCreate) -> Event:
 async def update_event(session: AsyncSession, event_id: str, payload: EventUpdate) -> Event:
     event = await get_event_or_404(session, event_id)
     data = payload.model_dump(exclude_unset=True)
+    if "template_key" in data:
+        data["template_key"] = event_page_service.resolve_template_key(data["template_key"])
+    if "theme_config" in data:
+        if payload.theme_config is None:
+            raise HTTPException(status_code=400, detail="Konfigurasi tema tidak boleh kosong")
+        previous = event_page_service.normalize_theme_config(event.theme_config)
+        theme = _validate_theme_payload(event_id, payload.theme_config, previous)
+        data["theme_config"] = {**theme, "assets": theme.get("assets", {})}
     if "slug" in data and data["slug"] is None:
         data.pop("slug")
     if "category" in data and data["category"] is None:

@@ -22,6 +22,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.core.config import settings
 from app.middleware import (  # noqa: F401
     AuditMiddleware,
+    BodyLimitMiddleware,
     RateLimitMiddleware,
     SecurityMiddleware,
 )
@@ -50,11 +51,14 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 # Middleware — urutan penting. Middleware yang ditambahkan terakhir akan
 # dijalankan pertama (paling luar).
-# Logging -> Security -> Rate Limit -> Audit -> Route
-# (Security wraps Rate Limit so 429 responses carry the security headers too.)
+# Logging -> Body Limit -> Security -> Rate Limit -> Audit -> Route
+# (Body Limit sits outside routing so an oversized admin upload answers 413
+# before multipart parsing; Security wraps Rate Limit so 429 responses carry
+# the security headers too.)
 app.add_middleware(AuditMiddleware)
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(SecurityMiddleware)
+app.add_middleware(BodyLimitMiddleware)
 app.add_middleware(LoggingMiddleware)
 
 # Routers

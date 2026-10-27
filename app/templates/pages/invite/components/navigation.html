@@ -1,0 +1,30 @@
+<header class="event-header" aria-label="Header event {{ event.name }}">
+  <div class="event-header-inner shell">
+    <div class="event-identity">
+      {% if event.banner_url %}<img class="event-banner-thumb" src="{{ event.banner_url }}" alt="Poster {{ event.name }}" loading="lazy" onerror="this.style.display='none'">{% endif %}
+      <div class="group flex items-center gap-3 text-left transition-opacity hover:opacity-90">
+        <img class="h-12 w-auto object-contain" src="{{ assets.logo }}" alt="Logo {{ event.name }}">
+        <div>
+          <span class="block text-[11px] font-black uppercase tracking-[0.25em] text-[#ffd875]" x-text="event?.name || 'RAJA VOTING'"></span>
+          <span class="block text-[9px] font-bold uppercase tracking-widest text-[#d8c39d]" x-text="event?.category_label || 'DIGITAL VOTING PLATFORM'"></span>
+        </div>
+      </div>
+    </div>
+    <nav class="event-tabs" aria-label="Bagian event">
+      <button type="button" @click="setTab('beranda')" :aria-current="tab === 'beranda' ? 'page' : null" :class="{ 'is-active': tab === 'beranda' }">{{ icon('home') }}<span>BERANDA</span><span x-show="tab === 'beranda'" class="tab-dot"></span></button>
+      {% if theme.show_participants %}
+      <button type="button" @click="setTab('peserta')" :aria-current="tab === 'peserta' ? 'page' : null" :class="{ 'is-active': tab === 'peserta' }">{{ icon('users') }}<span>PESERTA</span><span x-show="tab === 'peserta'" class="tab-dot"></span></button>
+      {% endif %}
+      <button type="button" @click="setTab('klasemen')" :aria-current="tab === 'klasemen' ? 'page' : null" :class="{ 'is-active': tab === 'klasemen' }">{{ icon('trophy') }}<span>KLASEMEN</span><span x-show="tab === 'klasemen'" class="tab-dot"></span></button>
+      <button type="button" @click="setTab('sultan')" :aria-current="tab === 'sultan' ? 'page' : null" :class="{ 'is-active': tab === 'sultan' }">{{ icon('crown') }}<span>SULTAN</span><span x-show="tab === 'sultan'" class="tab-dot"></span></button>
+    </nav>
+    <div class="event-actions">
+      {% if not preview %}
+      <button type="button" class="button button-dark" @click="setTab('{{ 'peserta' if theme.show_participants else 'klasemen' }}')" x-show="event?.is_voting_open">DUKUNG SEKARANG {{ icon('arrow') }}</button>
+      <button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen" aria-label="Buka QR code event">{{ icon('qr') }}<span x-show="!qrOpen">QR</span><span x-show="qrOpen">Tutup</span></button>
+      {% else %}
+      <span class="preview-chip">PRATINJAU</span>
+      {% endif %}
+    </div>
+  </div>
+</header>

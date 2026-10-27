@@ -12,13 +12,16 @@ function adminPage(file, responses) {
     querySelector() { return null; },
     addEventListener() {},
     getElementById(id) {
-      if (!elements.has(id)) elements.set(id, { value: '', innerHTML: '', textContent: '', classList: { add() {}, remove() {} }, addEventListener() {} });
+      if (!elements.has(id)) elements.set(id, { value: '', innerHTML: '', textContent: '', classList: { add() {}, remove() {} }, addEventListener() {}, querySelector() { return { value: '', textContent: '', innerHTML: '', disabled: false, files: [], classList: { add() {}, remove() {} }, addEventListener() {}, setAttribute() {} }; }, querySelectorAll() { return []; } });
       return elements.get(id);
     },
   };
   const context = vm.createContext({ document, Date, console, localStorage: { getItem() { return 'test'; } }, fetch: async url => ({ ok: true, status: 200, json: async () => ({ success: true, data: responses(url) }) }) });
   context.window = context;
   vm.runInContext(readFileSync(join(__dirname, '../app/static/js/admin.js'), 'utf8'), context);
+  // admin_events.html loads the shared Excel-import controller before its inline
+  // script, so the harness must do the same for the inline init to resolve.
+  vm.runInContext(readFileSync(join(__dirname, '../app/static/js/team_import.js'), 'utf8'), context);
   const source = readFileSync(join(__dirname, '../app/templates/pages', file), 'utf8').match(/<script>([\s\S]*?)<\/script>/)[1];
   vm.runInContext(source, context);
   return { context, elements };

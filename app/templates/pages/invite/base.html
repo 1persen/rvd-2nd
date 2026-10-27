@@ -1,0 +1,69 @@
+{% extends "event_base.html" %}
+{% from "macros/public.html" import icon, podium, stage_header %}
+{% block title %}{{ event.name }} — Raja Voting Digital{% endblock %}
+{% block head %}
+{{ super() }}
+<link rel="stylesheet" href="/static/css/invite.css?v={{ invite_css_version | default('preview', true) }}">
+{% include "pages/invite/components/theme_style.html" %}
+{% endblock %}
+{% block content %}
+<div class="event-page" data-template="{{ template_key }}" data-bg="{{ theme.background_type }}" x-data='eventsPage({{ event | tojson }}, [], {{ invite_config | tojson }})' x-cloak>
+  {% if preview %}
+  <div class="preview-banner" role="status"><strong>Pratinjau</strong><span>Halaman belum disimpan. Tautan vote dinonaktifkan.</span></div>
+  {% endif %}
+
+  {% include "pages/invite/components/navigation.html" %}
+
+  {% if payment_sandbox_enabled() and not preview %}
+  <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
+  {% endif %}
+
+  {% if not preview %}
+  <div x-show="qrOpen" x-cloak class="qr-panel" role="dialog" aria-modal="true" aria-label="QR code event">
+    <div class="qr-panel-backdrop" @click="qrOpen = false"></div>
+    <div class="qr-panel-content">
+      <button type="button" class="qr-close" @click="qrOpen = false" aria-label="Tutup QR code">{{ icon('arrow') }}</button>
+      <div class="qr-body">
+        <h3>QR Code Event</h3>
+        <p class="qr-sub">Scan untuk membuka halaman event ini.</p>
+        <img class="qr-image" :src="qrUrl" alt="QR code event" onerror="this.style.display='none'">
+        <div class="qr-url" x-text="event?.invite_path || window.location.pathname"></div>
+        <button type="button" class="button button-dark qr-copy" @click="qrOpen = false">Tutup {{ icon('arrow') }}</button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <section class="shell event-content">
+    <div x-show="loading[tab]" class="empty-state" role="status"><span class="loading-ring"></span><p>Menyiapkan panggung…</p></div>
+    <div x-show="error[tab]" class="empty-state" role="alert"><h3>Data belum dapat dimuat.</h3><p x-text="error[tab]"></p><button class="button button-dark" @click="fetchIfNeeded(tab)">Coba lagi</button></div>
+    <div x-show="!loading[tab] && !error[tab]">
+      <div x-show="tab === 'beranda'">
+        {% block hero %}{% endblock %}
+      </div>
+      {% if theme.show_participants %}
+      <div x-show="tab === 'peserta'">
+        {% include "pages/invite/components/participants.html" %}
+      </div>
+      {% endif %}
+      <div x-show="tab === 'klasemen'">
+        {% include "pages/invite/components/leaderboard.html" %}
+      </div>
+      <div x-show="tab === 'sultan'">
+        {% include "pages/invite/components/supporters.html" %}
+      </div>
+    </div>
+  </section>
+
+  <nav class="event-bottom-nav" aria-label="Navigasi event">
+    <button type="button" @click="setTab('beranda')" :class="{ 'is-active': tab === 'beranda' }" :aria-current="tab === 'beranda' ? 'page' : null">{{ icon('home') }}<span>Beranda</span></button>
+    {% if theme.show_participants %}
+    <button type="button" @click="setTab('peserta')" :class="{ 'is-active': tab === 'peserta' }" :aria-current="tab === 'peserta' ? 'page' : null">{{ icon('users') }}<span>Peserta</span></button>
+    {% endif %}
+    <button type="button" @click="setTab('klasemen')" :class="{ 'is-active': tab === 'klasemen' }" :aria-current="tab === 'klasemen' ? 'page' : null">{{ icon('trophy') }}<span>Klasemen</span></button>
+    <button type="button" @click="setTab('sultan')" :class="{ 'is-active': tab === 'sultan' }" :aria-current="tab === 'sultan' ? 'page' : null">{{ icon('crown') }}<span>Sultan</span></button>
+  </nav>
+  <div class="event-bottom-spacer" aria-hidden="true"></div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/events.js?v={{ tailwind_css_version | default('preview', true) }}"></script>{% endblock %}

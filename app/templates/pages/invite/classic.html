@@ -1,0 +1,43 @@
+{% extends "pages/invite/base.html" %}
+{% from "macros/public.html" import icon %}
+{% block hero %}
+<div class="event-home">
+  <div class="event-hero-top">
+    <img class="event-home-logo" src="{{ assets.logo }}" alt="Logo {{ event.name }}">
+    <div class="event-date-card">
+      <span class="event-date-label">PELAKSANAAN ACARA</span>
+      <div class="event-date-row">
+        <span class="event-date-icon">{{ icon('calendar') }}</span>
+        <div>
+          <b class="event-date-day" x-text="event?.opens_at ? new Date(event.opens_at).getDate() : '-'"></b>
+          <small class="event-date-month" x-text="event?.opens_at ? new Date(event.opens_at).toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase() : 'JADWAL MENYUSUL'"></small>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="event-home-main">
+    {% if theme.show_countdown %}
+    <div class="event-countdown" x-show="countdown" x-cloak>
+      <span class="eyebrow">MENUJU HARI PEMBUKAAN</span>
+      <div class="countdown-grid">
+        <div><b x-text="String(countdown?.days ?? 0).padStart(2, '0')"></b><small>HARI</small></div>
+        <div><b x-text="String(countdown?.hours ?? 0).padStart(2, '0')"></b><small>JAM</small></div>
+        <div><b x-text="String(countdown?.minutes ?? 0).padStart(2, '0')"></b><small>MENIT</small></div>
+        <div><b x-text="String(countdown?.seconds ?? 0).padStart(2, '0')"></b><small>DETIK</small></div>
+      </div>
+    </div>
+    {% endif %}
+    <div class="event-home-actions">
+      <button type="button" class="button button-dark" @click="setTab('{{ 'peserta' if theme.show_participants else 'klasemen' }}')">Mulai Vote Sekarang {{ icon('arrow') }}</button>
+      <button type="button" class="button button-outline" @click="setTab('klasemen')">Lihat Klasemen</button>
+      {% if not preview %}<button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen">{{ icon('qr') }} QR Event</button>{% endif %}
+    </div>
+  </div>
+  <div class="event-home-stats">
+    <div><span class="event-stat-icon">{{ icon('check') }}</span><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>TOTAL SUARA</small></div>
+    <div><span class="event-stat-icon">{{ icon('users') }}</span><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>KONTINGEN TERDAFTAR</small></div>
+    <div><span class="event-stat-icon">{{ icon('star') }}</span><b x-text="Number(event?.total_supporters || 0).toLocaleString('id-ID')"></b><small>PENDUKUNG</small></div>
+    <div><span class="event-stat-icon">{{ icon('spark') }}</span><b x-text="event?.category_label || 'UMUM'"></b><small>KATEGORI EVENT</small></div>
+  </div>
+</div>
+{% endblock %}

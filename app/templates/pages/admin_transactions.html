@@ -125,7 +125,7 @@
   }
 
   async function loadEvents() {
-    const data = await api('/events');
+    const data = await api('/admin/events');
     allEvents = data?.data || [];
     const select = document.getElementById('filter-event');
     select.innerHTML = '<option value="">Semua event</option>' +

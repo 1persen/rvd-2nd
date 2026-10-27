@@ -15,6 +15,18 @@ async def get_event(session: AsyncSession, event_id: str) -> Optional[Event]:
     return await session.get(Event, event_id)
 
 
+async def lock_event_category(session: AsyncSession, event_id: str) -> tuple[bool, Optional[str]]:
+    """Row-lock the event until the caller's transaction ends.
+
+    Returns (found, category). Used to serialize concurrent team imports per event.
+    """
+    stmt = select(Event.id, Event.category).where(Event.id == event_id).with_for_update()
+    row = (await session.execute(stmt)).first()
+    if row is None:
+        return False, None
+    return True, row.category
+
+
 async def get_by_slug(session: AsyncSession, slug: str) -> Optional[Event]:
     # Slugs remain unique even for soft-deleted events because the database
     # unique index covers those rows too.

@@ -1,0 +1,279 @@
+/* Invite variants: theme tokens first, then per-template composition.
+   Loaded after public.css so these overrides stay scoped to .event-page. */
+
+.event-page {
+  min-height: 100vh;
+  font-family: var(--event-font, inherit);
+  color: var(--event-text, inherit);
+  background-repeat: no-repeat;
+}
+
+.event-page .button-dark {
+  background: var(--event-primary);
+  border-color: var(--event-primary);
+  color: var(--event-button-text);
+}
+
+.event-page .button-outline {
+  border-color: var(--event-primary);
+  color: var(--event-primary);
+}
+
+.event-page .event-tabs button:hover {
+  color: var(--event-primary);
+}
+
+.event-page .event-tabs button.is-active,
+.event-page .event-bottom-nav button.is-active {
+  color: var(--event-primary);
+}
+
+/* The header pill nav hardcodes --gold in public.css; the theme owns it here. */
+.event-page .event-tabs button.is-active {
+  background: var(--event-primary);
+  border-color: var(--event-primary);
+  color: var(--event-button-text);
+}
+
+.event-page .event-bottom-nav button.is-active::before {
+  background: var(--event-primary);
+}
+
+.event-page .event-tabs .tab-dot {
+  background: var(--event-primary);
+}
+
+/* Keyboard focus must stay visible on every theme: the token colour can be
+   low-contrast on some backgrounds, so pair it with a solid ring offset. */
+.event-page :focus-visible {
+  outline: 3px solid var(--event-primary);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.event-page .button:focus-visible,
+.event-page .event-tabs button:focus-visible,
+.event-page .event-bottom-nav button:focus-visible {
+  outline-offset: 4px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--event-primary) 30%, transparent);
+}
+
+.poster-meta div,
+.cinematic-meta {
+  border-color: var(--event-primary);
+}
+
+.preview-chip {
+  border-color: var(--event-primary);
+  color: var(--event-primary);
+}
+
+.event-page .participant-votes,
+.event-page .row-votes strong {
+  color: var(--event-primary);
+}
+
+.preview-banner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+  background: #FACC15;
+  color: #1F2937;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.preview-banner strong {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.preview-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.9rem;
+  border: 1px dashed var(--event-primary);
+  border-radius: 999px;
+  color: var(--event-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.preview-chip:focus-visible {
+  outline-offset: 3px;
+}
+
+/* --- Poster: one editorial hero, poster-led ------------------------------- */
+.event-poster-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+  padding: clamp(1.5rem, 4vw, 3rem) 0;
+}
+
+.poster-frame {
+  position: relative;
+  margin: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--event-secondary, #160F0A);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.poster-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  object-fit: cover;
+}
+
+.poster-title {
+  margin: 0.4rem 0 0.8rem;
+  font-size: clamp(1.9rem, 4.2vw, 3.1rem);
+  line-height: 1.05;
+  font-weight: 800;
+}
+
+.poster-desc {
+  max-width: 46ch;
+  opacity: 0.9;
+}
+
+.poster-meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.75rem;
+  margin: 1.4rem 0;
+}
+
+.poster-meta div {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--event-primary) 40%, transparent);
+  border-radius: 12px;
+}
+
+.poster-meta dt {
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.poster-meta dd {
+  margin: 0.25rem 0 0;
+  font-weight: 700;
+}
+
+.event-ornament {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* --- Cinematic: full-bleed backdrop with a document-flow hero ------------- */
+.cinematic-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 22px;
+  margin: clamp(1rem, 3vw, 2rem) 0;
+  min-height: min(78vh, 640px);
+  display: flex;
+  align-items: flex-end;
+  background: var(--event-secondary, #160F0A);
+}
+
+.cinematic-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.cinematic-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, rgba(0, 0, 0, calc(var(--event-overlay, 0.45) * 0.6)) 0%, rgba(0, 0, 0, var(--event-overlay, 0.45)) 55%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+.cinematic-inner {
+  position: relative;
+  z-index: 2;
+  padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(2rem, 5vw, 3.5rem);
+  color: var(--event-text, #FDFAF5);
+  max-width: 60rem;
+}
+
+.cinematic-logo {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.5rem;
+}
+
+.cinematic-title {
+  margin: 0.5rem 0 0.75rem;
+  font-size: clamp(2rem, 5vw, 3.6rem);
+  line-height: 1.02;
+  font-weight: 800;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.45);
+}
+
+.cinematic-desc {
+  max-width: 52ch;
+  opacity: 0.92;
+}
+
+.cinematic-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.25rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  opacity: 0.9;
+}
+
+.cinematic-countdown .countdown-grid b,
+.poster-countdown .countdown-grid b {
+  color: var(--event-primary);
+}
+
+.cinematic-ornament {
+  opacity: 0.28;
+}
+
+/* --- Responsive ----------------------------------------------------------- */
+@media (max-width: 820px) {
+  .event-poster-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .poster-image {
+    aspect-ratio: 3 / 4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .event-page *,
+  .event-page *::before,
+  .event-page *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -18,7 +18,16 @@ from app.repositories import audit_log as audit_repo
 
 logger = logging.getLogger(__name__)
 
-_SKIP_PATHS = ("/api/v1/payments/webhook", "/api/v1/payments/duitku/callback")
+# Preview is a POST that writes nothing; keeping it out of the audit table also
+# stops a page-load preview loop from filling audit_logs.
+_SKIP_PATHS = (
+    "/api/v1/payments/webhook",
+    "/api/v1/payments/duitku/callback",
+    "/api/v1/admin/events/preview",
+)
+# Import preview parses an uploaded file without writing anything; the confirm
+# endpoint is audited explicitly (action team.import) with counts + hash only.
+_SKIP_SUFFIXES = ("/teams/import/preview",)
 _MUTATING = ("POST", "PUT", "PATCH", "DELETE")
 
 
@@ -32,6 +41,7 @@ class AuditMiddleware:
             or scope["method"] not in _MUTATING
             or not scope["path"].startswith("/api/v1/")
             or scope["path"] in _SKIP_PATHS
+            or scope["path"].endswith(_SKIP_SUFFIXES)
         ):
             await self.app(scope, receive, send)
             return

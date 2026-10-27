@@ -128,8 +128,76 @@
             <input type="url" id="event-banner" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="https://example.com/banner.jpg">
           </div>
         </div>
-        <div class="flex justify-end gap-3 pt-2">
+
+        <fieldset class="border border-gray-200 rounded-lg p-4 space-y-4">
+          <legend class="px-1 text-sm font-semibold text-gray-700">Template Halaman Event</legend>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="event-template" class="block text-sm font-medium text-gray-700 mb-1">Template</label>
+              <select id="event-template" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                <option value="classic">Classic — hero ringkas + statistik</option>
+                <option value="poster">Poster — poster besar + detail acara</option>
+                <option value="cinematic">Cinematic — backdrop penuh layar</option>
+              </select>
+            </div>
+            <div>
+              <label for="theme-background-type" class="block text-sm font-medium text-gray-700 mb-1">Latar Halaman</label>
+              <select id="theme-background-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm">
+                <option value="default">Default (mengikuti template)</option>
+                <option value="solid">Warna solid</option>
+                <option value="gradient">Gradien</option>
+                <option value="image">Gambar unggahan</option>
+              </select>
+            </div>
+            <div><label for="theme-background-color" class="block text-sm font-medium text-gray-700 mb-1">Warna dasar</label><input type="color" id="theme-background-color" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-gradient-start" class="block text-sm font-medium text-gray-700 mb-1">Gradien awal</label><input type="color" id="theme-gradient-start" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-gradient-end" class="block text-sm font-medium text-gray-700 mb-1">Gradien akhir</label><input type="color" id="theme-gradient-end" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-primary-color" class="block text-sm font-medium text-gray-700 mb-1">Aksen utama</label><input type="color" id="theme-primary-color" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-secondary-color" class="block text-sm font-medium text-gray-700 mb-1">Warna sekunder</label><input type="color" id="theme-secondary-color" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-text-color" class="block text-sm font-medium text-gray-700 mb-1">Warna teks</label><input type="color" id="theme-text-color" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div><label for="theme-button-text-color" class="block text-sm font-medium text-gray-700 mb-1">Teks tombol</label><input type="color" id="theme-button-text-color" class="h-10 w-full border border-gray-300 rounded-lg"></div>
+            <div>
+              <label for="theme-overlay" class="block text-sm font-medium text-gray-700 mb-1">Kegelapan overlay gambar <span id="theme-overlay-value" class="text-gray-400">45%</span></label>
+              <input type="range" id="theme-overlay" min="0" max="85" step="1" class="w-full">
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-6">
+            <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="theme-show-countdown" checked> Tampilkan countdown</label>
+            <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="theme-show-participants" checked> Tampilkan tab Peserta</label>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="asset-background" class="block text-sm font-medium text-gray-700 mb-1">Background (JPEG/PNG/WebP ≤5 MiB)</label>
+              <input type="file" id="asset-background" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-500"><img id="asset-background-preview" class="hidden h-10 w-16 object-cover rounded" alt="Pratinjau background"><label class="flex items-center gap-1"><input type="checkbox" data-clear-asset="background"> Hapus</label></div>
+            </div>
+            <div>
+              <label for="asset-poster" class="block text-sm font-medium text-gray-700 mb-1">Poster (JPEG/PNG/WebP ≤5 MiB)</label>
+              <input type="file" id="asset-poster" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-500"><img id="asset-poster-preview" class="hidden h-10 w-16 object-cover rounded" alt="Pratinjau poster"><label class="flex items-center gap-1"><input type="checkbox" data-clear-asset="poster"> Hapus</label></div>
+            </div>
+            <div>
+              <label for="asset-logo" class="block text-sm font-medium text-gray-700 mb-1">Logo (JPEG/PNG/WebP ≤5 MiB)</label>
+              <input type="file" id="asset-logo" accept="image/jpeg,image/png,image/webp" class="w-full text-sm">
+              <div class="mt-1 flex items-center gap-2 text-xs text-gray-500"><img id="asset-logo-preview" class="hidden h-10 w-10 object-contain rounded" alt="Pratinjau logo"><label class="flex items-center gap-1"><input type="checkbox" data-clear-asset="logo"> Hapus</label></div>
+            </div>
+            <div>
+              <label for="asset-ornament" class="block text-sm font-medium text-gray-700 mb-1">Ornamen (SVG ≤512 KiB)</label>
+              <input type="file" id="asset-ornament" accept="image/svg+xml" class="w-full text-sm">
+              <label class="mt-1 flex items-center gap-1 text-xs text-gray-500"><input type="checkbox" data-clear-asset="ornament"> Hapus ornamen</label>
+            </div>
+            <div>
+              <label for="asset-font" class="block text-sm font-medium text-gray-700 mb-1">Font kustom (WOFF2 ≤1 MiB)</label>
+              <input type="file" id="asset-font" accept=".woff2,font/woff2" class="w-full text-sm">
+              <label class="mt-1 flex items-center gap-1 text-xs text-gray-500"><input type="checkbox" data-clear-asset="font"> Hapus font</label>
+            </div>
+          </div>
+          <p id="storage-note" class="text-xs text-amber-700 hidden">Supabase Storage belum dikonfigurasi: unggahan dinonaktifkan, tema tetap bisa disimpan.</p>
+        </fieldset>
+
+        <div class="flex flex-wrap justify-end gap-3 pt-2">
           <button type="button" onclick="closeEventModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
+          <button type="button" onclick="openEventPreview()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Pratinjau Halaman</button>
           <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium">Save Event</button>
         </div>
       </form>
@@ -206,6 +274,10 @@
             <p class="text-sm text-gray-400">Memuat tim...</p>
           </div>
         </div>
+        <div class="border-t pt-4 flex flex-wrap items-center gap-3">
+          <button type="button" onclick="openTeamImportModal()" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Import dari Excel</button>
+          <span class="text-xs text-gray-500">Impor banyak peserta dari file .xlsx (maks 1 MiB, 500 baris).</span>
+        </div>
       </div>
     </div>
   </div>
@@ -229,16 +301,29 @@
   </div>
 </div>
 
+{% set modal_id = "team-import-modal" %}
+{% include "partials/team_import_modal.html" %}
+
 {% endblock %}
 
 
 {% block scripts %}
+<script src="/static/js/team_import.js?v={{ tailwind_css_version | default('preview', true) }}"></script>
 <script>
 (function() {
   const esc = window.adminEscapeHTML;
   const API_BASE = '/api/v1';
+  const ASSET_SLOTS = ['background', 'poster', 'logo', 'ornament', 'font'];
+  const ASSET_LIMITS = { background: 5 * 1024 * 1024, poster: 5 * 1024 * 1024, logo: 5 * 1024 * 1024, ornament: 512 * 1024, font: 1024 * 1024 };
+  const DEFAULT_THEME = {
+    background_type: 'default', background_color: '#160F0A', gradient_start: '#160F0A',
+    gradient_end: '#3A270F', background_overlay: 0.45, primary_color: '#D4A036',
+    secondary_color: '#160F0A', text_color: '#FDFAF5', button_text_color: '#160F0A',
+    show_countdown: true, show_participants: true,
+  };
   let currentEventId = null;
   let isEditMode = false;
+  let currentAssets = {};
 
   function showId(el) {
     const e = document.getElementById(el);
@@ -276,6 +361,200 @@
     return data;
   }
 
+  function currencyToHex(value, fallback) {
+    return /^#[0-9a-fA-F]{6}$/.test(value || '') ? value.toUpperCase() : fallback;
+  }
+
+  function setThemeFields(eventData) {
+    const theme = (eventData && eventData.theme_config) || {};
+    const t = Object.assign({}, DEFAULT_THEME, theme);
+    document.getElementById('event-template').value = (eventData && eventData.template_key) || 'classic';
+    document.getElementById('theme-background-type').value = t.background_type || 'default';
+    document.getElementById('theme-background-color').value = currencyToHex(t.background_color, DEFAULT_THEME.background_color);
+    document.getElementById('theme-gradient-start').value = currencyToHex(t.gradient_start, DEFAULT_THEME.gradient_start);
+    document.getElementById('theme-gradient-end').value = currencyToHex(t.gradient_end, DEFAULT_THEME.gradient_end);
+    document.getElementById('theme-primary-color').value = currencyToHex(t.primary_color, DEFAULT_THEME.primary_color);
+    document.getElementById('theme-secondary-color').value = currencyToHex(t.secondary_color, DEFAULT_THEME.secondary_color);
+    document.getElementById('theme-text-color').value = currencyToHex(t.text_color, DEFAULT_THEME.text_color);
+    document.getElementById('theme-button-text-color').value = currencyToHex(t.button_text_color, DEFAULT_THEME.button_text_color);
+    const overlay = Math.round(Number(t.background_overlay ?? DEFAULT_THEME.background_overlay) * 100);
+    document.getElementById('theme-overlay').value = String(overlay);
+    document.getElementById('theme-overlay-value').textContent = overlay + '%';
+    document.getElementById('theme-show-countdown').checked = t.show_countdown !== false;
+    document.getElementById('theme-show-participants').checked = t.show_participants !== false;
+  }
+
+  function readTheme() {
+    return {
+      background_type: document.getElementById('theme-background-type').value,
+      background_color: document.getElementById('theme-background-color').value.toUpperCase(),
+      gradient_start: document.getElementById('theme-gradient-start').value.toUpperCase(),
+      gradient_end: document.getElementById('theme-gradient-end').value.toUpperCase(),
+      background_overlay: Number(document.getElementById('theme-overlay').value) / 100,
+      primary_color: document.getElementById('theme-primary-color').value.toUpperCase(),
+      secondary_color: document.getElementById('theme-secondary-color').value.toUpperCase(),
+      text_color: document.getElementById('theme-text-color').value.toUpperCase(),
+      button_text_color: document.getElementById('theme-button-text-color').value.toUpperCase(),
+      show_countdown: document.getElementById('theme-show-countdown').checked,
+      show_participants: document.getElementById('theme-show-participants').checked,
+    };
+  }
+
+  function resetAssetInputs() {
+    currentAssets = {};
+    ASSET_SLOTS.forEach(function(slot) {
+      const input = document.getElementById('asset-' + slot);
+      if (input) input.value = '';
+      const clear = document.querySelector('[data-clear-asset="' + slot + '"]');
+      if (clear) clear.checked = false;
+      const preview = document.getElementById('asset-' + slot + '-preview');
+      if (preview) { preview.removeAttribute('src'); preview.classList.add('hidden'); }
+    });
+    document.getElementById('storage-note').classList.add('hidden');
+  }
+
+  function showCurrentAssets(assets, storageConfigured) {
+    currentAssets = Object.assign({}, assets || {});
+    // With no Storage configured only removal of existing URLs stays possible.
+    setAssetInputsEnabled(storageConfigured !== false);
+    ASSET_SLOTS.forEach(function(slot) {
+      const url = assets && assets[slot];
+      const preview = document.getElementById('asset-' + slot + '-preview');
+      if (preview && url) { preview.src = url; preview.classList.remove('hidden'); }
+      const clear = document.querySelector('[data-clear-asset="' + slot + '"]');
+      if (clear) clear.disabled = !url;
+    });
+    document.getElementById('storage-note').classList.toggle('hidden', storageConfigured !== false);
+  }
+
+  document.getElementById('theme-overlay').addEventListener('input', function() {
+    document.getElementById('theme-overlay-value').textContent = this.value + '%';
+  });
+
+  ASSET_SLOTS.filter(function(slot) { return slot !== 'ornament' && slot !== 'font'; }).forEach(function(slot) {
+    document.getElementById('asset-' + slot).addEventListener('change', function() {
+      const preview = document.getElementById('asset-' + slot + '-preview');
+      const file = this.files && this.files[0];
+      if (!file) { preview.classList.add('hidden'); return; }
+      preview.src = URL.createObjectURL(file);
+      preview.classList.remove('hidden');
+    });
+  });
+
+  function eventPayload() {
+    return {
+      name: document.getElementById('event-name').value.trim(),
+      description: document.getElementById('event-description').value.trim() || null,
+      banner_url: document.getElementById('event-banner').value.trim() || null,
+      timezone: document.getElementById('event-timezone').value.trim() || 'UTC',
+      currency: document.getElementById('event-currency').value.trim().toUpperCase() || 'IDR',
+      price_per_vote: document.getElementById('event-price').value ? parseInt(document.getElementById('event-price').value, 10) : null,
+      max_vote_per_transaction: document.getElementById('event-max-vote').value ? parseInt(document.getElementById('event-max-vote').value, 10) : null,
+      opens_at: document.getElementById('event-opens-at').value || null,
+      closes_at: document.getElementById('event-closes-at').value || null,
+      status: document.getElementById('event-status').value,
+      category: document.getElementById('event-category').value || null,
+      template_key: document.getElementById('event-template').value,
+      theme_config: Object.assign(readTheme(), { assets: Object.assign({}, currentAssets) }),
+    };
+  }
+
+  function validateFiles() {
+    for (const slot of ASSET_SLOTS) {
+      const input = document.getElementById('asset-' + slot);
+      const file = input.files && input.files[0];
+      if (file && file.size > ASSET_LIMITS[slot]) {
+        throw new Error('File ' + slot + ' melebihi ' + Math.round(ASSET_LIMITS[slot] / 1024) + ' KiB');
+      }
+    }
+  }
+
+  function buildFormData() {
+    const formData = new FormData();
+    const payload = eventPayload();
+    // "Hapus" removes the asset from the theme; the server deletes the old object.
+    ASSET_SLOTS.forEach(function(slot) {
+      const clear = document.querySelector('[data-clear-asset="' + slot + '"]');
+      if (clear && clear.checked) payload.theme_config.assets[slot] = null;
+    });
+    formData.append('payload', JSON.stringify(payload));
+    ASSET_SLOTS.forEach(function(slot) {
+      const file = document.getElementById('asset-' + slot).files[0];
+      if (file) formData.append('asset_' + slot, file, file.name);
+    });
+    if (currentEventId) formData.append('event_id', currentEventId);
+    return formData;
+  }
+
+  async function sendEvent(path, formData, method) {
+    const token = localStorage.getItem('wvc_admin_token') || '';
+    // Never set Content-Type for FormData: the browser adds the boundary.
+    const res = await fetch(API_BASE + path, {
+      method: method,
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData,
+    });
+    if (res.status === 401 || res.status === 403) {
+      localStorage.removeItem('wvc_admin_token');
+      window.location.href = '/admin/login';
+      return null;
+    }
+    const data = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      const detail = data && data.data;
+      throw new Error((data && data.message) || (typeof detail === 'string' ? detail : 'HTTP ' + res.status));
+    }
+    return data;
+  }
+
+  window.openEventPreview = async function() {
+    const feedback = document.getElementById('event-form-feedback');
+    const button = document.querySelector('button[onclick="openEventPreview()"]');
+    let formData;
+    try {
+      validateFiles();
+      formData = buildFormData();
+    } catch (error) {
+      feedback.textContent = error.message;
+      showId('event-form-feedback');
+      return;
+    }
+    // Open the window synchronously so popup blockers allow it.
+    const preview = window.open('about:blank', '_blank');
+    // The preview is a finished page, not a script-opened child: cut the
+    // window.opener handle so it cannot navigate or script the admin tab.
+    if (preview) {
+      try { preview.opener = null; } catch (error) { /* cross-origin about:blank */ }
+      preview.document.write('<p style="font-family:sans-serif;padding:2rem">Menyiapkan pratinjau…</p>');
+    }
+    button.disabled = true;
+    try {
+      const token = localStorage.getItem('wvc_admin_token') || '';
+      const res = await fetch(API_BASE + '/admin/events/preview', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: formData,
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(function() { return {}; });
+        throw new Error((data && data.message) || 'Pratinjau gagal dimuat');
+      }
+      const html = await res.text();
+      if (!preview || preview.closed) throw new Error('Izinkan popup untuk membuka pratinjau.');
+      preview.document.open();
+      preview.document.write(html);
+      preview.document.close();
+      // Reusing a tab keeps its previous scroll offset; the preview must start
+      // at the hero, not halfway down the page.
+      try { preview.scrollTo(0, 0); } catch (error) { /* window closed meanwhile */ }
+      hideId('event-form-feedback');
+    } catch (error) {
+      if (preview) preview.close();
+      feedback.textContent = error.message;
+      showId('event-form-feedback');
+    } finally { button.disabled = false; }
+  };
+
   function getStatusBadge(status) {
     const map = {
       'DRAFT': 'bg-gray-100 text-gray-600',
@@ -310,7 +589,7 @@
     showId('loading-state');
 
     try {
-      const data = await api('/events');
+      const data = await api('/admin/events');
       if (!data || !data.success) {
         throw new Error(data?.message || 'Gagal memuat event');
       }
@@ -331,13 +610,18 @@
             dateText = d2.toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric' });
           }
 
+          // Draft/archived events have no public URL; send admins to the editor's preview.
+          var viewLink = ev.is_public
+            ? '<a href="' + esc(ev.public_url) + '" target="_blank" rel="noopener" class="text-blue-600 hover:text-blue-700 text-xs font-medium mr-3">Lihat</a>'
+            : '<button onclick="editEvent(' + esc(JSON.stringify(ev.id)) + ')" class="text-blue-600 hover:text-blue-700 text-xs font-medium mr-3">Pratinjau</button>';
           return '<tr class="border-b last:border-0 hover:bg-gray-50">' +
             '<td class="px-6 py-3 font-medium text-gray-800">' + esc(ev.name) + '</td>' +
              '<td class="px-6 py-3 text-gray-600">' + esc(eventCategoryLabel(ev.category)) + '</td>' +
              '<td class="px-6 py-3">' + getStatusBadge(ev.status) + '</td>' +
             '<td class="px-6 py-3 text-gray-500">' + dateText + '</td>' +
              '<td class="px-6 py-3 text-right">' +
-                 '<a href="/events?event_id=' + esc(encodeURIComponent(ev.id)) + '" target="_blank" class="text-blue-600 hover:text-blue-700 text-xs font-medium mr-3">Lihat</a>' +
+                 viewLink +
+                '<button onclick="openTeamsModal(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Peserta</button>' +
                 '<button onclick="editEvent(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Ubah</button>' +
                 '<button onclick="openEventDetailModal(' + esc(JSON.stringify(ev.id)) + ')" class="text-gray-600 hover:text-gray-800 text-xs font-medium mr-3">Detail</button>' +
                 '<button onclick="deleteEvent(' + esc(JSON.stringify(ev.id)) + ')" class="text-red-600 hover:text-red-700 text-xs font-medium">Hapus</button>' +
@@ -365,7 +649,8 @@
     showId('event-form-feedback');
     document.getElementById('event-id').value = eventId;
 
-    api('/events/' + eventId).then(function(data) {
+    resetAssetInputs();
+    api('/admin/events/' + eventId).then(function(data) {
       if (!data || !data.success) throw new Error('Event belum dapat dimuat.');
       const ev = data.data || {};
       document.getElementById('event-name').value = ev.name || '';
@@ -383,6 +668,8 @@
       else document.getElementById('event-opens-at').value = '';
       if (ev.closes_at) document.getElementById('event-closes-at').value = formatDateTimeLocal(ev.closes_at);
       else document.getElementById('event-closes-at').value = '';
+      setThemeFields(ev);
+      showCurrentAssets(ev.assets || {}, ev.storage_configured !== false);
       hideId('event-form-feedback');
     }).catch(function(error) {
       document.getElementById('event-form-feedback').textContent = error.message;
@@ -390,6 +677,16 @@
 
     showId('event-modal');
   };
+
+  function setAssetInputsEnabled(enabled) {
+    ASSET_SLOTS.forEach(function(slot) {
+      const input = document.getElementById('asset-' + slot);
+      if (input) input.disabled = !enabled;
+      const clear = document.querySelector('[data-clear-asset="' + slot + '"]');
+      if (clear && !enabled) clear.disabled = true;
+    });
+    document.getElementById('storage-note').classList.toggle('hidden', enabled);
+  }
 
   window.openCreateEventModal = function() {
     isEditMode = false;
@@ -403,6 +700,11 @@
      document.getElementById('event-category').value = '';
      document.getElementById('event-category').required = true;
     document.getElementById('event-id').value = '';
+    resetAssetInputs();
+    setThemeFields({ template_key: 'classic', theme_config: DEFAULT_THEME });
+    setAssetInputsEnabled(false);
+    document.getElementById('storage-note').textContent = 'Simpan event terlebih dahulu untuk mengaktifkan upload aset.';
+    document.getElementById('storage-note').classList.remove('hidden');
     showId('event-modal');
   };
 
@@ -412,37 +714,33 @@
 
   document.getElementById('event-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const payload = {
-      name: document.getElementById('event-name').value.trim(),
-      description: document.getElementById('event-description').value.trim() || null,
-      banner_url: document.getElementById('event-banner').value.trim() || null,
-      timezone: document.getElementById('event-timezone').value.trim() || 'UTC',
-      currency: document.getElementById('event-currency').value.trim().toUpperCase() || 'IDR',
-      price_per_vote: document.getElementById('event-price').value ? parseInt(document.getElementById('event-price').value, 10) : null,
-      max_vote_per_transaction: document.getElementById('event-max-vote').value ? parseInt(document.getElementById('event-max-vote').value, 10) : null,
-      opens_at: document.getElementById('event-opens-at').value || null,
-      closes_at: document.getElementById('event-closes-at').value || null,
-      status: document.getElementById('event-status').value,
-      category: document.getElementById('event-category').value || null,
-    };
-
-    const method = isEditMode ? 'PUT' : 'POST';
-    const path = isEditMode ? '/admin/events/' + currentEventId : '/admin/events';
-
     const submit = e.target.querySelector('button[type="submit"]');
     submit.disabled = true;
     try {
-    const res = await api(path, {
-      method: method,
-      body: JSON.stringify(payload),
-    });
+      validateFiles();
+      if (!isEditMode) {
+        // A new event needs an id before files can be attached; assets are added
+        // on the next Save (the form reopens in edit mode).
+        const created = await api('/admin/events', {
+          method: 'POST',
+          body: JSON.stringify(eventPayload()),
+        });
+        if (!created || !created.success) throw new Error(created?.message || 'Gagal menyimpan event');
+        closeEventModal();
+        loadEvents();
+        editEvent(created.data.id);
+        document.getElementById('event-form-feedback').textContent = 'Event tersimpan. Unggah aset lalu simpan lagi.';
+        showId('event-form-feedback');
+        return;
+      }
 
-    if (res && res.success) {
-      closeEventModal();
-      loadEvents();
-    } else {
-      throw new Error(res?.message || 'Gagal menyimpan event');
-    }
+      const res = await sendEvent('/admin/events/' + currentEventId, buildFormData(), 'PUT');
+      if (res && res.success) {
+        closeEventModal();
+        loadEvents();
+      } else {
+        throw new Error(res?.message || 'Gagal menyimpan event');
+      }
     } catch (error) {
       document.getElementById('event-form-feedback').textContent = error.message;
       showId('event-form-feedback');
@@ -500,8 +798,8 @@
 
     try {
       const [eventData, teamsData, dashboardData] = await Promise.all([
-        api('/events/' + eventId),
-        api('/events/' + eventId + '/teams'),
+        api('/admin/events/' + eventId),
+        api('/admin/events/' + eventId + '/teams'),
         api('/admin/dashboard?event_id=' + eventId),
       ]);
 
@@ -613,7 +911,7 @@
     listEl.innerHTML = '<p class="text-sm text-gray-400">Memuat peserta...</p>';
 
     try {
-      const data = await api('/events/' + eventId + '/teams');
+      const data = await api('/admin/events/' + eventId + '/teams');
       if (!data || !data.success) {
         throw new Error(data?.message || 'Gagal memuat peserta');
       }
@@ -642,7 +940,7 @@
   }
 
   window.editTeam = function(eventId, teamId) {
-    api('/events/' + eventId + '/teams').then(function(data) {
+    api('/admin/events/' + eventId + '/teams').then(function(data) {
       if (!data || !data.success) return;
       const teams = data.data || [];
       const team = teams.find(function(t) { return t.id === teamId; });
@@ -716,6 +1014,15 @@
       submitBtn.textContent = originalText;
     }
   });
+
+  // --- Excel import (shared module) -----------------------------------------
+  const teamImporter = window.TeamImport.init({
+    modalId: 'team-import-modal',
+    getEventId: function() { return currentEventId; },
+    onImported: function() { loadTeams(currentEventId); },
+  });
+
+  window.openTeamImportModal = function() { teamImporter.open(); };
 
   window.loadEvents = loadEvents;
   loadEvents();

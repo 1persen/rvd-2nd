@@ -1,148 +1,25 @@
 {% extends "event_base.html" %}
-{% from "macros/public.html" import icon, podium, stage_header %}
-{% block title %}{{ event.name if event else "Event" }} — Raja Voting Digital{% endblock %}
+{% from "macros/public.html" import icon %}
+{% block title %}Daftar Event — Raja Voting Digital{% endblock %}
 {% block content %}
-<div x-data='eventsPage({{ event | tojson }}, {{ all_events | tojson }})' x-cloak>
-  <div x-show="!event">
-    <section class="shell section-space"><div class="section-heading"><h2>Daftar Event</h2><span class="subtle" x-text="filteredEvents.length + ' event tersedia'"></span></div>
-<div class="discovery-filters"><div class="field"><label for="event-search">Cari event</label><input id="event-search" type="search" x-model="eventQuery" placeholder="Nama atau kategori event"></div><label><input type="checkbox" x-model="openOnly"> Voting dibuka</label></div>
-      <div class="event-grid"><template x-for="(ev, index) in filteredEvents" :key="ev.id"><a :href="ev.invite_path || ('/events?event_id=' + encodeURIComponent(ev.id))" class="event-card" @click.prevent="switchEvent(ev)">
-        <div class="event-cover" :data-color="index % 3"><span class="cover-shape" aria-hidden="true">{{ icon('spark') }}</span><template x-if="ev.banner_url"><img :src="ev.banner_url" :alt="'Poster ' + ev.name" loading="lazy" @error="$el.style.display = 'none'"></template><span class="cover-index" x-text="'EVENT / ' + String(index + 1).padStart(2, '0')"></span><span class="cover-title" x-text="ev.name"></span><span class="cover-arrow">{{ icon('arrow') }}</span></div>
-        <div class="event-card-body"><span class="status-pill" :class="{ 'status-open': ev.is_voting_open }"><span></span><span x-text="ev.is_voting_open ? 'Voting dibuka' : ev.status"></span></span><h3 x-text="ev.name"></h3><p class="event-description" x-text="ev.description || 'Kenali peserta dan berikan dukungan untuk pilihanmu.'"></p><div class="event-meta"><span>{{ icon('users') }} <b x-text="ev.total_teams || 0"></b> peserta</span><span>{{ icon('star') }} <b x-text="Number(ev.total_votes || 0).toLocaleString('id-ID')"></b> vote</span></div></div>
-      </a></template></div>
-      <p x-show="allEvents.length && !filteredEvents.length" class="empty-state">Tidak ada event yang sesuai pencarian.</p>
-      <div x-show="!allEvents.length" class="empty-state">{{ icon('spark') }}<h3>Event berikutnya segera hadir.</h3><p>Kembali lagi untuk menemukan kompetisi terbaru.</p></div>
-    </section>
-  </div>
-    <div x-show="event">
-      <!-- Event header: desktop = atas dengan logo, identitas, tab tengah, dukungan + QR kanan; mobile = konten di bawah, bottom nav -->
-      <header class="event-header" aria-label="Header event {{ event.name if event else 'Event' }}">
-        <div class="event-header-inner shell">
-          <div class="event-identity">
-            <template x-if="event?.banner_url"><img class="event-banner-thumb" :src="event.banner_url" :alt="'Poster ' + event.name" loading="lazy" @error="$el.style.display = 'none'"></template>
-            <div class="group flex items-center gap-3 text-left transition-opacity hover:opacity-90">
-              <img class="h-12 w-auto object-contain" src="/static/images/raja-voting-logo.png" alt="Logo">
-              <div>
-                <span class="block text-[11px] font-black uppercase tracking-[0.25em] text-[#ffd875]" x-text="event?.name || 'RAJA VOTING'"></span>
-                <span class="block text-[9px] font-bold uppercase tracking-widest text-[#d8c39d]" x-text="event?.category || 'DIGITAL VOTING PLATFORM'"></span>
-              </div>
-            </div>
-          </div>
-          <nav class="event-tabs" aria-label="Bagian event">
-            <button @click="setTab('beranda')" :aria-current="tab === 'beranda' ? 'page' : null" :class="{ 'is-active': tab === 'beranda' }">{{ icon('home') }}<span>BERANDA</span><span x-show="tab === 'beranda'" class="tab-dot"></span></button>
-            <button @click="setTab('peserta')" :aria-current="tab === 'peserta' ? 'page' : null" :class="{ 'is-active': tab === 'peserta' }">{{ icon('users') }}<span>PESERTA</span><span x-show="tab === 'peserta'" class="tab-dot"></span></button>
-            <button @click="setTab('klasemen')" :aria-current="tab === 'klasemen' ? 'page' : null" :class="{ 'is-active': tab === 'klasemen' }">{{ icon('trophy') }}<span>KLASEMEN</span><span x-show="tab === 'klasemen'" class="tab-dot"></span></button>
-            <button @click="setTab('sultan')" :aria-current="tab === 'sultan' ? 'page' : null" :class="{ 'is-active': tab === 'sultan' }">{{ icon('crown') }}<span>SULTAN</span><span x-show="tab === 'sultan'" class="tab-dot"></span></button>
-          </nav>
-          <div class="event-actions">
-            <button type="button" class="button button-dark" @click="setTab('peserta')" x-show="event?.is_voting_open">DUKUNG SEKARANG {{ icon('arrow') }}</button>
-            <button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen" aria-label="Buka QR code event">{{ icon('qr') }}<span x-show="!qrOpen">QR</span><span x-show="qrOpen">Tutup</span></button>
-          </div>
-        </div>
-      </header>
-
-      {% if payment_sandbox_enabled() %}
-      <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
-      {% endif %}
-
-      <!-- QR code panel -->
-      <div x-show="qrOpen" x-cloak class="qr-panel" role="dialog" aria-modal="true" aria-label="QR code event">
-        <div class="qr-panel-backdrop" @click="qrOpen = false"></div>
-        <div class="qr-panel-content">
-          <button type="button" class="qr-close" @click="qrOpen = false" aria-label="Tutup QR code">{{ icon('arrow') }}</button>
-          <div class="qr-body">
-            <h3>QR Code Event</h3>
-            <p class="qr-sub">Scan untuk membuka halaman event ini.</p>
-            <img class="qr-image" :src="qrUrl" alt="QR code event" onerror="this.style.display='none'">
-            <div class="qr-url" x-text="event?.invite_path || window.location.pathname"></div>
-            <button type="button" class="button button-dark qr-copy" @click="qrOpen = false">Tutup {{ icon('arrow') }}</button>
-          </div>
-        </div>
-      </div>
-
-      <section class="shell event-content">
-        <div x-show="loading[tab]" class="empty-state" role="status"><span class="loading-ring"></span><p>Menyiapkan panggung…</p></div>
-        <div x-show="error[tab]" class="empty-state" role="alert"><h3>Data belum dapat dimuat.</h3><p x-text="error[tab]"></p><button class="button button-dark" @click="fetchIfNeeded(tab)">Coba lagi</button></div>
-        <div x-show="!loading[tab] && !error[tab]">
-          <div x-show="tab === 'beranda'">
-            <div class="event-home">
-              <div class="event-hero-top">
-                <img class="event-home-logo" :src="event?.banner_url || '/static/images/raja-voting-logo.png'" :alt="'Logo ' + (event?.name || 'event')" @error="$el.src = '/static/images/raja-voting-logo.png'">
-                <div class="event-date-card">
-                  <span class="event-date-label">PELAKSANAAN ACARA</span>
-                  <div class="event-date-row">
-                    <span class="event-date-icon">{{ icon('calendar') }}</span>
-                    <div>
-                      <b class="event-date-day" x-text="event?.opens_at ? new Date(event.opens_at).getDate() : '-'"></b>
-                      <small class="event-date-month" x-text="event?.opens_at ? new Date(event.opens_at).toLocaleString('id-ID', { month: 'long', year: 'numeric' }).toUpperCase() : 'JADWAL MENYUSUL'"></small>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="event-home-main">
-                <div class="event-countdown" x-show="countdown" x-cloak>
-                  <span class="eyebrow">MENUJU HARI PEMBUKAAN</span>
-                  <div class="countdown-grid">
-                    <div><b x-text="String(countdown?.days ?? 0).padStart(2, '0')"></b><small>HARI</small></div>
-                    <div><b x-text="String(countdown?.hours ?? 0).padStart(2, '0')"></b><small>JAM</small></div>
-                    <div><b x-text="String(countdown?.minutes ?? 0).padStart(2, '0')"></b><small>MENIT</small></div>
-                    <div><b x-text="String(countdown?.seconds ?? 0).padStart(2, '0')"></b><small>DETIK</small></div>
-                  </div>
-                </div>
-                <div class="event-home-actions">
-                  <button type="button" class="button button-dark" @click="setTab('peserta')">Mulai Vote Sekarang {{ icon('arrow') }}</button>
-                  <button type="button" class="button button-outline" @click="setTab('klasemen')">Lihat Klasemen</button>
-                  <button type="button" class="button button-outline qr-button" @click="qrOpen = !qrOpen">{{ icon('qr') }} QR Event</button>
-                </div>
-              </div>
-              <div class="event-home-stats">
-                <div><span class="event-stat-icon">{{ icon('check') }}</span><b x-text="Number(event?.total_votes || 0).toLocaleString('id-ID')"></b><small>TOTAL SUARA</small></div>
-                <div><span class="event-stat-icon">{{ icon('users') }}</span><b x-text="Number(event?.total_teams || 0).toLocaleString('id-ID')"></b><small>KONTINGEN TERDAFTAR</small></div>
-                <div><span class="event-stat-icon">{{ icon('trophy') }}</span><b x-text="Number(event?.total_categories || 0).toLocaleString('id-ID')"></b><small>KATEGORI LOMBA</small></div>
-                <div><span class="event-stat-icon">{{ icon('spark') }}</span><b x-text="event?.category || '-'"></b><small>CAKUPAN WILAYAH</small></div>
-              </div>
-            </div>
-          </div>
-          <div x-show="tab === 'peserta'">
-            <div class="section-heading"><div><span class="eyebrow">KENALI PILIHANMU</span><h2>Di balik setiap <em>potensi.</em></h2></div><span class="subtle" x-text="filteredParticipants.length + ' peserta'"></span></div>
-            <div class="discovery-filters"><div class="field"><label for="participant-search">Cari peserta</label><input id="participant-search" type="search" x-model="participantQuery" @input="participantPage = 1" placeholder="Nama atau asal peserta"></div></div>
-            <div class="participant-categories" x-show="participantCategories.length" role="tablist" aria-label="Kategori peserta">
-              <button type="button" role="tab" :aria-selected="activeCategory === ''" :class="{ 'is-active': activeCategory === '' }" @click="setCategory('')">Semua</button>
-              <template x-for="cat in participantCategories" :key="cat"><button type="button" role="tab" :aria-selected="activeCategory === cat" :class="{ 'is-active': activeCategory === cat }" @click="setCategory(cat)" x-text="categoryLabel(cat)"></button></template>
-            </div>
-            <div class="participant-countdown" x-show="participantCountdown" x-cloak>
-              <span class="participant-countdown-label" x-text="event?.is_voting_open ? 'Voting ditutup dalam' : 'Voting dibuka dalam'"></span>
-              <div class="countdown-grid">
-                <div><b x-text="String(participantCountdown?.days ?? 0).padStart(2, '0')"></b><small>HARI</small></div>
-                <div><b x-text="String(participantCountdown?.hours ?? 0).padStart(2, '0')"></b><small>JAM</small></div>
-                <div><b x-text="String(participantCountdown?.minutes ?? 0).padStart(2, '0')"></b><small>MENIT</small></div>
-                <div><b x-text="String(participantCountdown?.seconds ?? 0).padStart(2, '0')"></b><small>DETIK</small></div>
-              </div>
-            </div>
-            <div class="participant-grid"><template x-for="team in paginatedParticipants" :key="team.id"><article class="participant-card"><a class="participant-card-link" :href="'/events/' + encodeURIComponent(event.id) + '/vote/' + encodeURIComponent(team.id)"><div class="participant-image"><template x-if="team.logo_url || team.photo_url"><img :src="team.logo_url || team.photo_url" :alt="team.name" loading="lazy" @error="$el.style.display = 'none'"></template><span class="participant-number" x-text="'#' + String(team.rank).padStart(2, '0')"></span><span class="participant-category-tag" x-show="team.education_level" x-text="categoryLabel(team.education_level)"></span></div><div class="participant-body"><h3 x-text="team.name"></h3><p class="participant-school" x-text="team.school || 'Peserta kompetisi'"></p><div class="participant-votes"><span aria-hidden="true">♥</span><b x-text="Number(team.votes || 0).toLocaleString('id-ID')"></b><span>suara</span></div><span class="participant-vote-btn" x-text="event?.is_voting_open ? 'Vote Sekarang →' : 'Lihat Detail →'"></span></div></a><div class="participant-actions"><button type="button" :aria-label="'Bagikan ' + team.name" @click="navigator.share ? navigator.share({ title: team.name, url: window.location.origin + '/events/' + event.id + '/vote/' + team.id }) : null">Bagikan</button><button type="button" :aria-label="'Chat tentang ' + team.name">Chat</button><button type="button" :aria-label="'Unduh ' + team.name" @click="window.open(team.logo_url || team.photo_url || '#', '_blank')">Unduh</button></div></article></template></div>
-            <p x-show="dataPeserta.length && !filteredParticipants.length" class="empty-state">Tidak ada peserta yang sesuai pencarian.</p><div class="empty-state" x-show="!dataPeserta.length">{{ icon('users') }}<h3>Panggung sedang disiapkan.</h3><p>Peserta akan tampil setelah didaftarkan panitia.</p></div>
-            <div class="pagination" x-show="participantTotalPages > 1"><button @click="prevParticipantPage()" :disabled="participantPage <= 1">← Sebelumnya</button><span x-text="participantPage + ' / ' + participantTotalPages"></span><button @click="nextParticipantPage()" :disabled="participantPage >= participantTotalPages">Selanjutnya →</button></div>
-          </div>
-          <div x-show="tab === 'klasemen'">
-             <div class="award-stage">{{ stage_header('Panggung untuk yang terdepan.') }}{{ podium('dataKlasemen') }}<div x-show="!dataKlasemen.length" class="empty-state"><h3>Jadilah dukungan pertama.</h3><p>Peringkat akan tampil setelah data peserta tersedia.</p></div><div class="stage-footer"><span>Peringkat sementara · bukan pengumuman pemenang</span><span>Leaderboard event</span></div></div>
-            <div class="section-heading ranking-heading"><h2>Perjalanan <em>berlanjut.</em></h2><span class="subtle">Peringkat berikutnya</span></div>
-            <div class="ranking-list"><template x-for="team in dataKlasemen.slice(3)" :key="team.id"><article class="ranking-row"><span class="row-rank" x-text="String(team.rank).padStart(2, '0')"></span><div class="row-avatar"><span x-text="(team.name || '?').slice(0, 1)"></span><template x-if="team.logo_url"><img :src="team.logo_url" :alt="team.name" @error="$el.style.display = 'none'"></template></div><div class="row-person"><h3 x-text="team.name"></h3><p x-text="team.school || 'Peserta kompetisi'"></p><div class="vote-bar"><span :style="{ width: Math.min(100, (team.votes / (dataKlasemen[0]?.votes || 1)) * 100) + '%' }"></span></div></div><div class="row-votes"><strong x-text="Number(team.votes || 0).toLocaleString('id-ID')"></strong><small>vote</small></div><a x-show="event?.is_voting_open" :href="'/events/' + encodeURIComponent(event?.id) + '/vote/' + encodeURIComponent(team.id)" class="row-action" :aria-label="'Dukung ' + team.name">{{ icon('arrow') }}</a></article></template></div>
-          </div>
-          <div x-show="tab === 'sultan'">
-            <div class="award-stage supporter-stage"><div class="stage-heading"><span class="eyebrow">{{ icon('star') }} BEHIND EVERY GREAT MOMENT</span><h2>Dukungan yang <em>luar biasa.</em></h2><p>Apresiasi untuk para pendukung di balik perjalanan peserta.</p></div>{{ podium('dataSultan', true) }}<div x-show="!dataSultan.length" class="empty-state"><h3>Setiap dukungan dimulai dari seseorang.</h3><p>Pendukung akan tampil setelah pembayaran berhasil.</p></div></div>
-            <div class="ranking-list supporter-list"><template x-for="donor in dataSultan.slice(3)" :key="donor.id"><article class="ranking-row"><span class="row-rank" x-text="String(donor.rank).padStart(2, '0')"></span><div class="row-avatar"><span x-text="(donor.name || '?').slice(0, 1)"></span></div><div class="row-person"><h3 x-text="donor.name"></h3><p x-text="donor.team_name"></p></div><div class="row-votes"><strong x-text="formatCurrency(donor.amount)"></strong><small x-text="Number(donor.votes || 0).toLocaleString('id-ID') + ' vote'"></small></div></article></template></div>
-          </div>
-        </div>
-      </section>
-      <nav class="event-bottom-nav" aria-label="Navigasi event">
-        <button type="button" @click="setTab('beranda')" :class="{ 'is-active': tab === 'beranda' }" :aria-current="tab === 'beranda' ? 'page' : null">{{ icon('home') }}<span>Beranda</span></button>
-        <button type="button" @click="setTab('peserta')" :class="{ 'is-active': tab === 'peserta' }" :aria-current="tab === 'peserta' ? 'page' : null">{{ icon('users') }}<span>Peserta</span></button>
-        <button type="button" @click="setTab('klasemen')" :class="{ 'is-active': tab === 'klasemen' }" :aria-current="tab === 'klasemen' ? 'page' : null">{{ icon('trophy') }}<span>Klasemen</span></button>
-        <button type="button" @click="setTab('sultan')" :class="{ 'is-active': tab === 'sultan' }" :aria-current="tab === 'sultan' ? 'page' : null">{{ icon('crown') }}<span>Sultan</span></button>
-      </nav>
-      <div class="event-bottom-spacer" aria-hidden="true"></div>
+<div class="event-catalog" x-data='eventsPage({{ (event if event is defined else none) | tojson }}, {{ all_events | tojson }}, {"catalog": true})' x-cloak>
+  <section class="shell section-space">
+    <div class="section-heading"><div><span class="eyebrow">JELAJAHI KOMPETISI</span><h2>Daftar <em>Event</em></h2></div><span class="subtle" x-text="filteredEvents.length + ' event tersedia'"></span></div>
+    <div class="discovery-filters">
+      <div class="field"><label for="event-search">Cari event</label><input id="event-search" type="search" x-model="eventQuery" placeholder="Nama atau kategori event"></div>
+      <label><input type="checkbox" x-model="openOnly"> Voting dibuka</label>
     </div>
-  </div>
+    <div class="event-grid">
+      <template x-for="(ev, index) in filteredEvents" :key="ev.id">
+        <a :href="ev.invite_path" class="event-card">
+          <div class="event-cover" :data-color="index % 3"><span class="cover-shape" aria-hidden="true">{{ icon('spark') }}</span><template x-if="ev.banner_url"><img :src="ev.banner_url" :alt="'Poster ' + ev.name" loading="lazy" @error="$el.style.display = 'none'"></template><span class="cover-index" x-text="'EVENT / ' + String(index + 1).padStart(2, '0')"></span><span class="cover-title" x-text="ev.name"></span><span class="cover-arrow">{{ icon('arrow') }}</span></div>
+          <div class="event-card-body"><span class="status-pill" :class="{ 'status-open': ev.is_voting_open }"><span></span><span x-text="ev.is_voting_open ? 'Voting dibuka' : ev.status"></span></span><h3 x-text="ev.name"></h3><p class="event-description" x-text="ev.description || 'Kenali peserta dan berikan dukungan untuk pilihanmu.'"></p><div class="event-meta"><span>{{ icon('users') }} <b x-text="ev.total_teams || 0"></b> peserta</span><span>{{ icon('star') }} <b x-text="Number(ev.total_votes || 0).toLocaleString('id-ID')"></b> vote</span></div></div>
+        </a>
+      </template>
+    </div>
+    <p x-show="allEvents.length && !filteredEvents.length" class="empty-state">Tidak ada event yang sesuai pencarian.</p>
+    <div x-show="!allEvents.length" class="empty-state">{{ icon('spark') }}<h3>Event berikutnya segera hadir.</h3><p>Kembali lagi untuk menemukan kompetisi terbaru.</p></div>
+  </section>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/events.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/events.js?v={{ tailwind_css_version | default('preview', true) }}"></script>{% endblock %}
