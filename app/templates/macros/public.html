@@ -40,7 +40,7 @@
       <div class="podium-crown" x-show="index === 0">{{ icon('crown') }}<span>PERINGKAT PERTAMA</span></div>
       <div class="podium-portrait">
         <span class="portrait-initial" x-text="(person.name || '?').slice(0, 1).toUpperCase()"></span>
-        {% if not donors %}<template x-if="person.logo_url || person.photo_url"><img :src="person.logo_url || person.photo_url" :alt="person.name" @error="$el.style.display = 'none'"></template>{% endif %}
+        {% if not donors %}<template x-if="person.logo_url || person.photo_url"><img :src="person.logo_url || person.photo_url" :alt="person.name" width="106" height="106" @error="$el.style.display = 'none'"></template>{% endif %}
         <span class="podium-medal" x-text="index + 1"></span>
       </div>
       <h3 x-text="person.name"></h3>

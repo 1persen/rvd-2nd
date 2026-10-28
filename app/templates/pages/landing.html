@@ -39,7 +39,7 @@
     {% if event %}
     <article class="home-featured-event">
       <a href="{{ event.invite_path }}" class="home-event-poster" aria-label="Buka event {{ event.name }}">
-        {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" loading="lazy" onerror="this.style.display='none'">{% endif %}
+        {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">{% endif %}
         <span class="home-poster-top"><span class="home-poster-mark">RVD</span><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span></span>
         <span class="home-poster-title">{{ event.name }}</span><span class="home-poster-bottom">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</span>
       </a>
@@ -62,9 +62,9 @@
     <div class="shell">
       <div class="home-section-heading"><div><p class="eyebrow">KOMPETISI LAINNYA</p><h2>Temukan event pilihanmu</h2></div><a class="home-section-link" href="/events">Jelajahi semua {{ icon('arrow') }}</a></div>
       {% set other_events = all_events|rejectattr('id', 'equalto', event.id)|list %}
-      <div class="home-event-list">
+      <div class="home-event-list" x-data='landingPage({{ other_events | tojson }})'>
         {% for ev in other_events[:4] %}
-        <a class="home-event-row" href="{{ ev.invite_path }}"><span class="home-event-row__date">{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
+        <a class="home-event-row" href="{{ ev.invite_path }}"><span class="home-event-row__date" x-text="(() => { const d = new Date('{{ ev.opens_at }}'); return isNaN(d) ? 'SEGERA' : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) })()"></span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
         {% endfor %}
       </div>
       {% if other_events|length > 4 %}<a class="home-event-list-more" href="/events">Lihat {{ other_events|length - 4 }} event lainnya {{ icon('arrow') }}</a>{% endif %}

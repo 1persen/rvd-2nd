@@ -24,6 +24,7 @@ html.dark {
 }
 * { box-sizing: border-box; }
 html { scroll-padding-top: 6rem; }
+@media (hover: hover) and (pointer: fine) { html { overscroll-behavior: none; } }
 body { margin: 0; background: var(--canvas); color: var(--ink); line-height: 1.6; }
 img { max-width: 100%; }
 button, input, select, textarea { font: inherit; }
