@@ -83,5 +83,7 @@ async def test_checkout_without_gateway_does_not_collect_payer_details(test_data
         response = await client.get(f"/events/{test_data['event'].id}/vote/{test_data['team'].id}")
     assert response.status_code == 200
     assert "Pembayaran belum tersedia." in response.text
+    # No payer details are collected and no gateway button is offered without a gateway.
     assert 'id="voter-phone"' not in response.text
     assert "Simulasikan berhasil" not in response.text
+    assert "Buka pembayaran Duitku" not in response.text

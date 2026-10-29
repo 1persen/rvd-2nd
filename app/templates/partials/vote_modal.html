@@ -1,0 +1,108 @@
+<div x-data="voteModal()" x-show="open" x-cloak class="vote-modal" role="dialog" aria-modal="true" aria-labelledby="vote-modal-title" @click.self="close()">
+  <div class="vote-modal-panel" role="document">
+    <header class="vote-modal-head">
+      <div>
+        <p class="vote-modal-kicker" x-text="event?.name"></p>
+        <h2 id="vote-modal-title" class="vote-modal-title" x-text="team?.name"></h2>
+        <p class="vote-modal-votes"><span aria-hidden="true">♥</span> <b x-text="Number(team?.votes || 0).toLocaleString('id-ID')"></b> suara</p>
+      </div>
+      <button type="button" class="vote-modal-close" @click="close()" :disabled="isLoading" aria-label="Tutup">×</button>
+    </header>
+
+    <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
+    <div class="notice" role="status" x-show="statusText" x-cloak x-text="statusText"></div>
+
+    <template x-if="payment && payment.status === 'PENDING' && payment.payment_url">
+      <div class="vote-modal-pay">
+        <p>Invoice dibuat. Lanjutkan ke pembayaran. Suara dihitung setelah pembayaran berhasil.</p>
+        <button type="button" class="btn btn-secondary vote-modal-full" @click="goToPayment()" :disabled="isNavigating">Lanjutkan pembayaran</button>
+      </div>
+    </template>
+
+    <form x-show="!payment || payment.status !== 'SUCCESS'" @submit.prevent="submit()" class="vote-modal-form" novalidate>
+      <label class="vote-field">
+        <span>Nama pendukung <em>*</em></span>
+        <input id="vote-modal-name" type="text" x-model="form.name" maxlength="100" autocomplete="name" placeholder="Nama kamu">
+      </label>
+
+      <label class="vote-field">
+        <span>Pesan dukungan <small>(opsional)</small></span>
+        <textarea x-model="form.message" maxlength="150" rows="3" placeholder="Semangat untuk jagoanmu..."></textarea>
+        <small class="vote-counter" x-text="messageLeft + ' karakter tersisa'"></small>
+      </label>
+
+      <div class="vote-row">
+        <label class="vote-field">
+          <span>Email <em>*</em></span>
+          <input type="email" x-model="form.email" maxlength="50" autocomplete="email" placeholder="nama@email.com">
+        </label>
+        <label class="vote-field">
+          <span>Nomor WhatsApp <em>*</em></span>
+          <div class="rv-phone-input"><span>+62</span><input id="voter-phone" type="tel" inputmode="numeric" x-model="form.phone" maxlength="13" autocomplete="tel-national" aria-describedby="vote-phone-hint" placeholder="81234567890"></div><small id="vote-phone-hint">Masukkan 9-13 angka tanpa awalan +62 atau 0.</small>
+        </label>
+      </div>
+
+      <div class="vote-field">
+        <span>Jumlah suara <em>*</em></span>
+        <div class="vote-qty">
+          <button type="button" class="btn btn-secondary" @click="decrementQty()" :disabled="form.qty <= 1" aria-label="Kurangi">−</button>
+          <input type="number" min="1" max="10000" step="1" x-model.number="form.qty" aria-label="Jumlah suara">
+          <button type="button" class="btn btn-secondary" @click="incrementQty()" :disabled="form.qty >= 10000" aria-label="Tambah">+</button>
+        </div>
+        <div class="vote-chips" role="group" aria-label="Jumlah cepat">
+          <button type="button" :class="{ 'is-active': form.qty == 1 }" @click="setQty(1)">1</button>
+          <button type="button" :class="{ 'is-active': form.qty == 5 }" @click="setQty(5)">5</button>
+        </div>
+      </div>
+
+      <div class="vote-field">
+        <span>Efek animasi</span>
+        <div class="vote-effects" role="radiogroup" aria-label="Efek animasi">
+          <template x-for="effect in effects" :key="effect.code">
+            <button type="button" role="radio" :aria-checked="form.effect === effect.code"
+              :disabled="!effectEnabled(effect)" :class="{ 'is-active': form.effect === effect.code }"
+              @click="toggleEffect(effect)">
+              <span aria-hidden="true" x-text="effect.icon"></span>
+              <b x-text="effect.min_points"></b>
+              <small x-text="effect.label"></small>
+            </button>
+          </template>
+        </div>
+        <p class="vote-divider">✦ Luxury ✦</p>
+        <div class="vote-effects vote-effects--luxury" role="radiogroup" aria-label="Efek luxury">
+          <template x-for="effect in luxury" :key="effect.code">
+            <button type="button" role="radio" :aria-checked="form.effect === effect.code"
+              :disabled="!effectEnabled(effect)" :class="{ 'is-active': form.effect === effect.code }"
+              @click="toggleEffect(effect)">
+              <span aria-hidden="true" x-text="effect.icon"></span>
+              <small x-text="effect.label"></small>
+              <b x-text="effect.min_points.toLocaleString('id-ID')"></b>
+            </button>
+          </template>
+        </div>
+        <p class="vote-hint" x-show="effects.length && !effectEnabled(effects[0])" x-cloak><span x-text="effectHint"></span> Efek hanya bundling, tidak menambah suara.</p>
+        <p class="vote-hint" x-show="!allEffects.length" x-cloak>Efek animasi belum tersedia untuk event ini.</p>
+      </div>
+
+      <label class="vote-field">
+        <span>Metode pembayaran <em>*</em></span>
+        <select x-model="form.method" x-show="methods.length" x-cloak required>
+          <template x-for="m in methods" :key="m.code"><option :value="m.code" x-text="m.name + (Number(m.fee) > 0 ? ' (biaya ' + Number(m.fee).toLocaleString('id-ID') + ')' : '')"></option></template>
+        </select>
+        <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Belum ada metode pembayaran yang tersedia. Pembayaran belum dikonfigurasi, hubungi panitia.</small>
+      </label>
+
+      <div class="vote-total">
+        <span>Total pembayaran</span>
+        <strong x-text="'Rp ' + total.toLocaleString('id-ID')"></strong>
+      </div>
+      <p class="vote-hint">Harga per suara: Rp <span x-text="pricePerVote.toLocaleString('id-ID')"></span>. Total dihitung ulang oleh server.</p>
+
+      <button type="submit" class="btn btn-primary vote-modal-full" :disabled="isLoading || !votingOpen || !event?.payments_configured || payment?.status === 'PENDING'" :aria-busy="isLoading">
+        <span x-show="!isLoading">Lanjutkan pembayaran · <span x-text="form.qty"></span> suara</span>
+        <span x-show="isLoading" x-cloak>Membuat invoice…</span>
+      </button>
+      <p class="notice" x-show="!votingOpen" x-cloak>Event ini sedang tidak menerima suara.</p>
+    </form>
+  </div>
+</div>

@@ -113,6 +113,7 @@ async def reconcile_payment(payment_id: str, session: AsyncSession = Depends(get
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
+        await leaderboard_service.publish_support(payment)
     return ok(data)
 
 
@@ -142,6 +143,7 @@ async def midtrans_webhook(request: Request, session: AsyncSession = Depends(get
 
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
+        await leaderboard_service.publish_support(payment)
 
     return ok({"order_id": payment.id, "status": payment.status.value}, "Webhook diterima")
 
@@ -209,4 +211,5 @@ async def duitku_callback(request: Request, session: AsyncSession = Depends(get_
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
+        await leaderboard_service.publish_support(payment)
     return ok({"order_id": payment.id, "status": payment.status.value}, "Callback diterima")

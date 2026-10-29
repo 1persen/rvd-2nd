@@ -44,7 +44,7 @@ def request(path='/'):
                     'server': ('test', 80)})
 
 
-@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard', 'vote', 'voting_closed'])
+@pytest.mark.parametrize('name', ['landing', 'events', 'leaderboard', 'voting_closed'])
 def test_public_templates_render(name):
     event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
              'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,

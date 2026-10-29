@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.core.effects import public_effects
 from app.enums.event_status import EventStatus
 from app.repositories import event as event_repo
 from app.repositories import payment as payment_repo
@@ -75,7 +76,11 @@ async def _get_event_by_id_or_active(session: AsyncSession, event_id: str | None
 
 
 def _event_dict(event) -> dict:
-    return event_page_service.event_dict(event)
+    payload = event_page_service.event_dict(event)
+    # Syarat bundling efek berasal dari konfigurasi backend, bukan dari frontend.
+    payload["vote_effects"] = public_effects()
+    payload["payments_configured"] = settings.payments_configured
+    return payload
 
 
 def _event_with_stats_dict(event, total_teams=0, total_votes=0, total_supporters=0, progress=0) -> dict:
@@ -191,6 +196,8 @@ async def invite_event(
         total_supporters=donor_counts.get(event.id, 0),
         collections={},
     )
+    # Ticker dukungan live untuk event publik ini.
+    context["support_event_id"] = event.id
     return templates.TemplateResponse(request, context["template_path"], context)
 
 
@@ -225,14 +232,22 @@ async def vote_page(
     mine = next((e for e in entries if e["team_id"] == team_id), None)
     rank, votes = (mine["rank"], mine["votes"]) if mine else (1, team.total_votes)
 
-    return templates.TemplateResponse(
-        request,
-        "pages/vote.html",
-        {
-            "event": _event_dict(event),
-            "team": _team_dict(team, votes, rank),
-        },
+    # Deep link (termasuk return_url Duitku): buka halaman event dengan modal vote
+    # untuk tim ini. ?payment= dibaca modal untuk menampilkan status transaksi.
+    team_stats = await team_repo.stats_by_event(session, [event.id])
+    team_count, total_votes = team_stats.get(event.id, (0, 0))
+    donor_counts = await payment_repo.count_donors_by_event(session, [event.id])
+    context = event_page_service.build_invite_context(
+        event,
+        total_teams=team_count,
+        total_votes=total_votes,
+        total_supporters=donor_counts.get(event.id, 0),
+        collections={},
     )
+    context["event"] = _event_dict(event)
+    context["support_event_id"] = event.id
+    context["vote_target"] = _team_dict(team, votes, rank)
+    return templates.TemplateResponse(request, context["template_path"], context)
 
 
 @router.get("/leaderboard")
@@ -278,6 +293,7 @@ async def leaderboard_detail(
             "available_levels": available_levels,
             "level": chosen_level,
             "labels": EDUCATION_LABELS,
+            "support_event_id": event.id,
         },
     )
 

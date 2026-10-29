@@ -23,7 +23,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
+from app.core.effects import EFFECTS, effect_min_points
 from app.enums.payment_gateway import PaymentGateway
+from app.services import profanity_filter
 from app.enums.payment_status import PaymentStatus
 from app.models.payment import Payment
 from app.models.event import Event
@@ -65,8 +67,14 @@ class PaymentUnavailable(PaymentError):
 
 def _replay_or_raise(existing: Payment, payload: PaymentCreate) -> Payment:
     """Return the original invoice for a retried request, never someone else's."""
-    same_request = (existing.team_id, existing.supporter_phone, existing.qty) == (
+    # Effect and message are part of the order: a retry that changes them is a
+    # different request and must not silently receive the old invoice.
+    same_request = (
+        existing.team_id, existing.supporter_phone, existing.qty,
+        existing.effect_code, existing.support_message,
+    ) == (
         payload.team_id, payload.supporter_phone, payload.qty,
+        payload.effect_code or None, profanity_filter.censor((payload.support_message or "").strip()) or None,
     )
     if not same_request:
         raise PaymentError("Idempotency-Key sudah dipakai untuk permintaan lain")
@@ -149,6 +157,16 @@ async def create_payment(
     bonus_votes = 0
     qty = payload.qty
 
+    # Efek hanya syarat bundling dalam poin. Tidak menambah biaya dan tidak menambah vote.
+    effect_code = payload.effect_code or None
+    if effect_code is not None:
+        min_points = effect_min_points(effect_code)
+        if min_points is None:
+            raise PaymentError("Efek animasi tidak dikenal.")
+        if qty < min_points:
+            raise PaymentError(f"Pilih minimal {min_points} point untuk efek {EFFECTS[effect_code]['label']}.")
+    support_message = profanity_filter.censor((payload.support_message or "").strip()) or None
+
     amount = unit_price * qty
     votes = qty + bonus_votes
 
@@ -201,6 +219,8 @@ async def create_payment(
         supporter_email=payload.supporter_email,
         supporter_phone=payload.supporter_phone,
         is_anonymous=payload.is_anonymous,
+        support_message=support_message,
+        effect_code=effect_code,
         status=PaymentStatus.PENDING,
         payment_gateway=PaymentGateway.MIDTRANS,
         currency=event.currency or "IDR",
@@ -253,7 +273,7 @@ async def create_payment(
                 email=payload.supporter_email,
                 customer_va_name=payload.supporter_name,
                 callback_url=f"{settings.APP_BASE_URL}/api/v1/payments/duitku/callback",
-                return_url=f"{settings.APP_BASE_URL}/events/{event.id}/vote/{team.id}",
+                return_url=f"{settings.APP_BASE_URL}/events/{event.id}/vote/{team.id}?payment={payment.id}",
                 phone_number=payload.supporter_phone,
                 expiry_period=INVOICE_TTL_MINUTES,
             )
@@ -374,6 +394,8 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
         supporter_email=payment.supporter_email,
         supporter_phone=payment.supporter_phone,
         is_anonymous=payment.is_anonymous,
+        support_message=payment.support_message,
+        effect_code=payment.effect_code,
         is_mock=is_mock,
         is_sandbox=(payment.payment_gateway == PaymentGateway.DUITKU
                     and (duitku_service.is_sandbox_payment_url(duitku_payload.get("paymentUrl"))

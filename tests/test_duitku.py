@@ -9,7 +9,7 @@ import pytest
 
 from app.core.config import settings
 from app.repositories import payment as payment_repo, vote_log as vote_log_repo
-from app.services import duitku_service
+from app.services import duitku_service, leaderboard_service
 
 
 @pytest.fixture
@@ -152,6 +152,39 @@ async def test_valid_callback_is_idempotent(async_client, test_data, db_session,
         response = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
         assert response.status_code == 200, response.text
     assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3
+
+
+@pytest.mark.asyncio
+async def test_confirmed_payment_publishes_support_once(async_client, test_data, duitku, monkeypatch):
+    """Satu pembayaran sukses menerbitkan tepat satu event support publik."""
+    published = []
+
+    async def capture(payload):
+        published.append(payload)
+
+    monkeypatch.setattr(leaderboard_service.cache, 'publish', capture)
+    response = await invoice(
+        async_client, test_data, qty=10, effect_code='rocket',
+        support_message='Semangat untuk jagoanmu!',
+    )
+    assert response.status_code == 200, response.text
+    payment = response.json()['data']
+    assert payment['effect_code'] == 'rocket'
+    # Efek hanya bundling: tidak menambah biaya maupun jumlah vote.
+    assert payment['amount'] == 10 * test_data['event'].price_per_vote
+    assert payment['votes'] == 10
+
+    for _ in range(2):
+        delivered = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
+        assert delivered.status_code == 200, delivered.text
+
+    supports = [p for p in published if p.get('type') == 'support']
+    assert len(supports) == 1
+    assert supports[0]['payment_id'] == payment['id']
+    assert supports[0]['effect_code'] == 'rocket'
+    assert supports[0]['support_message'] == 'Semangat untuk jagoanmu!'
+    assert 'supporter_phone' not in supports[0]
+    assert 'supporter_email' not in supports[0]
 
 
 @pytest.mark.asyncio

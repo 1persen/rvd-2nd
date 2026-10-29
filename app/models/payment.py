@@ -76,6 +76,8 @@ class Payment(TimestampMixin, UUIDMixin, Base):
     duitku_payment_method: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     duitku_payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     idempotency_key: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, unique=True)
+    support_message: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)
+    effect_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 

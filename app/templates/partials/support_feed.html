@@ -1,0 +1,16 @@
+{% if support_event_id %}
+<div x-data="supportFeed({{ support_event_id | tojson }})" class="support-stage" aria-live="polite" aria-relevant="additions">
+  <template x-if="currentEffect">
+    <div class="support-effect" :data-effect="currentEffect.code" aria-hidden="true">
+      <span class="support-effect-icon" x-text="{ rocket: '🚀', kelinci: '🐰', singa: '🐯', phoenix: '🔥', paus: '🐳', dragon: '🐉', kencana: '👑', pesiar: '🛥️', jet: '✈️' }[currentEffect.code] || '✦'"></span>
+    </div>
+  </template>
+  <div class="support-ticker" x-show="queue.length" x-cloak>
+    <div class="support-ticker-track">
+      <template x-for="item in queue" :key="item.id">
+        <span class="support-ticker-item" x-text="item.text"></span>
+      </template>
+    </div>
+  </div>
+</div>
+{% endif %}

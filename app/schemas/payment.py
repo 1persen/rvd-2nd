@@ -24,6 +24,9 @@ class PaymentCreate(BaseModel):
     idempotency_key: Optional[str] = Field(default=None, max_length=64)
     # Kode metode Duitku yang dipilih pelanggan. Kosong = pakai DUITKU_PAYMENT_METHOD.
     payment_method: Optional[str] = Field(default=None, min_length=2, max_length=2, pattern=r"^[A-Z0-9]{2}$")
+    # Pesan dukungan opsional (disensor di backend) dan satu efek bundling.
+    support_message: Optional[str] = Field(default=None, max_length=150)
+    effect_code: Optional[str] = Field(default=None, max_length=20)
 
 
 class PaymentOut(BaseModel):
@@ -58,3 +61,5 @@ class PaymentOut(BaseModel):
     is_anonymous: bool = False
     is_mock: bool = False
     is_sandbox: bool = False
+    support_message: Optional[str] = None
+    effect_code: Optional[str] = None

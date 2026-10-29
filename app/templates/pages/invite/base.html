@@ -66,4 +66,13 @@
   <div class="event-bottom-spacer" aria-hidden="true"></div>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/events.js?v={{ tailwind_css_version | default('preview', true) }}"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/events.js?v={{ tailwind_css_version | default('preview', true) }}"></script>
+{% if vote_target %}<script type="application/json" id="vote-target-data">{{ {"event": event, "team": vote_target} | tojson }}</script>
+<script>
+  window.addEventListener('DOMContentLoaded', function () {
+    var el = document.getElementById('vote-target-data');
+    if (!el) return;
+    try { var data = JSON.parse(el.textContent); } catch (e) { return; }
+    window.dispatchEvent(new CustomEvent('vote:open', { detail: data }));
+  });
+</script>{% endif %}{% endblock %}

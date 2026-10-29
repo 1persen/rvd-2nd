@@ -126,3 +126,22 @@ async def schedule_push(event_id: str) -> None:
     task = asyncio.create_task(_push_later(event_id, interval))
     _pending_pushes.add(task)
     task.add_done_callback(_pending_pushes.discard)
+
+
+async def publish_support(payment) -> None:
+    """Broadcast one confirmed support (ticker + effect) to public SSE clients.
+
+    Call only after the payment's vote was granted in this request (voted_now).
+    Contains only public fields: no email, phone, or Duitku references.
+    """
+    await cache.publish({
+        "type": "support",
+        "event_id": payment.event_id,
+        "level": None,
+        "payment_id": payment.id,
+        "supporter_name": payment.supporter_name,
+        "support_message": payment.support_message or "",
+        "votes": payment.votes,
+        "effect_code": payment.effect_code,
+        "is_anonymous": bool(payment.is_anonymous),
+    })
