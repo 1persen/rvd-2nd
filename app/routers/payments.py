@@ -1,5 +1,5 @@
-"""
-Payments API — create invoice (QRIS), status polling, Midtrans webhook.
+﻿"""
+Payments API â€” create invoice (QRIS), status polling, Midtrans webhook.
 
 Webhook menerima semua event Midtrans, memverifikasi signature, memproses
 secara idempotent, membroadcast SSE leaderboard setelah vote masuk.
@@ -113,7 +113,7 @@ async def reconcile_payment(payment_id: str, session: AsyncSession = Depends(get
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
-        await leaderboard_service.publish_support(payment)
+        await leaderboard_service.publish_support(session, payment)
     return ok(data)
 
 
@@ -143,7 +143,7 @@ async def midtrans_webhook(request: Request, session: AsyncSession = Depends(get
 
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
-        await leaderboard_service.publish_support(payment)
+        await leaderboard_service.publish_support(session, payment)
 
     return ok({"order_id": payment.id, "status": payment.status.value}, "Webhook diterima")
 
@@ -156,7 +156,7 @@ async def mock_simulate_payment(
 ):
     """Simulate a Midtrans payment outcome (mock mode only).
 
-    Mirrors ``POST /payments/webhook`` but without any Midtrans call — it is
+    Mirrors ``POST /payments/webhook`` but without any Midtrans call â€” it is
     gated on explicit mock mode (``MIDTRANS_MOCK_MODE`` with no server key),
     the same condition that produces the mock QRIS in ``create_payment``.
     Otherwise the endpoint is intentionally hidden (404).
@@ -211,5 +211,5 @@ async def duitku_callback(request: Request, session: AsyncSession = Depends(get_
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
-        await leaderboard_service.publish_support(payment)
+        await leaderboard_service.publish_support(session, payment)
     return ok({"order_id": payment.id, "status": payment.status.value}, "Callback diterima")

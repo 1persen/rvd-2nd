@@ -103,10 +103,13 @@
 
 .vote-counter { text-align: right; font-size: 11px; color: var(--muted, #666a70); }
 
-.vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.rv-phone-input { display: flex; align-items: center; border: 1px solid #d9d3c2; border-radius: 4px; background: #fdfbf5; overflow: hidden; }
-.rv-phone-input span { padding: 0 10px; font-size: 13px; color: var(--muted, #666a70); border-right: 1px solid #e6e0d0; }
-.rv-phone-input input { border: 0; border-radius: 0; background: transparent; }
+.vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.rv-phone-input { display: flex; align-items: stretch; height: 42px; box-sizing: border-box; border: 1px solid #d9d3c2; border-radius: 4px; background: #fdfbf5; overflow: hidden; }
+.rv-phone-input span { display: flex; align-items: center; padding: 0 10px; font-size: 13px; color: var(--muted, #666a70); border-right: 1px solid #e6e0d0; }
+.rv-phone-input input { flex: 1; min-width: 0; height: 100%; padding: 0 12px; border: 0; border-radius: 0; background: transparent; box-sizing: border-box; }
+.vote-row .vote-field input[type="email"] { height: 42px; padding-block: 0; box-sizing: border-box; }
+.vote-row .vote-field input { height: 42px; box-sizing: border-box; }
+.vote-row small { display: block; margin-top: 2px; }
 
 .vote-qty { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; }
 .vote-qty input { text-align: center; font-weight: 700; }
@@ -126,39 +129,34 @@
 }
 .vote-chips button.is-active { border-color: #a58852; background: #f0e3c4; }
 
-.vote-effects {
+.vote-gifts {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
-.vote-effects--luxury { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
-.vote-effects button {
+.vote-gifts button {
   display: grid;
   justify-items: center;
   gap: 2px;
-  padding: 10px 4px;
+  padding: 10px 4px 8px;
   border: 1px solid #d9d3c2;
-  border-radius: 5px;
+  border-radius: 6px;
   background: #fdfbf5;
   font: inherit;
   cursor: pointer;
   transition: border-color .15s ease, background .15s ease;
 }
-.vote-effects button span { font-size: 24px; line-height: 1.1; }
-.vote-effects button b { font-size: 13px; }
-.vote-effects button small { font-size: 9px; letter-spacing: .06em; color: var(--muted, #666a70); }
-.vote-effects button.is-active { border-color: #a58852; background: #f0e3c4; }
-.vote-effects button:disabled { opacity: .38; cursor: not-allowed; }
+.vote-gifts button:focus-visible { outline: 2px solid #a58852; outline-offset: 2px; }
+.vote-gift-icon { width: 34px; height: 34px; color: #7a5c24; }
+.vote-gift-icon svg { width: 100%; height: 100%; }
+.vote-gifts button b { font-size: 12px; }
+.vote-gifts button small { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #666a70); }
+.vote-gifts button em { font-style: normal; font-size: 10px; font-weight: 700; color: #a58852; }
+.vote-gifts button.is-active { border-color: #a58852; background: #f0e3c4; }
+.vote-gifts button:disabled { opacity: .4; cursor: not-allowed; }
 
-.vote-divider {
-  margin: 4px 0 0;
-  text-align: center;
-  font-size: 10px;
-  letter-spacing: .28em;
-  text-transform: uppercase;
-  color: #a58852;
-}
+.gift-svg-library { display: none; }
 
 .vote-hint { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted, #666a70); }
 
@@ -181,7 +179,6 @@
 
 .support-ticker {
   overflow: hidden;
-  border-top: 1px solid var(--line, #e4e6df);
   border-bottom: 1px solid var(--line, #e4e6df);
   background: #f3efe3;
   padding: 7px 0;
@@ -192,7 +189,9 @@
   gap: 40px;
   width: max-content;
   padding-inline: 20px;
-  animation: support-scroll 40s linear infinite;
+  /* Kecepatan tetap ~60 px/dtk, tidak tergantung jumlah item. */
+  animation: support-scroll calc(var(--ticker-count, 1) * 4s + 12s) linear infinite;
+  will-change: transform;
 }
 
 .support-ticker-item {
@@ -211,38 +210,184 @@
   to { transform: translateX(-50%); }
 }
 
+
+/* Efek gift. Ringan: hanya transform/opacity, maksimal 8 partikel, satu efek
+   aktif per waktu. Filter hanya statis (bayangan ikon), tidak dianimasikan. */
 .support-effect {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 96px;
+  inset: 0;
   z-index: 6;
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   pointer-events: none;
+  overflow: hidden;
+  contain: layout paint;
+  animation: fx-fade var(--gift-ms, 2500ms) linear forwards;
+}
+
+.support-effect > span { position: absolute; will-change: transform, opacity; }
+
+.fx-backdrop {
+  inset: 0;
+  background: rgba(16, 26, 30, .32);
+  opacity: 0;
+  animation: fx-dim var(--gift-ms) ease-in-out forwards;
+}
+
+.fx-wave, .fx-trail, .fx-glint, .fx-flash { opacity: 0; }
+
+.fx-name {
+  bottom: 22%;
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(14px, 3vw, 20px);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #f6e7bf;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  opacity: 0;
+}
+
+.fx-particles { inset: 0; }
+.fx-particles i {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f1d48a;
+  opacity: 0;
+  animation: fx-particle var(--gift-ms) ease-out forwards;
 }
 
 .support-effect-icon {
-  font-size: 64px;
-  filter: drop-shadow(0 12px 18px rgba(23, 43, 50, .3));
-  animation: support-fly 3.6s ease-in-out forwards;
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 120px;
+  color: #b8893a;
+  filter: drop-shadow(0 10px 14px rgba(23, 43, 50, .3));
+  transform-origin: 50% 50%;
+}
+.support-effect-icon svg { width: 100%; height: 100%; }
+
+/* Gift 1: bintang membesar, berputar, memudar (1,5 dtk). */
+.support-effect--star .support-effect-icon { animation: gift-star var(--gift-ms) ease-out forwards; }
+.support-effect--star .fx-glint { inset: 0; background: radial-gradient(circle, rgba(255, 233, 160, .55), transparent 60%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+
+/* Gift 2: mawar mekar, kelopak berjatuhan (2 dtk). */
+.support-effect--rose .support-effect-icon { animation: gift-rose var(--gift-ms) ease-out forwards; }
+.support-effect--rose .fx-particles i { background: #d9737a; }
+
+/* Gift 3: mahkota turun dengan kilau emas (2,5 dtk). */
+.support-effect--crown .support-effect-icon { animation: gift-crown var(--gift-ms) ease-out forwards; }
+.support-effect--crown .fx-glint { inset: 0; background: radial-gradient(circle at 50% 35%, rgba(255, 221, 120, .6), transparent 55%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+
+/* Gift 4: paus. Layar meredup, gelombang, paus melintas dan menyemburkan air,
+   lalu nama event kembali tampil (4,5 dtk). */
+.support-effect--whale .support-effect-icon { animation: gift-whale var(--gift-ms) ease-in-out forwards; }
+.support-effect--whale .fx-wave {
+  left: -10%; right: -10%; bottom: 12%; height: 22%;
+  background: linear-gradient(transparent, rgba(60, 150, 190, .55));
+  border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+  animation: fx-wave var(--gift-ms) ease-in-out forwards;
+}
+.support-effect--whale .fx-trail { left: 55%; bottom: 30%; width: 14px; height: 36px; border-radius: 50%; background: rgba(190, 235, 255, .9); animation: fx-spout var(--gift-ms) ease-out forwards; }
+.support-effect--whale .fx-name { animation: fx-name-return var(--gift-ms) ease-out forwards; }
+.support-effect--whale .fx-particles i { background: #bfe6f5; }
+
+/* Gift 5: roket melesat diagonal dengan jejak cahaya dan ledakan bintang (3 dtk). */
+.support-effect--rocket .support-effect-icon { animation: gift-rocket var(--gift-ms) ease-in forwards; }
+.support-effect--rocket .fx-trail { left: 20%; bottom: 20%; width: 120px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, transparent, #ffd27a); transform-origin: left center; animation: fx-trail-rocket var(--gift-ms) ease-in forwards; }
+.support-effect--rocket .fx-flash { inset: 0; background: radial-gradient(circle at 75% 25%, rgba(255, 240, 180, .7), transparent 35%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+.support-effect--rocket .fx-particles i { background: #ffe39a; }
+
+/* Gift 6: phoenix terbang melintas, sayap api terbuka, partikel menyebar (4 dtk). */
+.support-effect--phoenix .support-effect-icon { animation: gift-phoenix var(--gift-ms) ease-in-out forwards; }
+.support-effect--phoenix .fx-glint { inset: 0; background: radial-gradient(circle, rgba(255, 150, 60, .45), transparent 60%); animation: fx-flash var(--gift-ms) ease-in-out forwards; }
+.support-effect--phoenix .fx-particles i { background: #ff9a3c; }
+
+/* Gift 7: naga mengitari layar, energi menyambar, kilatan final (5,5 dtk). */
+.support-effect--dragon .support-effect-icon { animation: gift-dragon var(--gift-ms) linear forwards; }
+.support-effect--dragon .fx-flash { inset: 0; background: rgba(255, 255, 255, .0); animation: fx-final-flash var(--gift-ms) linear forwards; }
+.support-effect--dragon .fx-particles i { background: #7fe3c4; }
+
+.fx-particles i:nth-child(2n) { animation-delay: 80ms; }
+.fx-particles i:nth-child(3n) { animation-delay: 160ms; }
+
+@keyframes fx-fade { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-dim { 0%, 100% { opacity: 0; } 15%, 80% { opacity: 1; } }
+@keyframes fx-flash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-final-flash { 0%, 90% { opacity: 0; } 94% { opacity: 1; background: rgba(255, 255, 255, .85); } 100% { opacity: 0; } }
+@keyframes fx-particle {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+@keyframes fx-wave {
+  0% { opacity: 0; transform: translateY(40px) scaleY(.6); }
+  25% { opacity: 1; transform: translateY(0) scaleY(1); }
+  75% { opacity: 1; transform: translateY(0) scaleY(1); }
+  100% { opacity: 0; transform: translateY(20px) scaleY(.8); }
+}
+@keyframes fx-spout {
+  0%, 30% { opacity: 0; transform: scaleY(0); }
+  40% { opacity: 1; transform: scaleY(1.2); }
+  60% { opacity: 0; transform: scaleY(1.6) translateY(-20px); }
+  100% { opacity: 0; }
+}
+@keyframes fx-name-return {
+  0%, 70% { opacity: 0; transform: translateY(12px); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fx-trail-rocket {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-35deg) scaleX(0); }
+  20% { opacity: 1; transform: translate(0, 0) rotate(-35deg) scaleX(1); }
+  100% { opacity: 0; transform: translate(40vw, -40vh) rotate(-35deg) scaleX(1.4); }
 }
 
-.support-effect[data-effect="rocket"] .support-effect-icon { animation-name: support-launch; }
-.support-effect[data-effect="dragon"] .support-effect-icon,
-.support-effect[data-effect="jet"] .support-effect-icon { font-size: 82px; }
-
-@keyframes support-fly {
-  0% { transform: translateY(24px) scale(.85); opacity: 0; }
-  18% { transform: translateY(0) scale(1); opacity: 1; }
-  78% { transform: translateY(-8px) scale(1.05); opacity: 1; }
-  100% { transform: translateY(-40px) scale(1.1); opacity: 0; }
+@keyframes gift-star {
+  0% { transform: scale(.2) rotate(0); opacity: 0; }
+  40% { transform: scale(1.15) rotate(200deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 0; }
 }
-
-@keyframes support-launch {
-  0% { transform: translate(-40vw, 20px) rotate(-18deg); opacity: 0; }
+@keyframes gift-rose {
+  0% { transform: scale(.3); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: translateY(40px) scale(.9); opacity: 0; }
+}
+@keyframes gift-crown {
+  0% { transform: translateY(-120px) scale(.9); opacity: 0; }
+  50% { transform: translateY(0) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 0; }
+}
+@keyframes gift-whale {
+  0% { transform: translateX(-60vw); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translateX(60vw); opacity: 1; }
+  100% { transform: translateX(70vw); opacity: 0; }
+}
+@keyframes gift-rocket {
+  0% { transform: translate(-40vw, 30vh) rotate(-35deg) scale(.6); opacity: 0; }
   15% { opacity: 1; }
-  100% { transform: translate(40vw, -50px) rotate(-18deg); opacity: 0; }
+  100% { transform: translate(40vw, -40vh) rotate(-35deg) scale(1.1); opacity: 0; }
+}
+@keyframes gift-phoenix {
+  0% { transform: translateX(-70vw) scaleX(-1); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateX(70vw) scaleX(-1); opacity: 0; }
+}
+@keyframes gift-dragon {
+  0% { transform: translate(-50vw, 10vh) rotate(0); opacity: 0; }
+  25% { transform: translate(-10vw, -20vh) rotate(60deg); opacity: 1; }
+  50% { transform: translate(20vw, 10vh) rotate(-60deg); opacity: 1; }
+  75% { transform: translate(-5vw, 20vh) rotate(40deg); opacity: 1; }
+  100% { transform: translate(0, 0) rotate(0); opacity: 0; }
 }
 
 @media (max-width: 640px) {
@@ -256,11 +401,15 @@
     padding: 18px 16px 32px;
   }
   .vote-row { grid-template-columns: 1fr; }
-  .vote-effects { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .support-effect { bottom: 120px; }
+  .vote-gifts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .support-ticker-track { animation: none; }
-  .support-effect-icon { animation: none; }
+  .support-effect *, .support-effect *::before, .support-effect *::after {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .fx-particles, .fx-backdrop, .fx-wave, .fx-trail, .fx-glint, .fx-flash { display: none; }
 }
+

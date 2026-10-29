@@ -99,6 +99,32 @@ async def list_donations(session: AsyncSession, event_id: str, limit: int = 5000
     return result.all()
 
 
+async def recent_supports(session: AsyncSession, event_id: str, limit: int = 30):
+    """Dukungan sukses terbaru untuk running text.
+
+    Hanya nama, jumlah vote, tim yang divote, dan pesan. Email dan nomor
+    telepon sengaja tidak diambil.
+    """
+    from app.models.team import Team
+
+    stmt = (
+        select(
+            Payment.id,
+            Payment.supporter_name,
+            Payment.support_message,
+            Payment.votes,
+            Payment.is_anonymous,
+            Team.name.label("team_name"),
+        )
+        .join(Team, Team.id == Payment.team_id)
+        .where(Payment.event_id == event_id, Payment.status.in_(_SUCCESS_STATUSES))
+        .order_by(Payment.created_at.desc())
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return result.all()
+
+
 async def status_summary(session: AsyncSession, event_id: str) -> dict[PaymentStatus, tuple[int, int]]:
     """status -> (count, total amount) for one event, aggregated in SQL."""
     stmt = (

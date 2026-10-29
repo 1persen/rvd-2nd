@@ -15,14 +15,14 @@ function openVoteModal(team, event) {
   window.dispatchEvent(new CustomEvent('vote:open', { detail: { event, team } }));
 }
 
-// Hanya ikon yang ada di frontend; label dan syarat poin datang dari backend
-// (event.vote_effects) agar tidak pernah berbeda dari validasi server.
-const EFFECT_ICONS = {
-  rocket: '🚀', kelinci: '🐰', singa: '🐯', phoenix: '🔥', paus: '🐳', dragon: '🐉',
-  kencana: '👑', pesiar: '🛥️', jet: '✈️',
-};
-const LUXURY_CODES = ['kencana', 'pesiar', 'jet'];
+// Katalog gift (nama, level, syarat vote, durasi) datang dari backend:
+// event.vote_effects. Ikon SVG dirender sekali oleh Jinja (<template data-gift>).
 const SUPPORT_MAX = 150;
+
+function giftIcon(animation) {
+  const tpl = document.querySelector('template[data-gift="' + animation + '"]');
+  return tpl ? tpl.innerHTML : '';
+}
 
 function voteModal() {
   return {
@@ -94,15 +94,8 @@ function voteModal() {
       }
     },
 
-    get allEffects() {
-      return (this.event?.vote_effects || []).map(e => ({ ...e, icon: EFFECT_ICONS[e.code] || '✦' }));
-    },
-    get effects() { return this.allEffects.filter(e => !LUXURY_CODES.includes(e.code)); },
-    get luxury() { return this.allEffects.filter(e => LUXURY_CODES.includes(e.code)); },
-    get effectHint() {
-      const first = this.effects[0];
-      return first ? 'Pilih minimal ' + first.min_points + ' point untuk efek ' + first.label + '.' : '';
-    },
+    get allEffects() { return this.event?.vote_effects || []; },
+    giftIcon(animation) { return giftIcon(animation); },
     get pricePerVote() { return Number(this.event?.price_per_vote || 0); },
     get total() { return this.pricePerVote * (Number(this.form.qty) || 0); },
     get messageLeft() { return SUPPORT_MAX - (this.form.message || '').length; },
@@ -219,15 +212,27 @@ function voteModal() {
  * Ticker dan antrean efek. Satu koneksi SSE per halaman, dedup per payment_id.
  * Ticker dan efek berjalan terpisah: efek tidak menghentikan ticker.
  */
-function supportFeed(eventId) {
+function supportFeed(eventId, catalog, eventName) {
   return {
     queue: [],
     seen: new Set(),
     effectQueue: [],
     currentEffect: null,
+    effectTimer: null,
+    catalog: catalog || [],
+    eventName: eventName || '',
     source: null,
     init() {
-      if (!eventId || !('EventSource' in window)) return;
+      if (!eventId) return;
+      // Isi awal: dukungan terbaru yang sudah tersimpan (urut lama -> baru).
+      fetch('/api/v1/events/' + encodeURIComponent(eventId) + '/support-feed')
+        .then(res => res.json())
+        .then(body => {
+          if (!body.success || !Array.isArray(body.data)) return;
+          body.data.slice().reverse().forEach(msg => this.push(msg, { silent: true }));
+        })
+        .catch(() => {});
+      if (!('EventSource' in window)) return;
       this.source = new EventSource('/api/v1/leaderboard/stream?event_id=' + encodeURIComponent(eventId));
       this.source.onmessage = (e) => {
         let msg;
@@ -235,25 +240,39 @@ function supportFeed(eventId) {
         if (msg.type === 'support') this.push(msg);
       };
     },
-    push(msg) {
+    push(msg, opts = {}) {
       if (!msg.payment_id || this.seen.has(msg.payment_id)) return;
       this.seen.add(msg.payment_id);
       if (this.seen.size > 500) this.seen.delete(this.seen.values().next().value);
-      const name = msg.is_anonymous ? 'Anonim' : (msg.supporter_name || 'Pendukung');
-      this.queue.push({ id: msg.payment_id, text: name + ' — ' + (msg.support_message || 'Memberi dukungan') + ' (' + msg.votes + ' suara)' });
+      // Hanya data publik: nama, jumlah vote, tim, dan pesan. Tidak ada kontak.
+      const name = msg.supporter_name || 'Pendukung';
+      const team = msg.team_name ? ' → ' + msg.team_name : '';
+      const message = msg.support_message ? ' — ' + msg.support_message : '';
+      this.queue.push({ id: msg.payment_id, text: name + ' (' + msg.votes + ' suara)' + team + message });
       if (this.queue.length > 50) this.queue.shift();
-      if (msg.effect_code) this.enqueueEffect(msg.effect_code, msg.payment_id);
+      // Riwayat awal hanya mengisi ticker; animasi hanya untuk dukungan baru.
+      if (msg.effect_code && !opts.silent) this.enqueueEffect(msg.effect_code, msg.payment_id);
     },
     enqueueEffect(code, id) {
-      this.effectQueue.push({ code, id });
+      const gift = this.catalog.find(g => g.code === code);
+      if (!gift) return; // kode tidak dikenal: tetap tampil di ticker, tanpa animasi
+      this.effectQueue.push({ ...gift, id });
       if (this.effectQueue.length > 10) this.effectQueue.shift();
       if (!this.currentEffect) this.nextEffect();
     },
     nextEffect() {
+      clearTimeout(this.effectTimer);
       this.currentEffect = this.effectQueue.shift() || null;
       if (!this.currentEffect) return;
       const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      setTimeout(() => this.nextEffect(), reduce ? 1500 : 4000);
+      // Satu gift berjalan penuh sebelum gift berikutnya; durasi dari katalog backend.
+      this.effectTimer = setTimeout(() => this.nextEffect(), reduce ? 1200 : this.currentEffect.duration_ms);
+    },
+    // Dua salinan daftar agar gulir tanpa putus; kunci unik per posisi.
+    get loopItems() { return this.queue.length ? this.queue.concat(this.queue) : []; },
+    giftIcon(animation) {
+      const tpl = document.querySelector('template[data-gift="' + animation + '"]');
+      return tpl ? tpl.innerHTML : '';
     },
   };
 }

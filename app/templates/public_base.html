@@ -10,7 +10,8 @@
 <link rel="stylesheet" href="/static/css/public.css?v={{ public_css_version | default("preview", true) }}">
 <link rel="stylesheet" href="/static/css/vote_modal.css?v={{ public_css_version | default("preview", true) }}">
 {% endblock %}
-{% block vote_overlays %}{% if support_event_id %}{% include "partials/support_feed.html" %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
+{% block vote_ticker %}{% endblock %}
+{% block vote_overlays %}{% if support_event_id %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
 {% block navbar %}
 <a class="skip-link" href="#main-content">Lewati</a>
 <div class="public-header-layer {{ 'public-header-layer--home' if request.url.path == '/' else '' }}" x-data="{ open: false }">
@@ -36,6 +37,8 @@
    </div>
   </header>
 </div>
+{# Running text dukungan tepat di bawah header publik. #}
+{% if support_event_id %}{% include "partials/support_feed.html" %}{% endif %}
 {% if payment_sandbox_enabled() %}
 <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
 {% endif %}

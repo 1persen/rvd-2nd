@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/static/css/public.css?v={{ public_css_version | default("preview", true) }}">
 <link rel="stylesheet" href="/static/css/vote_modal.css?v={{ public_css_version | default("preview", true) }}">
 {% endblock %}
-{% block vote_overlays %}{% if support_event_id %}{% include "partials/support_feed.html" %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
+{% block vote_overlays %}{% if support_event_id %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
 {% block navbar %}
 <a class="skip-link" href="#main-content">Lewati</a>
 <div id="main-content" tabindex="-1"></div>

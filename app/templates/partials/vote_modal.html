@@ -1,3 +1,9 @@
+{% from "macros/public.html" import gift_svg %}
+<div class="gift-svg-library" hidden>
+  {% for animation in ['star', 'rose', 'crown', 'whale', 'rocket', 'phoenix', 'dragon'] %}
+  <template data-gift="{{ animation }}">{{ gift_svg(animation) }}</template>
+  {% endfor %}
+</div>
 <div x-data="voteModal()" x-show="open" x-cloak class="vote-modal" role="dialog" aria-modal="true" aria-labelledby="vote-modal-title" @click.self="close()">
   <div class="vote-modal-panel" role="document">
     <header class="vote-modal-head">
@@ -56,32 +62,21 @@
       </div>
 
       <div class="vote-field">
-        <span>Efek animasi</span>
-        <div class="vote-effects" role="radiogroup" aria-label="Efek animasi">
-          <template x-for="effect in effects" :key="effect.code">
-            <button type="button" role="radio" :aria-checked="form.effect === effect.code"
-              :disabled="!effectEnabled(effect)" :class="{ 'is-active': form.effect === effect.code }"
-              @click="toggleEffect(effect)">
-              <span aria-hidden="true" x-text="effect.icon"></span>
-              <b x-text="effect.min_points"></b>
-              <small x-text="effect.label"></small>
+        <span>Gift animasi <small>(opsional, pilih satu)</small></span>
+        <div class="vote-gifts" role="radiogroup" aria-label="Gift animasi">
+          <template x-for="gift in allEffects" :key="gift.code">
+            <button type="button" role="radio" :aria-checked="form.effect === gift.code"
+              :disabled="!effectEnabled(gift)" :class="{ 'is-active': form.effect === gift.code }"
+              @click="toggleEffect(gift)" :title="gift.label + ' · ' + gift.level">
+              <span class="vote-gift-icon" aria-hidden="true" x-html="giftIcon(gift.animation)"></span>
+              <b x-text="gift.label"></b>
+              <small x-text="gift.level"></small>
+              <em x-text="gift.min_points.toLocaleString('id-ID') + ' vote'"></em>
             </button>
           </template>
         </div>
-        <p class="vote-divider">✦ Luxury ✦</p>
-        <div class="vote-effects vote-effects--luxury" role="radiogroup" aria-label="Efek luxury">
-          <template x-for="effect in luxury" :key="effect.code">
-            <button type="button" role="radio" :aria-checked="form.effect === effect.code"
-              :disabled="!effectEnabled(effect)" :class="{ 'is-active': form.effect === effect.code }"
-              @click="toggleEffect(effect)">
-              <span aria-hidden="true" x-text="effect.icon"></span>
-              <small x-text="effect.label"></small>
-              <b x-text="effect.min_points.toLocaleString('id-ID')"></b>
-            </button>
-          </template>
-        </div>
-        <p class="vote-hint" x-show="effects.length && !effectEnabled(effects[0])" x-cloak><span x-text="effectHint"></span> Efek hanya bundling, tidak menambah suara.</p>
-        <p class="vote-hint" x-show="!allEffects.length" x-cloak>Efek animasi belum tersedia untuk event ini.</p>
+        <p class="vote-hint" x-show="allEffects.length && !effectEnabled(allEffects[0])" x-cloak>Jumlah vote belum mencapai syarat gift. Kamu tetap bisa membeli jumlah vote apa pun tanpa gift.</p>
+        <p class="vote-hint" x-show="!allEffects.length" x-cloak>Gift belum tersedia untuk event ini.</p>
       </div>
 
       <label class="vote-field">

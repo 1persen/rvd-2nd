@@ -14,6 +14,9 @@
 
   {% include "pages/invite/components/navigation.html" %}
 
+  {# Running text dukungan tepat di bawah header event. #}
+  {% if support_event_id %}{% include "partials/support_feed.html" %}{% endif %}
+
   {% if payment_sandbox_enabled() and not preview %}
   <div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
   {% endif %}
