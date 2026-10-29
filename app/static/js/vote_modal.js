@@ -18,6 +18,8 @@ function openVoteModal(team, event) {
 // Katalog gift (nama, level, syarat vote, durasi) datang dari backend:
 // event.vote_effects. Ikon SVG dirender sekali oleh Jinja (<template data-gift>).
 const SUPPORT_MAX = 150;
+// Gift yang tampil di kategori "Sultan".
+const SULTAN_CODES = ['roket', 'phoenix', 'naga'];
 
 function giftIcon(animation) {
   const tpl = document.querySelector('template[data-gift="' + animation + '"]');
@@ -95,6 +97,9 @@ function voteModal() {
     },
 
     get allEffects() { return this.event?.vote_effects || []; },
+    // Kategori Sultan: paket tier tertinggi, ditampilkan terpisah.
+    get sultanGifts() { return this.allEffects.filter(g => SULTAN_CODES.includes(g.code)); },
+    get regularGifts() { return this.allEffects.filter(g => !SULTAN_CODES.includes(g.code)); },
     giftIcon(animation) { return giftIcon(animation); },
     get pricePerVote() { return Number(this.event?.price_per_vote || 0); },
     get total() { return this.pricePerVote * (Number(this.form.qty) || 0); },

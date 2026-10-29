@@ -65,7 +65,7 @@
       <div class="vote-field">
         <span>Gift animasi <small>(paket bundling, opsional)</small></span>
         <div class="vote-gifts" role="radiogroup" aria-label="Gift animasi">
-          <template x-for="gift in allEffects" :key="gift.code">
+          <template x-for="gift in regularGifts" :key="gift.code">
             <button type="button" role="radio" :aria-checked="form.effect === gift.code"
               :class="{ 'is-active': form.effect === gift.code }"
               @click="toggleEffect(gift)" :title="'Paket ' + gift.votes + ' vote + efek ' + gift.label">
@@ -76,6 +76,24 @@
             </button>
           </template>
         </div>
+
+        <template x-if="sultanGifts.length">
+          <div class="vote-gifts-sultan" role="radiogroup" aria-label="Gift kategori Sultan">
+            <p class="vote-gifts-title"><span>✦</span> Sultan <span>✦</span></p>
+            <div class="vote-gifts vote-gifts--sultan">
+              <template x-for="gift in sultanGifts" :key="gift.code">
+                <button type="button" role="radio" :aria-checked="form.effect === gift.code"
+                  :class="{ 'is-active': form.effect === gift.code }"
+                  @click="toggleEffect(gift)" :title="'Paket ' + gift.votes + ' vote + efek ' + gift.label">
+                  <span class="vote-gift-icon" aria-hidden="true" x-html="giftIcon(gift.animation)"></span>
+                  <b x-text="gift.label"></b>
+                  <small x-text="gift.level"></small>
+                  <em x-text="'+' + gift.votes.toLocaleString('id-ID') + ' vote'"></em>
+                </button>
+              </template>
+            </div>
+          </div>
+        </template>
         <p class="vote-hint" x-show="form.effect" x-cloak>Gift dipilih: paket <b x-text="form.qty"></b> vote, efek animasi sebagai bonus. Ubah jumlah vote manual akan melepas gift.</p>
         <p class="vote-hint" x-show="allEffects.length && !form.effect" x-cloak>Gift adalah paket beli cepat: klik gift untuk membeli paket vote sekaligus mendapat efeknya.</p>
         <p class="vote-hint" x-show="!allEffects.length" x-cloak>Gift belum tersedia untuk event ini.</p>
