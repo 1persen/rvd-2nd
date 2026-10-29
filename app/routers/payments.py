@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.config import FREE_ADMIN_PAYMENT_METHODS, settings
 from app.core.database import get_db
 from app.enums.payment_status import PaymentStatus
 from app.repositories import payment as payment_repo
@@ -56,7 +56,11 @@ async def create_payment(
 
 @router.get("/payments/methods")
 async def list_payment_methods(amount: int = 10000):
-    """Metode pembayaran Duitku yang aktif untuk ditampilkan ke pelanggan."""
+    """Metode pembayaran Duitku yang aktif untuk ditampilkan ke pelanggan.
+
+    Hanya e-wallet DANA/ShopeePay dan QRIS Nobu. `fee` adalah biaya admin yang
+    ditanggung pelanggan (0 untuk Nobu QRIS), `total` nominal setelah biaya.
+    """
     if amount < 1 or amount > 100_000_000:
         raise HTTPException(status_code=400, detail="Nominal tidak valid")
     try:
@@ -68,7 +72,9 @@ async def list_payment_methods(amount: int = 10000):
         raise HTTPException(status_code=503, detail="Metode pembayaran belum dapat dimuat.") from exc
     data = [
         {"code": m.get("paymentMethod"), "name": m.get("paymentName"),
-         "image": m.get("paymentImage"), "fee": m.get("totalFee")}
+         "image": m.get("paymentImage"), "fee": m.get("adminFee"),
+         "free_admin": m.get("paymentMethod") in FREE_ADMIN_PAYMENT_METHODS,
+         "total": payment_service.total_with_admin_fee(amount, m)}
         for m in methods if m.get("paymentMethod")
     ]
     return ok(data)
