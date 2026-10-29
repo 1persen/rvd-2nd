@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id" class="scroll-smooth">
 <head>
 <meta charset="UTF-8">
@@ -63,7 +63,7 @@
 
 {% block scripts %}{% endblock %}
 
-  <script defer src="/static/js/vote_modal.js?v={{ tailwind_css_version | default("preview", true) }}"></script>
+  <script defer src="/static/js/vote_modal.js?v={{ vote_modal_js_version | default("preview", true) }}"></script>
   <!-- Alpine.js self-hosted to avoid CDN issues -->
   <script defer src="/static/js/alpine.min.js?v={{ tailwind_css_version | default("preview", true) }}"></script>
   <script defer src="/static/js/theme-toggle.js?v={{ tailwind_css_version | default("preview", true) }}"></script>

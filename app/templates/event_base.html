@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% from "macros/public.html" import icon %}
 {% block body_class %}public-site font-body antialiased{% endblock %}
 {% block fonts %}
@@ -8,7 +8,7 @@
 {% endblock %}
 {% block head %}
 <link rel="stylesheet" href="/static/css/public.css?v={{ public_css_version | default("preview", true) }}">
-<link rel="stylesheet" href="/static/css/vote_modal.css?v={{ public_css_version | default("preview", true) }}">
+<link rel="stylesheet" href="/static/css/vote_modal.css?v={{ vote_modal_css_version | default("preview", true) }}">
 {% endblock %}
 {% block vote_overlays %}{% if support_event_id %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
 {% block navbar %}
@@ -43,5 +43,5 @@
     </span>
   </div>
   <div><span class="eyebrow">ALIHKAN SUARAMU KE VOTING DIGITAL</span><p>Pilih peserta, Berikan dukungan, Selesaikan Pembayaran<br>Selesai</p></div>
-</div><div class="shell footer-bottom"><span>© 2026 Raja Voting Digital.</span><span>Raja Group Ecosystem</span><a href="/admin/login">Admin ↗</a></div></footer>
+</div><div class="shell footer-bottom"><span>Â© 2026 Raja Voting Digital.</span><span>Raja Group Ecosystem</span><a href="/admin/login">Admin â†—</a></div></footer>
 {% endblock %}

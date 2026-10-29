@@ -51,6 +51,17 @@ templates.env.globals["invite_css_version"] = (
     int(_INVITE_CSS.stat().st_mtime) if _INVITE_CSS.exists() else None
 )
 
+# Modal vote punya aset sendiri; versi dari mtime masing-masing agar perubahan
+# modal langsung membatalkan cache browser tanpa menunggu rebuild Tailwind.
+_VOTE_MODAL_CSS = Path("app/static/css/vote_modal.css")
+_VOTE_MODAL_JS = Path("app/static/js/vote_modal.js")
+templates.env.globals["vote_modal_css_version"] = (
+    int(_VOTE_MODAL_CSS.stat().st_mtime) if _VOTE_MODAL_CSS.exists() else None
+)
+templates.env.globals["vote_modal_js_version"] = (
+    int(_VOTE_MODAL_JS.stat().st_mtime) if _VOTE_MODAL_JS.exists() else None
+)
+
 
 _STATUS_LABELS = {
     EventStatus.DRAFT: "Draf",

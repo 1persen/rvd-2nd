@@ -1,4 +1,4 @@
-"""Duitku checkout and callback integrity against the disposable database."""
+﻿"""Duitku checkout and callback integrity against the disposable database."""
 import asyncio
 import hashlib
 import hmac
@@ -164,12 +164,12 @@ async def test_confirmed_payment_publishes_support_once(async_client, test_data,
 
     monkeypatch.setattr(leaderboard_service.cache, 'publish', capture)
     response = await invoice(
-        async_client, test_data, qty=10, effect_code='rocket',
+        async_client, test_data, qty=10, effect_code='bintang',
         support_message='Semangat untuk jagoanmu!',
     )
     assert response.status_code == 200, response.text
     payment = response.json()['data']
-    assert payment['effect_code'] == 'rocket'
+    assert payment['effect_code'] == 'bintang'
     # Efek hanya bundling: tidak menambah biaya maupun jumlah vote.
     assert payment['amount'] == 10 * test_data['event'].price_per_vote
     assert payment['votes'] == 10
@@ -181,7 +181,7 @@ async def test_confirmed_payment_publishes_support_once(async_client, test_data,
     supports = [p for p in published if p.get('type') == 'support']
     assert len(supports) == 1
     assert supports[0]['payment_id'] == payment['id']
-    assert supports[0]['effect_code'] == 'rocket'
+    assert supports[0]['effect_code'] == 'bintang'
     assert supports[0]['support_message'] == 'Semangat untuk jagoanmu!'
     assert 'supporter_phone' not in supports[0]
     assert 'supporter_email' not in supports[0]
@@ -218,7 +218,7 @@ async def test_checkout_discloses_sandbox_before_invoice(async_client, test_data
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('payload', [[], None, {'signature': 123}, {
-    'merchantCode': 'test-merchant', 'merchantOrderId': 'id', 'amount': '1000', 'signature': 'é' * 64,
+    'merchantCode': 'test-merchant', 'merchantOrderId': 'id', 'amount': '1000', 'signature': 'Ã©' * 64,
 }])
 async def test_malformed_callbacks_are_rejected(async_client, duitku, payload):
     response = await async_client.post('/api/v1/payments/duitku/callback', json=payload)

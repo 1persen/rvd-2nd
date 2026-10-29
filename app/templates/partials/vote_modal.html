@@ -26,6 +26,7 @@
     </template>
 
     <form x-show="!payment || payment.status !== 'SUCCESS'" @submit.prevent="submit()" class="vote-modal-form" novalidate>
+      <div class="vote-modal-scroll">
       <label class="vote-field">
         <span>Nama pendukung <em>*</em></span>
         <input id="vote-modal-name" type="text" x-model="form.name" maxlength="100" autocomplete="name" placeholder="Nama kamu">
@@ -62,20 +63,21 @@
       </div>
 
       <div class="vote-field">
-        <span>Gift animasi <small>(opsional, pilih satu)</small></span>
+        <span>Gift animasi <small>(paket bundling, opsional)</small></span>
         <div class="vote-gifts" role="radiogroup" aria-label="Gift animasi">
           <template x-for="gift in allEffects" :key="gift.code">
             <button type="button" role="radio" :aria-checked="form.effect === gift.code"
-              :disabled="!effectEnabled(gift)" :class="{ 'is-active': form.effect === gift.code }"
-              @click="toggleEffect(gift)" :title="gift.label + ' · ' + gift.level">
+              :class="{ 'is-active': form.effect === gift.code }"
+              @click="toggleEffect(gift)" :title="'Paket ' + gift.votes + ' vote + efek ' + gift.label">
               <span class="vote-gift-icon" aria-hidden="true" x-html="giftIcon(gift.animation)"></span>
               <b x-text="gift.label"></b>
               <small x-text="gift.level"></small>
-              <em x-text="gift.min_points.toLocaleString('id-ID') + ' vote'"></em>
+              <em x-text="'+' + gift.votes.toLocaleString('id-ID') + ' vote'"></em>
             </button>
           </template>
         </div>
-        <p class="vote-hint" x-show="allEffects.length && !effectEnabled(allEffects[0])" x-cloak>Jumlah vote belum mencapai syarat gift. Kamu tetap bisa membeli jumlah vote apa pun tanpa gift.</p>
+        <p class="vote-hint" x-show="form.effect" x-cloak>Gift dipilih: paket <b x-text="form.qty"></b> vote, efek animasi sebagai bonus. Ubah jumlah vote manual akan melepas gift.</p>
+        <p class="vote-hint" x-show="allEffects.length && !form.effect" x-cloak>Gift adalah paket beli cepat: klik gift untuk membeli paket vote sekaligus mendapat efeknya.</p>
         <p class="vote-hint" x-show="!allEffects.length" x-cloak>Gift belum tersedia untuk event ini.</p>
       </div>
 
@@ -87,17 +89,21 @@
         <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Belum ada metode pembayaran yang tersedia. Pembayaran belum dikonfigurasi, hubungi panitia.</small>
       </label>
 
-      <div class="vote-total">
-        <span>Total pembayaran</span>
-        <strong x-text="'Rp ' + total.toLocaleString('id-ID')"></strong>
       </div>
-      <p class="vote-hint">Harga per suara: Rp <span x-text="pricePerVote.toLocaleString('id-ID')"></span>. Total dihitung ulang oleh server.</p>
 
-      <button type="submit" class="btn btn-primary vote-modal-full" :disabled="isLoading || !votingOpen || !event?.payments_configured || payment?.status === 'PENDING'" :aria-busy="isLoading">
-        <span x-show="!isLoading">Lanjutkan pembayaran · <span x-text="form.qty"></span> suara</span>
-        <span x-show="isLoading" x-cloak>Membuat invoice…</span>
-      </button>
-      <p class="notice" x-show="!votingOpen" x-cloak>Event ini sedang tidak menerima suara.</p>
+      {# Footer tetap: total dan tombol selalu terlihat saat isi form di-scroll. #}
+      <div class="vote-modal-footer">
+        <div class="vote-total">
+          <span>Total pembayaran</span>
+          <strong x-text="'Rp ' + total.toLocaleString('id-ID')"></strong>
+        </div>
+        <p class="vote-hint">Harga per suara: Rp <span x-text="pricePerVote.toLocaleString('id-ID')"></span>. Total dihitung ulang oleh server.</p>
+        <button type="submit" class="btn btn-primary vote-modal-full" :disabled="isLoading || !votingOpen || !event?.payments_configured || payment?.status === 'PENDING'" :aria-busy="isLoading">
+          <span x-show="!isLoading">Lanjutkan pembayaran · <span x-text="form.qty"></span> suara</span>
+          <span x-show="isLoading" x-cloak>Membuat invoice…</span>
+        </button>
+        <p class="notice" x-show="!votingOpen" x-cloak>Event ini sedang tidak menerima suara.</p>
+      </div>
     </form>
   </div>
 </div>

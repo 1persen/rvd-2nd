@@ -23,7 +23,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.effects import EFFECTS, effect_min_points
+from app.core.effects import EFFECTS
 from app.enums.payment_gateway import PaymentGateway
 from app.services import profanity_filter
 from app.enums.payment_status import PaymentStatus
@@ -157,14 +157,18 @@ async def create_payment(
     bonus_votes = 0
     qty = payload.qty
 
-    # Efek hanya syarat bundling dalam poin. Tidak menambah biaya dan tidak menambah vote.
+    # Gift adalah paket bundling: memilih gift berarti membeli paket vote-nya,
+    # dan efek animasi adalah bonus paket (bukan biaya dan bukan vote tambahan).
     effect_code = payload.effect_code or None
     if effect_code is not None:
-        min_points = effect_min_points(effect_code)
-        if min_points is None:
-            raise PaymentError("Efek animasi tidak dikenal.")
-        if qty < min_points:
-            raise PaymentError(f"Pilih minimal {min_points} point untuk efek {EFFECTS[effect_code]['label']}.")
+        gift = EFFECTS.get(effect_code)
+        if gift is None:
+            raise PaymentError("Gift animasi tidak dikenal.")
+        if qty != gift["votes"]:
+            raise PaymentError(
+                f"Paket {gift['label']} berisi {gift['votes']} vote. "
+                f"Sesuaikan jumlah vote atau hapus pilihan gift."
+            )
     support_message = profanity_filter.censor((payload.support_message or "").strip()) or None
 
     amount = unit_price * qty

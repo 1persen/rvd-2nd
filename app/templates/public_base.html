@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% from "macros/public.html" import icon %}
 {% block body_class %}public-site font-body antialiased{% endblock %}
 {% block fonts %}
@@ -8,7 +8,7 @@
 {% endblock %}
 {% block head %}
 <link rel="stylesheet" href="/static/css/public.css?v={{ public_css_version | default("preview", true) }}">
-<link rel="stylesheet" href="/static/css/vote_modal.css?v={{ public_css_version | default("preview", true) }}">
+<link rel="stylesheet" href="/static/css/vote_modal.css?v={{ vote_modal_css_version | default("preview", true) }}">
 {% endblock %}
 {% block vote_ticker %}{% endblock %}
 {% block vote_overlays %}{% if support_event_id %}{% include "partials/vote_modal.html" %}{% endif %}{% endblock %}
@@ -17,7 +17,7 @@
 <div class="public-header-layer {{ 'public-header-layer--home' if request.url.path == '/' else '' }}" x-data="{ open: false }">
   <header class="public-header shell">
    <div class="header-inner">
-    <a href="/" class="wordmark" aria-label="Raja Voting Digital — Home"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a>
+    <a href="/" class="wordmark" aria-label="Raja Voting Digital â€” Home"><img class="brand-logo" src="/static/images/raja-voting-logo.png?v={{ tailwind_css_version | default("preview", true) }}" width="56" height="56" alt="Logo Raja Voting Digital"><span>raja<span class="brand-light">voting</span><small>DIGITAL VOTING PLATFORM</small></span></a>
     <nav class="desktop-nav" aria-label="Navigasi utama">
       <a href="/" {% if request.url.path == '/' %}aria-current="page"{% endif %}>Beranda</a>
       <a href="/events" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
@@ -72,5 +72,5 @@
     </span>
   </div>
   <div><span class="eyebrow">ALIHKAN SUARAMU KE VOTING DIGITAL</span><p>Pilih peserta, Berikan dukungan, Selesaikan Pembayaran<br>Selesai</p></div>
-</div><div class="shell footer-bottom"><span>© 2026 Raja Voting Digital.</span><span>Raja Group Ecosystem</span><a href="/admin/login">Admin ↗</a></div></footer>
+</div><div class="shell footer-bottom"><span>Â© 2026 Raja Voting Digital.</span><span>Raja Group Ecosystem</span><a href="/admin/login">Admin â†—</a></div></footer>
 {% endblock %}

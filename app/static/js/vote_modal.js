@@ -106,14 +106,19 @@ function voteModal() {
         (!this.event.closes_at || now <= Date.parse(this.event.closes_at));
     },
 
-    effectEnabled(effect) { return (Number(this.form.qty) || 0) >= effect.min_points; },
+    // Gift = paket bundling. Klik = beli paket itu sekaligus memilih bonus efek.
     toggleEffect(effect) {
-      if (!this.effectEnabled(effect)) return;
-      this.form.effect = this.form.effect === effect.code ? '' : effect.code;
+      if (this.form.effect === effect.code) {
+        this.form.effect = '';
+        return;
+      }
+      this.form.effect = effect.code;
+      this.setQty(effect.votes);
     },
+    // Jika qty diubah manual, pilihan gift dilepas agar tidak ada paket yang tidak cocok.
     enforceEffectRule() {
       const current = this.allEffects.find(e => e.code === this.form.effect);
-      if (current && !this.effectEnabled(current)) this.form.effect = '';
+      if (current && Number(this.form.qty) !== current.votes) this.form.effect = '';
     },
 
     setQty(value) {

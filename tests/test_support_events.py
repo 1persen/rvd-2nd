@@ -20,37 +20,38 @@ def test_censor_with_empty_wordlist_is_passthrough(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_created_payment_stores_censored_message_without_effect_cost(test_data, monkeypatch):
-    """Efek hanya syarat bundling: pesan tersensor, amount dan votes tidak berubah."""
+    """Gift adalah paket bundling: pesan tersensor, amount tanpa biaya efek."""
     from app.core.database import async_session
     from app.schemas.payment import PaymentCreate
 
     monkeypatch.setattr(profanity_filter, "_pattern", lambda: re.compile(r"\bbodoh\b", re.IGNORECASE))
     payload = PaymentCreate(
-        event_id=test_data["event"].id, team_id=test_data["team"].id, qty=25,
+        event_id=test_data["event"].id, team_id=test_data["team"].id, qty=50,
         supporter_name="Uji", supporter_email="uji@example.com", supporter_phone="08123456789",
-        effect_code="kelinci", support_message="kamu bodoh sekali",
+        effect_code="mawar", support_message="kamu bodoh sekali",
     )
     async with async_session() as session:
         payment = await payment_service.create_payment(session, payload)
         await session.commit()
         assert payment.support_message == "kamu ***** sekali"
-        assert payment.effect_code == "kelinci"
-        assert payment.amount == 25 * test_data["event"].price_per_vote
-        assert payment.votes == 25
+        assert payment.effect_code == "mawar"
+        assert payment.amount == 50 * test_data["event"].price_per_vote
+        assert payment.votes == 50
 
 
 @pytest.mark.asyncio
-async def test_effect_below_bundling_threshold_is_rejected(test_data):
+async def test_gift_with_mismatched_package_qty_is_rejected(test_data):
+    """Memilih gift berarti membeli paketnya; qty lain harus ditolak."""
     from app.core.database import async_session
     from app.schemas.payment import PaymentCreate
 
     payload = PaymentCreate(
-        event_id=test_data["event"].id, team_id=test_data["team"].id, qty=5,
+        event_id=test_data["event"].id, team_id=test_data["team"].id, qty=25,
         supporter_name="Uji", supporter_email="uji@example.com", supporter_phone="08123456789",
-        effect_code="rocket",
+        effect_code="mawar",
     )
     async with async_session() as session:
-        with pytest.raises(PaymentError, match="minimal 10 point"):
+        with pytest.raises(PaymentError, match="berisi 50 vote"):
             await payment_service.create_payment(session, payload)
 
 
