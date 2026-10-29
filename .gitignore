@@ -20,3 +20,9 @@ app/static/css/tailwind.css
 
 # Local browser proof images
 tests/browser/artifacts/
+
+# Agent skill installation artifacts (npx skills), not part of the app
+/.agents/
+/.claude/
+/agent/
+/skills-lock.json
