@@ -1,4 +1,4 @@
-﻿"""
+"""
 Payments API â€” create invoice (QRIS), status polling, Midtrans webhook.
 
 Webhook menerima semua event Midtrans, memverifikasi signature, memproses
@@ -14,7 +14,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import FREE_ADMIN_PAYMENT_METHODS, settings
+from app.core.config import settings
 from app.core.database import get_db
 from app.enums.payment_status import PaymentStatus
 from app.repositories import payment as payment_repo
@@ -55,29 +55,13 @@ async def create_payment(
 
 
 @router.get("/payments/methods")
-async def list_payment_methods(amount: int = 10000):
-    """Metode pembayaran Duitku yang aktif untuk ditampilkan ke pelanggan.
+async def list_payment_methods():
+    """Pilihan metode pembayaran untuk modal: QRIS, ShopeePay, DANA.
 
-    Hanya e-wallet DANA/ShopeePay dan QRIS Nobu. `fee` adalah biaya admin yang
-    ditanggung pelanggan (0 untuk Nobu QRIS), `total` nominal setelah biaya.
+    Daftar tetap (tanpa inquiry ke Duitku). Kode dipilih pelanggan dan dikirim
+    apa adanya saat membuat invoice.
     """
-    if amount < 1 or amount > 100_000_000:
-        raise HTTPException(status_code=400, detail="Nominal tidak valid")
-    try:
-        methods = await payment_service.get_active_payment_methods(amount)
-    except payment_service.PaymentUnavailable as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except Exception as exc:
-        logger.warning("Payment method list unavailable (error=%s)", type(exc).__name__)
-        raise HTTPException(status_code=503, detail="Metode pembayaran belum dapat dimuat.") from exc
-    data = [
-        {"code": m.get("paymentMethod"), "name": m.get("paymentName"),
-         "image": m.get("paymentImage"), "fee": m.get("adminFee"),
-         "free_admin": m.get("paymentMethod") in FREE_ADMIN_PAYMENT_METHODS,
-         "total": payment_service.total_with_admin_fee(amount, m)}
-        for m in methods if m.get("paymentMethod")
-    ]
-    return ok(data)
+    return ok(payment_service.public_payment_methods())
 
 
 @router.get("/payments/{payment_id}/status")

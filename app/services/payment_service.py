@@ -22,7 +22,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import ALLOWED_PAYMENT_METHODS, FREE_ADMIN_PAYMENT_METHODS, settings
+from app.core.config import PAYMENT_METHODS, PAYMENT_METHOD_CODES, settings
 from app.core.effects import EFFECTS
 from app.enums.payment_gateway import PaymentGateway
 from app.services import profanity_filter
@@ -106,38 +106,22 @@ def _build_snapshot(
     }
 
 
-async def get_active_payment_methods(amount: int) -> list[dict]:
-    """Metode aktif dari Duitku, dipakai halaman vote dan validasi pembuatan invoice.
+def public_payment_methods() -> list[dict]:
+    """Pilihan metode untuk modal: daftar tetap, tanpa inquiry ke Duitku.
 
-    Daftar Duitku disaring ke ALLOWED_PAYMENT_METHODS. Setiap metode ditandai
-    bebas biaya admin atau tidak, dan biaya admin e-wallet ditambahkan ke total
-    yang dibayar pelanggan (bukan ditanggung merchant).
+    Kode dikirim ke Duitku sebagai `paymentMethod` saat invoice dibuat. Biaya
+    admin (jika ada) ditentukan Duitku di halaman pembayarannya, bukan di sini.
     """
-    if not settings.DUITKU_MERCHANT_CODE or not settings.DUITKU_API_KEY:
-        raise PaymentUnavailable("Pembayaran belum dikonfigurasi. Hubungi panitia.")
-    methods = await duitku_service.get_payment_methods(amount=amount)
-    allowed = []
-    for method in methods:
-        code = method.get("paymentMethod")
-        if code not in ALLOWED_PAYMENT_METHODS:
-            continue
-        fee = _parse_fee(method.get("totalFee"))
-        allowed.append({**method, "adminFee": 0 if code in FREE_ADMIN_PAYMENT_METHODS else fee})
-    return allowed
+    return [{"code": m["code"], "name": m["label"]} for m in PAYMENT_METHODS]
 
 
-def _parse_fee(value) -> int:
-    """Biaya admin Duitku berupa string rupiah; nilai tak terbaca = 0."""
-    try:
-        fee = Decimal(str(value)).to_integral_value()
-    except (InvalidOperation, ValueError):
-        return 0
-    return max(0, int(fee))
-
-
-def total_with_admin_fee(amount: int, method: dict) -> int:
-    return amount + (0 if method.get("paymentMethod") in FREE_ADMIN_PAYMENT_METHODS
-                     else _parse_fee(method.get("totalFee")))
+def resolve_payment_method(code: str | None) -> str:
+    """Kode metode dari frontend; kosong berarti QRIS."""
+    if not code:
+        return PAYMENT_METHODS[0]["code"]
+    if code not in PAYMENT_METHOD_CODES:
+        raise PaymentError("Metode pembayaran tidak dikenal. Pilih QRIS, ShopeePay, atau DANA.")
+    return code
 
 
 async def create_payment(
@@ -280,24 +264,12 @@ async def create_payment(
     else:
         payment.payment_gateway = PaymentGateway.DUITKU
         payment.duitku_merchant_order_id = payment.id
-        chosen_method = payload.payment_method or settings.DUITKU_PAYMENT_METHOD
+        # Metode dipilih di frontend; kode dikirim apa adanya ke Duitku.
+        # Tidak ada inquiry metode di sini supaya invoice tidak gagal karena
+        # daftar metode Duitku tidak dapat dimuat.
+        chosen_method = resolve_payment_method(payload.payment_method)
         payment.duitku_payment_method = chosen_method
         payment.duitku_payload = {'_environment': settings.DUITKU_ENVIRONMENT, '_inquiry_state': 'creating'}
-        # Validasi metode ke daftar aktif Duitku sebelum membuat inquiry.
-        # Ditolak di sini berarti tidak ada order di sisi Duitku dan invoice dibatalkan.
-        try:
-            active_methods = await get_active_payment_methods(payment.amount)
-        except (httpx.HTTPError, ValueError) as exc:
-            logger.warning("Duitku payment methods unavailable (error=%s)", type(exc).__name__)
-            raise PaymentUnavailable("Metode pembayaran belum dapat dimuat. Coba lagi setelah satu menit.") from exc
-        if chosen_method not in {m.get("paymentMethod") for m in active_methods}:
-            raise PaymentError("Metode pembayaran ini tidak tersedia. Pilih metode lain.")
-        selected = next(m for m in active_methods if m.get("paymentMethod") == chosen_method)
-        # E-wallet (DANA, ShopeePay) bukan bebas biaya admin: biaya ditanggung
-        # pelanggan dan dimasukkan ke nominal invoice. Nobu QRIS tetap tanpa biaya.
-        admin_fee = 0 if chosen_method in FREE_ADMIN_PAYMENT_METHODS else _parse_fee(selected.get("totalFee"))
-        payment.amount = payment.amount + admin_fee
-        payment.duitku_payload = {**payment.duitku_payload, 'adminFee': admin_fee}
         # A timeout is an unknown outcome, not proof that the provider rejected
         # the order. Make it discoverable by retries and callbacks first.
         await session.commit()

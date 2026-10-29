@@ -7,13 +7,17 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Metode Duitku yang boleh ditampilkan dan dipakai membuat invoice, sesuai
-# daftar metode di dokumentasi API Duitku:
-#   DA = DANA, SA = ShopeePay Apps, NQ = Nobu (QRIS).
-# Hanya metode QRIS dari Nobu yang bebas biaya admin; e-wallet lain menanggung
-# biaya admin pelanggan, jadi biaya dikirim ulang ke pelanggan saat inquiry.
-ALLOWED_PAYMENT_METHODS = ("NQ", "SA", "DA")
-FREE_ADMIN_PAYMENT_METHODS = frozenset({"NQ"})
+# Metode Duitku yang ditawarkan. Kode dikirim apa adanya sebagai
+# `paymentMethod` saat inquiry; Duitku yang menentukan penyedia di halaman
+# pembayarannya. Tidak ada setting env: daftar ini satu-satunya sumber.
+#   NQ = QRIS, SA = ShopeePay, DA = DANA.
+PAYMENT_METHODS = (
+    {"code": "NQ", "label": "QRIS"},
+    {"code": "SA", "label": "ShopeePay"},
+    {"code": "DA", "label": "DANA"},
+)
+PAYMENT_METHOD_CODES = tuple(m["code"] for m in PAYMENT_METHODS)
+PAYMENT_METHOD_LABELS = {m["code"]: m["label"] for m in PAYMENT_METHODS}
 
 
 class Settings(BaseSettings):
@@ -61,9 +65,6 @@ class Settings(BaseSettings):
     DUITKU_MERCHANT_CODE: str = ""
     DUITKU_API_KEY: str = ""
     DUITKU_ENVIRONMENT: Literal["sandbox", "production"] = "sandbox"
-    # Fallback saat request tidak memilih metode. Harus metode yang aktif di merchant
-    # dan termasuk ALLOWED_PAYMENT_METHODS.
-    DUITKU_PAYMENT_METHOD: Literal["NQ", "SA", "DA"] = "NQ"
 
     REDIS_URL: str = "redis://localhost:6379/0"
     CLOUDFLARE_API_KEY: str = ""

@@ -1,4 +1,4 @@
-﻿"""Duitku checkout and callback integrity against the disposable database."""
+"""Duitku checkout and callback integrity against the disposable database."""
 import asyncio
 import hashlib
 import hmac
@@ -23,14 +23,6 @@ def duitku(monkeypatch):
     })
     monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
     monkeypatch.setattr(duitku_service, 'check_transaction_status', AsyncMock(side_effect=httpx.ReadTimeout('Status unavailable')))
-    # Daftar metode aktif dari Duitku (read-only). Mock agar tes tidak memanggil sandbox.
-    # SP bukan metode yang ditawarkan, jadi harus tersaring keluar dari checkout.
-    monkeypatch.setattr(duitku_service, 'get_payment_methods', AsyncMock(return_value=[
-        {'paymentMethod': 'SP', 'paymentName': 'SHOPEEPAY QRIS', 'paymentImage': '', 'totalFee': '500'},
-        {'paymentMethod': 'NQ', 'paymentName': 'NOBU QRIS', 'paymentImage': '', 'totalFee': '0'},
-        {'paymentMethod': 'SA', 'paymentName': 'SHOPEEPAY APP', 'paymentImage': '', 'totalFee': '200'},
-        {'paymentMethod': 'DA', 'paymentName': 'DANA', 'paymentImage': '', 'totalFee': '1500'},
-    ]))
     return gateway
 
 
@@ -81,7 +73,7 @@ async def test_checkout_uses_duitku_without_midtrans_key(async_client, test_data
     assert not data['is_mock']
     assert data['payment_url'] == duitku.return_value['paymentUrl']
     assert data['qr_string'] == 'test-qr'
-    assert duitku.call_args.kwargs['payment_method'] == settings.DUITKU_PAYMENT_METHOD
+    assert duitku.call_args.kwargs['payment_method'] == 'NQ'
 
 
 @pytest.mark.asyncio
@@ -92,54 +84,19 @@ async def test_chosen_payment_method_is_sent_to_inquiry(async_client, test_data,
 
 
 @pytest.mark.asyncio
-async def test_inactive_payment_method_is_rejected_before_inquiry(async_client, test_data, duitku):
-    response = await invoice(async_client, test_data, payment_method='SP')
+async def test_unknown_payment_method_is_rejected_before_inquiry(async_client, test_data, duitku):
+    response = await invoice(async_client, test_data, payment_method='XX')
     assert response.status_code == 400, response.text
     duitku.assert_not_awaited()
 
 
 @pytest.mark.asyncio
-async def test_method_list_is_limited_to_nobu_shopee_dana(async_client, test_data, duitku):
-    response = await async_client.get('/api/v1/payments/methods', params={'amount': 10000})
+async def test_method_list_is_static_without_provider_call(async_client, test_data, duitku):
+    response = await async_client.get('/api/v1/payments/methods')
     assert response.status_code == 200, response.text
-    methods = {m['code']: m for m in response.json()['data']}
-    assert set(methods) == {'NQ', 'SA', 'DA'}
-    # Nobu QRIS bebas biaya admin; e-wallet lain menanggung biaya untuk pelanggan.
-    assert methods['NQ']['free_admin'] is True
-    assert methods['NQ']['fee'] == 0
-    assert methods['NQ']['total'] == 10000
-    assert methods['SA'] == {**methods['SA'], 'free_admin': False, 'fee': 200, 'total': 10200}
-    assert methods['DA']['fee'] == 1500
-    assert methods['DA']['total'] == 11500
-
-
-@pytest.mark.asyncio
-async def test_nobu_qris_adds_no_admin_fee_to_invoice(async_client, test_data, duitku):
-    response = await invoice(async_client, test_data, payment_method='NQ')
-    assert response.status_code == 200, response.text
-    data = response.json()['data']
-    assert data['amount'] == 3 * test_data['event'].price_per_vote
-    assert data['votes'] == 3
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize('method,fee', [('DA', 1500), ('SA', 200)])
-async def test_ewallet_admin_fee_is_charged_to_customer(async_client, test_data, duitku, method, fee):
-    response = await invoice(async_client, test_data, payment_method=method)
-    assert response.status_code == 200, response.text
-    data = response.json()['data']
-    # Biaya admin ditanggung pelanggan: nominal invoice bertambah, vote tetap.
-    assert data['amount'] == 3 * test_data['event'].price_per_vote + fee
-    assert data['votes'] == 3
-    assert duitku.call_args.kwargs['payment_amount'] == data['amount']
-
-    # Callback dengan nominal berbiaya diterima; nominal tanpa biaya ditolak.
-    unpaid_fee = await async_client.post('/api/v1/payments/duitku/callback', data=callback(
-        {**data, 'amount': data['amount'] - fee}))
-    assert unpaid_fee.status_code == 400, unpaid_fee.text
-    paid = await async_client.post('/api/v1/payments/duitku/callback', data=callback(data))
-    assert paid.status_code == 200, paid.text
-    assert paid.json()['data']['status'] == 'SUCCESS'
+    methods = {m['code']: m['name'] for m in response.json()['data']}
+    assert methods == {'NQ': 'QRIS', 'SA': 'ShopeePay', 'DA': 'DANA'}
+    duitku.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -265,7 +222,7 @@ async def test_checkout_discloses_sandbox_before_invoice(async_client, test_data
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('payload', [[], None, {'signature': 123}, {
-    'merchantCode': 'test-merchant', 'merchantOrderId': 'id', 'amount': '1000', 'signature': 'Ã©' * 64,
+    'merchantCode': 'test-merchant', 'merchantOrderId': 'id', 'amount': '1000', 'signature': 'ÃƒÂ©' * 64,
 }])
 async def test_malformed_callbacks_are_rejected(async_client, duitku, payload):
     response = await async_client.post('/api/v1/payments/duitku/callback', json=payload)

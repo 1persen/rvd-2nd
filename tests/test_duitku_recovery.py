@@ -17,16 +17,12 @@ from app.services import duitku_service
 def provider(monkeypatch):
     monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
     monkeypatch.setattr(settings, 'DUITKU_ENVIRONMENT', 'sandbox')
-    monkeypatch.setattr(settings, 'DUITKU_PAYMENT_METHOD', 'NQ')
     monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
     monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
     inquiry = AsyncMock(side_effect=httpx.ReadTimeout('Provider response lost'))
     status = AsyncMock()
     monkeypatch.setattr(duitku_service, 'create_transaction', inquiry)
     monkeypatch.setattr(duitku_service, 'check_transaction_status', status)
-    monkeypatch.setattr(duitku_service, 'get_payment_methods', AsyncMock(return_value=[
-        {'paymentMethod': 'NQ', 'paymentName': 'NOBU QRIS', 'paymentImage': '', 'totalFee': '0'},
-    ]))
     return inquiry, status
 
 

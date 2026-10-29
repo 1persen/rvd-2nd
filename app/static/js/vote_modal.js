@@ -83,11 +83,9 @@ function voteModal() {
     async loadMethods() {
       if (this.methodsLoaded) return;
       try {
-        const res = await fetch('/api/v1/payments/methods?amount=' + encodeURIComponent(this.event.price_per_vote || 10000));
+        const res = await fetch('/api/v1/payments/methods');
         const body = await res.json();
         this.methods = res.ok && body.success ? body.data : [];
-        // QRIS Nobu (bebas admin) dulu, lalu e-wallet yang dikenai biaya admin.
-        this.methods.sort((a, b) => Number(b.free_admin) - Number(a.free_admin));
         if (this.methods.length && !this.methods.some(m => m.code === this.form.method)) {
           this.form.method = this.methods[0].code;
         }
@@ -105,11 +103,6 @@ function voteModal() {
     giftIcon(animation) { return giftIcon(animation); },
     get pricePerVote() { return Number(this.event?.price_per_vote || 0); },
     get total() { return this.pricePerVote * (Number(this.form.qty) || 0); },
-    // Biaya admin dari Duitku untuk metode terpilih. DANA/ShopeePay ditanggung
-    // pelanggan, Nobu QRIS bebas biaya admin.
-    get selectedMethod() { return this.methods.find(m => m.code === this.form.method) || null; },
-    get adminFee() { return Number(this.selectedMethod?.fee || 0); },
-    get grandTotal() { return this.total + this.adminFee; },
     get messageLeft() { return SUPPORT_MAX - (this.form.message || '').length; },
     get votingOpen() {
       if (!this.event?.is_voting_open) return false;

@@ -102,11 +102,10 @@
       <label class="vote-field">
         <span>Metode pembayaran <em>*</em></span>
         <select x-model="form.method" x-show="methods.length" x-cloak required>
-          <template x-for="m in methods" :key="m.code"><option :value="m.code" x-text="m.name + (m.free_admin ? ' — bebas biaya admin' : ' (admin Rp ' + Number(m.fee).toLocaleString('id-ID') + ' ditanggung pembeli)')"></option></template>
+          <template x-for="m in methods" :key="m.code"><option :value="m.code" x-text="m.name"></option></template>
         </select>
-        <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Belum ada metode pembayaran yang tersedia. Pembayaran belum dikonfigurasi, hubungi panitia.</small>
-        <small class="vote-hint" x-show="selectedMethod && !selectedMethod.free_admin" x-cloak>Biaya admin <b>Rp <span x-text="adminFee.toLocaleString('id-ID')"></span></b> untuk <span x-text="selectedMethod?.name"></span> ditanggung pelanggan dan ditambahkan ke total. Pilih QRIS Nobu untuk bebas biaya admin.</small>
-        <small class="vote-hint" x-show="selectedMethod?.free_admin" x-cloak>QRIS Nobu bebas biaya admin. Tanpa tambahan biaya.</small>
+        <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Metode pembayaran belum tersedia. Hubungi panitia.</small>
+        <small class="vote-hint" x-show="methods.length" x-cloak>Pilih QRIS, ShopeePay, atau DANA. Pembayaran diselesaikan di halaman Duitku.</small>
       </label>
 
       </div>
@@ -115,9 +114,8 @@
       <div class="vote-modal-footer">
         <div class="vote-total">
           <span>Total pembayaran</span>
-          <strong x-text="'Rp ' + grandTotal.toLocaleString('id-ID')"></strong>
+          <strong x-text="'Rp ' + total.toLocaleString('id-ID')"></strong>
         </div>
-        <p class="vote-hint" x-show="adminFee > 0" x-cloak>Rp <span x-text="total.toLocaleString('id-ID')"></span> vote + Rp <span x-text="adminFee.toLocaleString('id-ID')"></span> biaya admin.</p>
         <p class="vote-hint">Harga per suara: Rp <span x-text="pricePerVote.toLocaleString('id-ID')"></span>. Total dihitung ulang oleh server.</p>
         <button type="submit" class="btn btn-primary vote-modal-full" :disabled="isLoading || !votingOpen || !event?.payments_configured || payment?.status === 'PENDING'" :aria-busy="isLoading">
           <span x-show="!isLoading">Lanjutkan pembayaran · <span x-text="form.qty"></span> suara</span>
