@@ -72,6 +72,46 @@ def normalize_duitku_status(status_code: str) -> Optional[str]:
     return DUITKU_STATUS_TO_INTERNAL.get(status_code)
 
 
+async def get_payment_methods(
+    *,
+    amount: int,
+    merchant_code: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> list[Dict[str, Any]]:
+    """Daftar metode pembayaran aktif untuk merchant (read-only, tidak membuat transaksi).
+
+    Signature: HMAC-SHA256(merchantCode + amount + datetime, apiKey).
+    """
+    merchant_code = merchant_code or settings.DUITKU_MERCHANT_CODE
+    api_key = api_key or settings.DUITKU_API_KEY
+    if not merchant_code or not api_key:
+        raise ValueError("Duitku merchant code or API key not configured")
+
+    datetime_str = time.strftime("%Y-%m-%d %H:%M:%S")
+    signature = hmac.new(
+        api_key.encode("utf-8"),
+        f"{merchant_code}{amount}{datetime_str}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+    payload = {
+        "merchantcode": merchant_code,
+        "amount": str(amount),
+        "datetime": datetime_str,
+        "signature": signature,
+    }
+    url = f"{_get_base_url()}/paymentmethod/getpaymentmethod"
+    async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
+        response = await client.post(url, json=payload)
+        response.raise_for_status()
+        result = response.json()
+    if not isinstance(result, dict) or result.get("responseCode") != "00":
+        raise ValueError("Duitku getpaymentmethod response is not successful")
+    methods = result.get("paymentFee")
+    if not isinstance(methods, list):
+        raise ValueError("Duitku getpaymentmethod response has no paymentFee list")
+    return methods
+
+
 def valid_payment_url(value) -> bool:
     if not isinstance(value, str):
         return False

@@ -23,6 +23,11 @@ def duitku(monkeypatch):
     })
     monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
     monkeypatch.setattr(duitku_service, 'check_transaction_status', AsyncMock(side_effect=httpx.ReadTimeout('Status unavailable')))
+    # Daftar metode aktif dari Duitku (read-only). Mock agar tes tidak memanggil sandbox.
+    monkeypatch.setattr(duitku_service, 'get_payment_methods', AsyncMock(return_value=[
+        {'paymentMethod': 'NQ', 'paymentName': 'NOBU QRIS', 'paymentImage': '', 'totalFee': '0'},
+        {'paymentMethod': 'SA', 'paymentName': 'SHOPEEPAY APP', 'paymentImage': '', 'totalFee': '200'},
+    ]))
     return gateway
 
 
@@ -73,7 +78,21 @@ async def test_checkout_uses_duitku_without_midtrans_key(async_client, test_data
     assert not data['is_mock']
     assert data['payment_url'] == duitku.return_value['paymentUrl']
     assert data['qr_string'] == 'test-qr'
-    assert duitku.call_args.kwargs['payment_method'] == 'SP'
+    assert duitku.call_args.kwargs['payment_method'] == settings.DUITKU_PAYMENT_METHOD
+
+
+@pytest.mark.asyncio
+async def test_chosen_payment_method_is_sent_to_inquiry(async_client, test_data, duitku):
+    response = await invoice(async_client, test_data, payment_method='SA')
+    assert response.status_code == 200, response.text
+    assert duitku.call_args.kwargs['payment_method'] == 'SA'
+
+
+@pytest.mark.asyncio
+async def test_inactive_payment_method_is_rejected_before_inquiry(async_client, test_data, duitku):
+    response = await invoice(async_client, test_data, payment_method='SP')
+    assert response.status_code == 400, response.text
+    duitku.assert_not_awaited()
 
 
 @pytest.mark.asyncio

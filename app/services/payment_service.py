@@ -98,6 +98,13 @@ def _build_snapshot(
     }
 
 
+async def get_active_payment_methods(amount: int) -> list[dict]:
+    """Metode aktif dari Duitku, dipakai halaman vote dan validasi pembuatan invoice."""
+    if not settings.DUITKU_MERCHANT_CODE or not settings.DUITKU_API_KEY:
+        raise PaymentUnavailable("Pembayaran belum dikonfigurasi. Hubungi panitia.")
+    return await duitku_service.get_payment_methods(amount=amount)
+
+
 async def create_payment(
     session: AsyncSession,
     payload: PaymentCreate,
@@ -222,8 +229,18 @@ async def create_payment(
     else:
         payment.payment_gateway = PaymentGateway.DUITKU
         payment.duitku_merchant_order_id = payment.id
-        payment.duitku_payment_method = settings.DUITKU_PAYMENT_METHOD
+        chosen_method = payload.payment_method or settings.DUITKU_PAYMENT_METHOD
+        payment.duitku_payment_method = chosen_method
         payment.duitku_payload = {'_environment': settings.DUITKU_ENVIRONMENT, '_inquiry_state': 'creating'}
+        # Validasi metode ke daftar aktif Duitku sebelum membuat inquiry.
+        # Ditolak di sini berarti tidak ada order di sisi Duitku dan invoice dibatalkan.
+        try:
+            active_methods = await get_active_payment_methods(payment.amount)
+        except (httpx.HTTPError, ValueError) as exc:
+            logger.warning("Duitku payment methods unavailable (error=%s)", type(exc).__name__)
+            raise PaymentUnavailable("Metode pembayaran belum dapat dimuat. Coba lagi setelah satu menit.") from exc
+        if chosen_method not in {m.get("paymentMethod") for m in active_methods}:
+            raise PaymentError("Metode pembayaran ini tidak tersedia. Pilih metode lain.")
         # A timeout is an unknown outcome, not proof that the provider rejected
         # the order. Make it discoverable by retries and callbacks first.
         await session.commit()
@@ -231,7 +248,7 @@ async def create_payment(
             result = await duitku_service.create_transaction(
                 merchant_order_id=payment.id,
                 payment_amount=payment.amount,
-                payment_method=settings.DUITKU_PAYMENT_METHOD,
+                payment_method=chosen_method,
                 product_details=f"Voting {team.name} - {payment.votes} vote(s)",
                 email=payload.supporter_email,
                 customer_va_name=payload.supporter_name,

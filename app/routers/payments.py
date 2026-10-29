@@ -54,6 +54,26 @@ async def create_payment(
     return ok(data, "Invoice pembayaran sudah dibuat")
 
 
+@router.get("/payments/methods")
+async def list_payment_methods(amount: int = 10000):
+    """Metode pembayaran Duitku yang aktif untuk ditampilkan ke pelanggan."""
+    if amount < 1 or amount > 100_000_000:
+        raise HTTPException(status_code=400, detail="Nominal tidak valid")
+    try:
+        methods = await payment_service.get_active_payment_methods(amount)
+    except payment_service.PaymentUnavailable as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.warning("Payment method list unavailable (error=%s)", type(exc).__name__)
+        raise HTTPException(status_code=503, detail="Metode pembayaran belum dapat dimuat.") from exc
+    data = [
+        {"code": m.get("paymentMethod"), "name": m.get("paymentName"),
+         "image": m.get("paymentImage"), "fee": m.get("totalFee")}
+        for m in methods if m.get("paymentMethod")
+    ]
+    return ok(data)
+
+
 @router.get("/payments/{payment_id}/status")
 async def payment_status(
     payment_id: str,

@@ -53,7 +53,8 @@ class Settings(BaseSettings):
     DUITKU_MERCHANT_CODE: str = ""
     DUITKU_API_KEY: str = ""
     DUITKU_ENVIRONMENT: Literal["sandbox", "production"] = "sandbox"
-    DUITKU_PAYMENT_METHOD: Literal["SP", "NQ", "SQ"] = "SP"
+    # Fallback saat request tidak memilih metode. Harus metode yang aktif di merchant.
+    DUITKU_PAYMENT_METHOD: Literal["SP", "NQ", "SQ", "SA", "DA", "OV", "VC", "BC", "M2", "VA", "I1", "B1", "BT", "BR", "BV", "NC", "LA", "IR"] = "NQ"
 
     REDIS_URL: str = "redis://localhost:6379/0"
     CLOUDFLARE_API_KEY: str = ""

@@ -4,11 +4,33 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
     voter: { name: '', email: '', phone: '' },
     qty: 1, payment: null, error: '',
     isLoading: false, isNavigating: false, idempotencyKey: '',
+    methods: [], methodsLoaded: false, paymentMethod: '',
 
     init() {
       // No sessionStorage restore or polling. The payment URL is navigated to
       // directly via the "Lanjutkan pembayaran" button. Payment settlement is
       // handled exclusively by the backend callback and reconciliation.
+      this.loadMethods();
+      this.$watch('paymentMethod', () => {
+        // A different method is a different invoice: never replay the old key.
+        this.idempotencyKey = '';
+        this.payment = null;
+      });
+    },
+
+    async loadMethods() {
+      try {
+        const res = await fetch('/api/v1/payments/methods?amount=' + encodeURIComponent(this.event.price_per_vote || 10000));
+        const body = await res.json();
+        this.methods = res.ok && body.success ? body.data : [];
+        if (this.methods.length && !this.methods.some(m => m.code === this.paymentMethod)) {
+          this.paymentMethod = this.methods[0].code;
+        }
+      } catch (_) {
+        this.methods = [];
+      } finally {
+        this.methodsLoaded = true;
+      }
     },
 
     get isVotingOpen() {
@@ -36,6 +58,9 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
       if (!Number.isInteger(this.qty) || this.qty < 1 || this.qty > 10000) {
         this.error = 'Jumlah vote harus berupa angka bulat antara 1 dan 10.000.'; return;
       }
+      if (!this.paymentMethod) {
+        this.error = 'Pilih metode pembayaran terlebih dahulu.'; return;
+      }
       this.payment = null;
       this.createInvoice();
     },
@@ -49,7 +74,8 @@ function votePage(team, event, createPaymentUrl, paymentStatusUrl) {
           method: 'POST', headers: { 'Content-Type': 'application/json', 'Idempotency-Key': this.idempotencyKey },
           body: JSON.stringify({ event_id: this.event.id, team_id: this.team.id, qty: this.qty,
             supporter_name: this.voter.name.trim(), supporter_email: this.voter.email,
-            supporter_phone: '+62' + this.voter.phone, is_anonymous: false }),
+            supporter_phone: '+62' + this.voter.phone, is_anonymous: false,
+            payment_method: this.paymentMethod }),
         });
         const body = await res.json();
         if (!res.ok || !body.success) throw new Error(body.message || 'Pembayaran belum dapat dibuat. Silakan coba lagi.');

@@ -24,6 +24,9 @@ def provider(monkeypatch):
     status = AsyncMock()
     monkeypatch.setattr(duitku_service, 'create_transaction', inquiry)
     monkeypatch.setattr(duitku_service, 'check_transaction_status', status)
+    monkeypatch.setattr(duitku_service, 'get_payment_methods', AsyncMock(return_value=[
+        {'paymentMethod': 'NQ', 'paymentName': 'NOBU QRIS', 'paymentImage': '', 'totalFee': '0'},
+    ]))
     return inquiry, status
 
 

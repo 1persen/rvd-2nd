@@ -22,6 +22,8 @@ class PaymentCreate(BaseModel):
     supporter_phone: str = Field(min_length=1, max_length=20)
     is_anonymous: bool = False
     idempotency_key: Optional[str] = Field(default=None, max_length=64)
+    # Kode metode Duitku yang dipilih pelanggan. Kosong = pakai DUITKU_PAYMENT_METHOD.
+    payment_method: Optional[str] = Field(default=None, min_length=2, max_length=2, pattern=r"^[A-Z0-9]{2}$")
 
 
 class PaymentOut(BaseModel):
