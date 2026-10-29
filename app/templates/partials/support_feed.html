@@ -2,8 +2,11 @@
 {% from "macros/public.html" import gift_svg %}
 <div x-data='supportFeed({{ support_event_id | tojson }}, {{ (event.vote_effects if event is defined and event else []) | tojson }}, {{ (event.name if event is defined and event else "") | tojson }})' class="support-stage" aria-live="polite" aria-relevant="additions">
   <div class="support-ticker" x-show="queue.length" x-cloak aria-label="Dukungan terbaru">
-    <div class="support-ticker-track" :style="'--ticker-count:' + Math.max(queue.length, 1)">
-      <template x-for="(item, idx) in loopItems" :key="idx + '-' + item.id">
+    <div class="support-ticker-track" x-ref="track">
+      <template x-for="(item, idx) in tickerItems" :key="'a' + idx + item.id">
+        <span class="support-ticker-item" x-text="item.text"></span>
+      </template>
+      <template x-for="(item, idx) in tickerItems" :key="'b' + idx + item.id">
         <span class="support-ticker-item" x-text="item.text"></span>
       </template>
     </div>

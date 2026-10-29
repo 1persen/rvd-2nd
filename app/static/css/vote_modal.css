@@ -258,7 +258,12 @@
 .vote-modal-pay p { font-size: 13px; line-height: 1.6; color: var(--muted, #666a70); }
 
 /* Ticker dan efek dukungan */
-.support-stage { position: relative; z-index: 5; }
+/* Ticker menempel tepat di bawah navbar saat halaman di-scroll. */
+.support-stage {
+  position: sticky;
+  top: var(--event-header-height, 80px);
+  z-index: 45;
+}
 
 .support-ticker {
   overflow: hidden;
@@ -272,9 +277,10 @@
   gap: 40px;
   width: max-content;
   padding-inline: 20px;
-  /* Kecepatan tetap ~60 px/dtk, tidak tergantung jumlah item. */
-  animation: support-scroll calc(var(--ticker-count, 1) * 4s + 12s) linear infinite;
+  /* Digeser oleh requestAnimationFrame di vote_modal.js, jadi tetap berjalan
+     walau browser mematikan animasi CSS (prefers-reduced-motion). */
   will-change: transform;
+  transform: translateX(0);
 }
 
 .support-ticker-item {
@@ -286,12 +292,7 @@
   color: var(--ink, #172b32);
 }
 
-.support-ticker-track:hover { animation-play-state: paused; }
 
-@keyframes support-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
-}
 
 
 /* Efek gift. Ringan: hanya transform/opacity, maksimal 8 partikel, satu efek
@@ -490,10 +491,18 @@
   .vote-gift-icon { width: 42px; height: 42px; }
   .vote-gift-icon svg { width: 30px; height: 30px; }
   .vote-modal-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  /* Mobile: ticker menempel tetap di atas navbar agar tidak menutupinya. */
+  .support-stage {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 70;
+  }
+  .support-ticker { border-top: 0; box-shadow: 0 2px 8px rgba(18, 28, 32, .08); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .support-ticker-track { animation: none; }
   .support-effect *, .support-effect *::before, .support-effect *::after {
     animation: none !important;
     opacity: 1 !important;

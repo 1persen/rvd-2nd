@@ -39,9 +39,6 @@
 </div>
 {# Running text dukungan tepat di bawah header publik. #}
 {% if support_event_id %}{% include "partials/support_feed.html" %}{% endif %}
-{% if payment_sandbox_enabled() %}
-<div class="sandbox-banner" data-payment-environment="sandbox" role="status"><strong>Mode sandbox Duitku</strong><span>Transaksi uji coba. Jangan gunakan uang sungguhan.</span></div>
-{% endif %}
 <div id="main-content" tabindex="-1"></div>
 {% endblock %}
 {% block footer %}

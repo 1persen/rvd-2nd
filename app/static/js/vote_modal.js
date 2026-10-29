@@ -229,11 +229,14 @@ function supportFeed(eventId, catalog, eventName) {
     effectQueue: [],
     currentEffect: null,
     effectTimer: null,
+    tickerRaf: null,
+    offset: 0,
     catalog: catalog || [],
     eventName: eventName || '',
     source: null,
     init() {
       if (!eventId) return;
+      this.startTicker();
       // Isi awal: dukungan terbaru yang sudah tersimpan (urut lama -> baru).
       fetch('/api/v1/events/' + encodeURIComponent(eventId) + '/support-feed')
         .then(res => res.json())
@@ -256,9 +259,12 @@ function supportFeed(eventId, catalog, eventName) {
       if (this.seen.size > 500) this.seen.delete(this.seen.values().next().value);
       // Hanya data publik: nama, jumlah vote, tim, dan pesan. Tidak ada kontak.
       const name = msg.supporter_name || 'Pendukung';
-      const team = msg.team_name ? ' → ' + msg.team_name : '';
-      const message = msg.support_message ? ' — ' + msg.support_message : '';
-      this.queue.push({ id: msg.payment_id, text: name + ' (' + msg.votes + ' suara)' + team + message });
+      const votes = Number(msg.votes || 0).toLocaleString('id-ID');
+      // Format: nama · jumlah vote · tim yang divote · pesan untuk tim.
+      const parts = [name, votes + ' vote'];
+      if (msg.team_name) parts.push('untuk ' + msg.team_name);
+      if (msg.support_message) parts.push(msg.support_message);
+      this.queue.push({ id: msg.payment_id, text: parts.join(' · ') });
       if (this.queue.length > 50) this.queue.shift();
       // Riwayat awal hanya mengisi ticker; animasi hanya untuk dukungan baru.
       if (msg.effect_code && !opts.silent) this.enqueueEffect(msg.effect_code, msg.payment_id);
@@ -278,8 +284,26 @@ function supportFeed(eventId, catalog, eventName) {
       // Satu gift berjalan penuh sebelum gift berikutnya; durasi dari katalog backend.
       this.effectTimer = setTimeout(() => this.nextEffect(), reduce ? 1200 : this.currentEffect.duration_ms);
     },
-    // Dua salinan daftar agar gulir tanpa putus; kunci unik per posisi.
-    get loopItems() { return this.queue.length ? this.queue.concat(this.queue) : []; },
+    get tickerItems() { return this.queue; },
+    // Ticker digeser lewat requestAnimationFrame (CSS animasi bisa dimatikan
+    // oleh preferensi reduce-motion, sehingga teks terlihat diam).
+    startTicker() {
+      if (this.tickerRaf) return;
+      let last = 0;
+      const step = (now) => {
+        const el = this.$refs?.track;
+        if (el) {
+          if (!last) last = now;
+          this.offset -= (now - last) * 0.05; // ~50 px/detik
+          const half = el.scrollWidth / 2;
+          if (half > 0 && this.offset <= -half) this.offset += half;
+          el.style.transform = 'translateX(' + this.offset + 'px)';
+        }
+        last = now;
+        this.tickerRaf = requestAnimationFrame(step);
+      };
+      this.tickerRaf = requestAnimationFrame(step);
+    },
     giftIcon(animation) {
       const tpl = document.querySelector('template[data-gift="' + animation + '"]');
       return tpl ? tpl.innerHTML : '';
