@@ -237,6 +237,7 @@ function supportFeed(eventId, catalog, eventName) {
     init() {
       if (!eventId) return;
       this.startTicker();
+      this.trackFooter();
       // Isi awal: dukungan terbaru yang sudah tersimpan (urut lama -> baru).
       fetch('/api/v1/events/' + encodeURIComponent(eventId) + '/support-feed')
         .then(res => res.json())
@@ -285,6 +286,21 @@ function supportFeed(eventId, catalog, eventName) {
       this.effectTimer = setTimeout(() => this.nextEffect(), reduce ? 1200 : this.currentEffect.duration_ms);
     },
     get tickerItems() { return this.queue; },
+    // Desktop: ticker menempel di dasar konten, berhenti tepat di atas footer.
+    trackFooter() {
+      if (!window.matchMedia || !window.matchMedia('(min-width: 701px)').matches) return;
+      const footer = document.querySelector('.public-footer');
+      const stage = this.$el || document.querySelector('.support-stage');
+      if (!footer || !stage) return;
+      const sync = () => {
+        const gap = window.innerHeight - footer.getBoundingClientRect().top;
+        // 0 = menempel di dasar layar; >0 = footer mulai tampil, ikut naik.
+        stage.style.bottom = (gap > 0 ? gap : 0) + 'px';
+      };
+      sync();
+      window.addEventListener('scroll', sync, { passive: true });
+      window.addEventListener('resize', sync);
+    },
     // Ticker digeser lewat requestAnimationFrame (CSS animasi bisa dimatikan
     // oleh preferensi reduce-motion, sehingga teks terlihat diam).
     startTicker() {
