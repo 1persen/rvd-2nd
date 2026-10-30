@@ -246,6 +246,19 @@ async def create_transaction(
         "Duitku inquiry for order %s (statusCode=%s, reference=%s, elapsed=%.2fs)",
         merchant_order_id, status_code, reference, elapsed,
     )
+    if not isinstance(result, dict) or status_code != "00" or not reference \
+            or not valid_payment_url(result.get("paymentUrl")):
+        # Catat apa yang dikirim Duitku agar penyebab penolakan bisa diketahui
+        # (metode tidak aktif, amount tidak sesuai, kredensial, dll).
+        # Tidak ada data rahasia di sini: bukan signature dan bukan API key.
+        logger.warning(
+            "Duitku inquiry rejected for order %s (method=%s, environment=%s): %s",
+            merchant_order_id, payment_method, settings.DUITKU_ENVIRONMENT,
+            result if not isinstance(result, dict) else {
+                **result,
+                "paymentUrl": "valid" if valid_payment_url(result.get("paymentUrl")) else repr(result.get("paymentUrl")),
+            },
+        )
 
     return result
 

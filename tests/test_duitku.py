@@ -213,11 +213,14 @@ async def test_invoice_environment_follows_saved_checkout_url(async_client, test
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('environment,visible', [('sandbox', True), ('production', False)])
-async def test_checkout_discloses_sandbox_before_invoice(async_client, test_data, duitku, monkeypatch, environment, visible):
+@pytest.mark.parametrize('environment', ['sandbox', 'production'])
+async def test_checkout_page_has_no_sandbox_banner(async_client, test_data, duitku, monkeypatch, environment):
     monkeypatch.setattr(settings, 'DUITKU_ENVIRONMENT', environment)
     response = await async_client.get(f"/events/{test_data['event'].id}/vote/{test_data['team'].id}")
-    assert ('data-payment-environment="sandbox"' in response.text) is visible
+    # Banner sandbox di halaman publik dihapus; penanda environment kini hanya
+    # di respons invoice (is_sandbox), bukan di markup halaman.
+    assert 'Mode sandbox Duitku' not in response.text
+    assert 'data-payment-environment="sandbox"' not in response.text
 
 
 @pytest.mark.asyncio
