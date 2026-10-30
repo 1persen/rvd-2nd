@@ -16,17 +16,37 @@
     </header>
 
     <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
-    <div class="notice" role="status" x-show="statusText" x-cloak x-text="statusText"></div>
 
-    {# Cadangan: hanya tampil jika browser gagal membuka halaman Duitku otomatis. #}
-    <template x-if="payment && payment.status === 'PENDING' && payment.payment_url">
-      <div class="vote-modal-pay">
-        <p>Invoice sudah dibuat. Suara dihitung setelah pembayaran berhasil.</p>
-        <button type="button" class="btn btn-secondary vote-modal-full" @click="goToPayment()" :disabled="isNavigating">Buka halaman pembayaran</button>
+    {# Panel status pesanan: membaca order, bukan payment. Tidak menampilkan
+       status internal mentah; tindakan mengikuti tabel tindakan plan. #}
+    <div class="vote-order" x-show="order" x-cloak role="status">
+      <p class="vote-order-kicker">Status pembayaran</p>
+      <h3 class="vote-order-title" x-text="orderLabel"></h3>
+      <dl class="vote-order-meta">
+        <div><dt>Pesanan</dt><dd x-text="(order?.votes || 0) + ' vote'"></dd></div>
+        <div><dt>ID Transaksi</dt><dd x-text="order?.id"></dd></div>
+      </dl>
+      <p class="vote-order-hint" x-show="order?.status === 'PENDING'">
+        Jangan melakukan pembayaran melalui tagihan lain.
+      </p>
+      <div class="vote-order-actions">
+        <button type="button" class="btn btn-primary vote-modal-full"
+                x-show="order?.status === 'PENDING' && order?.payment_url"
+                @click="goToPayment()" :disabled="isNavigating">Lanjutkan Pembayaran</button>
+        <button type="button" class="btn btn-secondary vote-modal-full"
+                x-show="order?.status === 'PENDING' && !order?.needs_manual_review"
+                @click="reconcileOrder()" :disabled="isChecking">
+          <span x-show="!isChecking">Periksa Status Pesanan</span>
+          <span x-show="isChecking" x-cloak>Memeriksa status…</span>
+        </button>
+        <button type="button" class="btn btn-secondary vote-modal-full"
+                x-show="reconcileVerdict === 'ABSENT_CONFIRMED'"
+                @click="startNewInvoice()">Coba Buat Tagihan Baru</button>
+        <a class="btn btn-secondary vote-modal-full" :href="helpUrl" target="_blank" rel="noopener">Hubungi Bantuan</a>
       </div>
-    </template>
+    </div>
 
-    <form x-show="!payment || payment.status !== 'SUCCESS'" @submit.prevent="submit()" class="vote-modal-form" novalidate>
+    <form x-show="!orderUnresolved && order?.status !== 'SUCCESS'" @submit.prevent="submit()" class="vote-modal-form" novalidate>
       <div class="vote-modal-scroll">
       <label class="vote-field">
         <span>Nama pendukung <em>*</em></span>
@@ -106,7 +126,7 @@
           <template x-for="m in methods" :key="m.code">
             <button type="button" role="radio" :aria-checked="form.method === m.code"
               :class="{ 'is-active': form.method === m.code }" @click="form.method = m.code"
-              x-text="m.name"></button>
+              :disabled="formLocked" x-text="m.name"></button>
           </template>
         </div>
         <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Metode pembayaran belum tersedia. Hubungi panitia.</small>

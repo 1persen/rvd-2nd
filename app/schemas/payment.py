@@ -63,3 +63,8 @@ class PaymentOut(BaseModel):
     is_sandbox: bool = False
     support_message: Optional[str] = None
     effect_code: Optional[str] = None
+    inquiry_state: Optional[str] = None
+    needs_manual_review: bool = False
+    reconcile_verdict: Optional[str] = None
+    # Token baca-status untuk GET /status dan POST /reconcile (deterministik, tidak di DB).
+    status_token: Optional[str] = None

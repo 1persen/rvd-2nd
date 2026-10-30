@@ -24,6 +24,7 @@
                 <option value="FAILED">Failed</option>
                 <option value="EXPIRED">Expired</option>
                 <option value="CANCELED">Canceled</option>
+                <option value="review">Perlu diperiksa</option>
               </select>
               <select id="filter-event" onchange="loadTransactions()" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                 <option value="">Semua Event</option>
@@ -147,7 +148,12 @@
       let url = '/admin/payments';
       const params = [];
       if (eventId) params.push('event_id=' + encodeURIComponent(eventId));
-      if (status) params.push('status=' + encodeURIComponent(status));
+      if (status === 'review') {
+        // "Perlu diperiksa" adalah filter payload, bukan nilai PaymentStatus.
+        params.push('needs_review=true');
+      } else if (status) {
+        params.push('status=' + encodeURIComponent(status));
+      }
       if (params.length) url += '?' + params.join('&');
 
       const data = await api(url);
@@ -193,7 +199,17 @@
             '<td class="px-6 py-3 text-gray-500">' + esc(p.supporter_name) + '</td>' +
             '<td class="px-6 py-3 text-gray-500">' + esc(p.supporter_phone) + '</td>' +
             '<td class="px-6 py-3 text-xs text-gray-400">' + (p.created_at ? new Date(p.created_at).toLocaleString('id-ID') : '') + '</td>' +
-            '<td class="px-6 py-3 text-xs text-gray-400">' + timeInfo + '</td>' +
+            '<td class="px-6 py-3 text-xs text-gray-400">' + timeInfo +
+              (p.needs_manual_review
+                ? '<div class="mt-1"><span class="inline-block px-2 py-0.5 rounded-full bg-orange-100 text-orange-600 text-xs font-medium">Perlu diperiksa</span></div>'
+                : '') +
+              (p.needs_manual_review
+                ? '<div class="mt-1 flex gap-1">' +
+                    '<button onclick="resolvePayment(\'' + esc(p.id) + '\', \'confirm_paid\')" class="px-2 py-1 rounded bg-green-600 hover:bg-green-700 text-white text-xs">Tandai Lunas</button>' +
+                    '<button onclick="resolvePayment(\'' + esc(p.id) + '\', \'cancel_unpaid\')" class="px-2 py-1 rounded bg-gray-600 hover:bg-gray-700 text-white text-xs">Batalkan</button>' +
+                  '</div>'
+                : '') +
+            '</td>' +
           '</tr>';
         }).join('');
       }
@@ -208,7 +224,26 @@
   }
 
 
+  // Aksi manual hanya dipanggil dari tombol yang dirender untuk baris needs_manual_review.
+  async function resolvePayment(id, action) {
+    const reason = window.prompt('Alasan...');
+    if (reason === null) return;
+    try {
+      await api('/admin/payments/' + encodeURIComponent(id) + '/resolve', {
+        method: 'POST',
+        body: JSON.stringify({ action: action, reason: reason }),
+      });
+      await loadTransactions();
+    } catch (e) {
+      hideId('loading-state');
+      document.getElementById('error-message').textContent = 'Gagal menyelesaikan transaksi: ' + e.message;
+      showId('error-state');
+    }
+  }
+
+
   window.loadTransactions = loadTransactions;
+  window.resolvePayment = resolvePayment;
   loadEvents().then(function() {
     return loadTransactions();
   });

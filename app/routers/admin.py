@@ -5,12 +5,14 @@ Semua endpoint admin butuh JWT authentication.
 Legacy session-based auth is deprecated but still available at /api/v1/auth/*.
 """
 from datetime import datetime, timezone
+import json
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
+from app.enums.payment_gateway import PaymentGateway
 from app.enums.payment_status import PaymentStatus
 from app.repositories import audit_log as audit_repo
 from app.repositories import event as event_repo
@@ -20,7 +22,12 @@ from app.repositories import user as user_repo
 from app.repositories import vote_log as vote_log_repo
 from app.routers.deps import get_current_admin_jwt
 from app.schemas.common import ok
+from app.services import audit_service
 from app.services import export_service
+from app.services import payment_service
+from app.services.vote_service import process_successful_payment
+from app.services import payment_service
+from app.services.vote_service import process_successful_payment
 
 router = APIRouter(
     prefix="/api/v1/admin",
@@ -76,12 +83,20 @@ async def dashboard(
 async def list_payments(
     event_id: str | None = Query(default=None),
     status: str | None = Query(default=None),
+    inquiry_state: str | None = Query(default=None),
+    needs_review: bool | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ):
     status_enum = PaymentStatus(status) if status else None
     payments = await payment_repo.list_payments(session, event_id=event_id, status=status_enum, limit=500)
     result = []
     for payment in payments:
+        duitku_payload = payment.duitku_payload or {}
+        # Filter JSON dilakukan di Python (bukan SQL) agar dialect-safe.
+        if inquiry_state is not None and duitku_payload.get("_inquiry_state") != inquiry_state:
+            continue
+        if needs_review is not None and bool(duitku_payload.get("_needs_manual_review")) != needs_review:
+            continue
         team = await team_repo.get_team(session, payment.team_id)
         event = await event_repo.get_event(session, payment.event_id)
         result.append(
@@ -98,12 +113,112 @@ async def list_payments(
                 "supporter_email": payment.supporter_email,
                 "supporter_phone": payment.supporter_phone,
                 "is_anonymous": payment.is_anonymous,
+                "payment_gateway": payment.payment_gateway.value,
+                "inquiry_state": duitku_payload.get("_inquiry_state"),
+                "needs_manual_review": bool(duitku_payload.get("_needs_manual_review")),
                 "created_at": payment.created_at.isoformat(),
                 "paid_at": payment.paid_at.isoformat() if payment.paid_at else None,
                 "expires_at": payment.expires_at.isoformat() if payment.expires_at else None,
             }
         )
     return ok(result)
+
+
+@router.post("/payments/{payment_id}/resolve")
+async def resolve_payment(
+    payment_id: str,
+    request: Request,
+    session: AsyncSession = Depends(get_db),
+):
+    """Tutup transaksi unknown secara manual, dengan alasan dan audit.
+
+    `cancel_unpaid` hanya boleh tanpa referencia, atau setelah provider
+    memastikan order tidak bisa dibayar (ABSENT_CONFIRMED). `confirm_paid`
+    memakai `process_successful_payment` yang sama dengan jalur otomatis.
+    """
+    try:
+        body = await request.json()
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail="Body JSON tidak valid") from exc
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Body JSON tidak valid")
+    action = body.get("action")
+    reason = (body.get("reason") or "").strip()
+    if action not in ("cancel_unpaid", "confirm_paid"):
+        raise HTTPException(status_code=400, detail="Action harus cancel_unpaid atau confirm_paid")
+    if len(reason) < 5:
+        raise HTTPException(status_code=400, detail="Alasan minimal 5 karakter")
+
+    payment = await payment_repo.get_payment(session, payment_id, for_update=True)
+    if not payment:
+        raise HTTPException(status_code=404, detail="Invoice tidak ditemukan")
+    payload = dict(payment.duitku_payload or {})
+
+    if action == "cancel_unpaid":
+        # Idempoten: invoice yang sudah ditutup dengan alasan yang sama = no-op.
+        if payment.status == PaymentStatus.CANCELED and payload.get("_manual_resolution"):
+            return ok(
+                {
+                    "id": payment.id,
+                    "status": payment.status.value,
+                    "resolution": payload.get("_manual_resolution"),
+                },
+                "Invoice sudah ditutup sebelumnya",
+            )
+        absent_verdict = payload.get("_last_verdict") == payment_service.ReconcileVerdict.ABSENT_CONFIRMED.value
+        if payment.status != PaymentStatus.PENDING or (payment.duitku_reference and not absent_verdict):
+            raise HTTPException(
+                status_code=400,
+                detail="Invoice hanya bisa dibatalkan bila belum ada referensi atau provider menyatakan tidak bisa dibayar",
+            )
+        resolution = {"action": action, "reason": reason,
+                      "at": datetime.now(timezone.utc).isoformat()}
+        payment.status = PaymentStatus.CANCELED
+        payment.idempotency_key = None
+        payload["_needs_manual_review"] = False
+        payload["_inquiry_state"] = "rejected"
+        payload["_manual_resolution"] = resolution
+        payment.duitku_payload = payload
+        await session.flush()
+    else:  # confirm_paid
+        if payment.status == PaymentStatus.SUCCESS:
+            resolution = payload.get("_manual_resolution") or {}
+        else:
+            # Midtrans legacy tidak punya referensi Duitku; keputusan manual
+            # berdasarkan bukti transfer tetap boleh dicatat admin.
+            if not payment.duitku_reference and payment.payment_gateway == PaymentGateway.DUITKU:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invoice belum punya referensi pembayaran; periksa status ke provider terlebih dahulu",
+                )
+            if payment.status not in (PaymentStatus.PENDING, PaymentStatus.EXPIRED, PaymentStatus.CANCELED):
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invoice berstatus {payment.status.value} tidak bisa dikonfirmasi dibayar",
+                )
+            now = datetime.now(timezone.utc)
+            resolution = {"action": action, "reason": reason, "at": now.isoformat()}
+            payment.status = PaymentStatus.SUCCESS
+            payment.paid_at = payment.paid_at or now
+            payment.settled_at = payment.settled_at or now
+            payload["_needs_manual_review"] = False
+            payload["_manual_resolution"] = resolution
+            payment.duitku_payload = payload
+            await session.flush()
+            # Satu-satunya jalur pemberian vote (idempoten di dalam service).
+            await process_successful_payment(session, payment)
+            await session.flush()
+
+    await audit_service.record(
+        session,
+        action="payment.manual_resolve",
+        request=request,
+        entity_type="payment",
+        entity_id=payment.id,
+        detail={"action": action, "reason": reason, "status": payment.status.value},
+    )
+    await session.commit()
+    return ok({"id": payment.id, "status": payment.status.value, "resolution": resolution})
 
 
 @router.get("/audit-logs")

@@ -15,7 +15,9 @@ from app.core.config import settings
 
 SANDBOX_BASE = "https://sandbox.duitku.com/webapi/api/merchant"
 PRODUCTION_BASE = "https://passport.duitku.com/webapi/api/merchant"
-HTTP_TIMEOUT = 15.0
+# Total di bawah maxDuration 10s di vercel.json agar RVD sempat menyimpan
+# state "unknown" sebelum platform memutus request.
+HTTP_TIMEOUT = httpx.Timeout(connect=5.0, read=8.0, write=5.0, pool=3.0)
 
 # Duitku transaction status codes (per API specification).
 # "00" = successful payment, "01" = pending/processing, "02" = canceled.
@@ -31,6 +33,21 @@ DUITKU_STATUS_TO_INTERNAL = {
 }
 
 logger = logging.getLogger(__name__)
+
+
+class DuitkuRejected(Exception):
+    """Provider menjawab dan secara definitif menolak membuat order."""
+    def __init__(self, reason: str = "", status_code: str | None = None) -> None:
+        super().__init__(reason or "Duitku rejected the inquiry")
+        self.reason = reason
+        self.status_code = status_code
+
+
+class DuitkuUncertain(Exception):
+    """Hasil tidak pasti: transport, 5xx, body tak terbaca, atau sukses cacat."""
+    def __init__(self, kind: str, detail: str = "") -> None:
+        super().__init__(f"{kind}: {detail}" if detail else kind)
+        self.kind = kind  # timeout | transport | http_5xx | malformed
 
 
 def _get_base_url() -> str:
@@ -136,13 +153,14 @@ def valid_callback(payload) -> bool:
     fields = ("merchantCode", "amount", "merchantOrderId", "signature")
     if any(not isinstance(payload.get(key), str) or not payload[key] for key in fields):
         return False
-    if not re.fullmatch(r"[0-9a-f]{64}", payload["signature"]):
+    signature = payload["signature"].strip().lower()
+    if not re.fullmatch(r"[0-9a-f]{64}", signature):
         return False
     if payload["merchantCode"] != settings.DUITKU_MERCHANT_CODE:
         return False
     return verify_callback_signature(
         payload["merchantCode"], payload["amount"], payload["merchantOrderId"],
-        payload["signature"], settings.DUITKU_API_KEY,
+        signature, settings.DUITKU_API_KEY,
     )
 
 
@@ -208,29 +226,20 @@ async def create_transaction(
     try:
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
             response = await client.post(url, json=payload)
-            response.raise_for_status()
-            result = response.json()
     except httpx.TimeoutException as exc:
         elapsed = time.monotonic() - start
         logger.warning(
             "Duitku inquiry timeout for order %s (method=%s, elapsed=%.2fs)",
             merchant_order_id, payment_method, elapsed,
         )
-        raise
-    except httpx.HTTPStatusError as exc:
+        raise DuitkuUncertain("timeout", type(exc).__name__) from exc
+    except httpx.HTTPError as exc:
         elapsed = time.monotonic() - start
         logger.warning(
-            "Duitku inquiry HTTP error for order %s (method=%s, status=%s, elapsed=%.2fs)",
-            merchant_order_id, payment_method, exc.response.status_code, elapsed,
-        )
-        raise
-    except (ValueError, TypeError) as exc:
-        elapsed = time.monotonic() - start
-        logger.warning(
-            "Duitku inquiry invalid JSON for order %s (method=%s, elapsed=%.2fs): %s",
+            "Duitku inquiry transport error for order %s (method=%s, elapsed=%.2fs): %s",
             merchant_order_id, payment_method, elapsed, type(exc).__name__,
         )
-        raise
+        raise DuitkuUncertain("transport", type(exc).__name__) from exc
     except Exception as exc:
         elapsed = time.monotonic() - start
         logger.warning(
@@ -239,28 +248,84 @@ async def create_transaction(
         )
         raise
 
+    # Body dibaca sebelum status diputuskan: 4xx bisa membawa penolakan yang
+    # definitif, sedangkan body tak terbaca tetap "tidak pasti".
+    status = response.status_code
+    try:
+        result = response.json()
+    except (ValueError, TypeError):
+        result = None
+
+    if status >= 500:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry http_5xx for order %s (method=%s, status=%s, elapsed=%.2fs)",
+            merchant_order_id, payment_method, status, elapsed,
+        )
+        raise DuitkuUncertain("http_5xx", f"status={status}")
+    if status == 429:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry rate limited for order %s (method=%s, elapsed=%.2fs)",
+            merchant_order_id, payment_method, elapsed,
+        )
+        raise DuitkuUncertain("transport", "rate_limited")
+    if status >= 400:
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry HTTP error for order %s (method=%s, status=%s, elapsed=%.2fs)",
+            merchant_order_id, payment_method, status, elapsed,
+        )
+        if isinstance(result, dict) and (result.get("statusCode") or result.get("Message")):
+            raise DuitkuRejected(
+                str(result.get("statusMessage") or result.get("Message") or "").strip(),
+                str(result.get("statusCode") or "") or None,
+            )
+        raise DuitkuUncertain("transport", f"status={status}")
+    if not isinstance(result, dict):
+        elapsed = time.monotonic() - start
+        logger.warning(
+            "Duitku inquiry malformed for order %s (method=%s, elapsed=%.2fs): non_object",
+            merchant_order_id, payment_method, elapsed,
+        )
+        raise DuitkuUncertain("malformed", "non_object")
+
     elapsed = time.monotonic() - start
-    status_code = result.get("statusCode") if isinstance(result, dict) else None
-    reference = result.get("reference") if isinstance(result, dict) else None
+    status_code = result.get("statusCode")
+    reference = result.get("reference")
     logger.info(
         "Duitku inquiry for order %s (statusCode=%s, reference=%s, elapsed=%.2fs)",
         merchant_order_id, status_code, reference, elapsed,
     )
-    if not isinstance(result, dict) or status_code != "00" or not reference \
-            or not valid_payment_url(result.get("paymentUrl")):
-        # Catat apa yang dikirim Duitku agar penyebab penolakan bisa diketahui
-        # (metode tidak aktif, amount tidak sesuai, kredensial, dll).
-        # Tidak ada data rahasia di sini: bukan signature dan bukan API key.
+    if status_code == "00":
+        if not reference or not valid_payment_url(result.get("paymentUrl")):
+            # Catat apa yang dikirim Duitku agar penyebab kegagalan diketahui
+            # (metode tidak aktif, amount tidak sesuai, kredensial, dll).
+            # Tidak ada data rahasia: bukan signature dan bukan API key.
+            logger.warning(
+                "Duitku inquiry malformed for order %s (method=%s, environment=%s): %s",
+                merchant_order_id, payment_method, settings.DUITKU_ENVIRONMENT,
+                {
+                    **result,
+                    "paymentUrl": "valid" if valid_payment_url(result.get("paymentUrl")) else repr(result.get("paymentUrl")),
+                },
+            )
+            raise DuitkuUncertain("malformed", "success_without_url")
+        return result
+    if status_code:
         logger.warning(
             "Duitku inquiry rejected for order %s (method=%s, environment=%s): %s",
             merchant_order_id, payment_method, settings.DUITKU_ENVIRONMENT,
-            result if not isinstance(result, dict) else {
+            {
                 **result,
                 "paymentUrl": "valid" if valid_payment_url(result.get("paymentUrl")) else repr(result.get("paymentUrl")),
             },
         )
-
-    return result
+        raise DuitkuRejected(
+            str(result.get("statusMessage") or result.get("Message") or "").strip(),
+            str(status_code),
+        )
+    raise DuitkuUncertain("malformed", "no_status_code")
 
 
 async def check_transaction_status(

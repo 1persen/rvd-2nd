@@ -8,8 +8,10 @@ import httpx
 import pytest
 
 from app.core.config import settings
+from app.core.database import async_session
+from app.enums.payment_status import PaymentStatus
 from app.repositories import payment as payment_repo, vote_log as vote_log_repo
-from app.services import duitku_service, leaderboard_service
+from app.services import duitku_service, leaderboard_service, payment_service
 
 
 @pytest.fixture
@@ -44,20 +46,22 @@ async def test_duitku_requires_valid_email_before_contacting_gateway(async_clien
 
 
 @pytest.mark.asyncio
-async def test_gateway_timeout_rejects_invoice_and_allows_retry(async_client, test_data, duitku):
+async def test_gateway_timeout_keeps_invoice_unresolved(async_client, test_data, duitku):
     import httpx
     duitku.side_effect = httpx.ReadTimeout('Provider stalled')
     response = await invoice(async_client, test_data)
-    # Tanpa tautan bayar, invoice tidak disimpan dan pelanggan boleh mencoba lagi.
-    assert response.status_code == 503, response.text
-    assert 'metode lain' in response.json()['message']
+    # Timeout = hasil tidak pasti: invoice tetap PENDING, tanpa tautan bayar.
+    assert response.status_code == 200, response.text
+    data = response.json()['data']
+    assert data['status'] == 'PENDING'
+    assert data['id']
+    assert data['payment_url'] is None
+    assert data['inquiry_state'] == 'unknown'
 
     duitku.side_effect = None
-    duitku.return_value = {'statusCode': '00', 'reference': 'retry',
-                           'paymentUrl': 'https://passport.duitku.com/checkout/test'}
-    retry = await invoice(async_client, test_data, payment_method='SA')
-    assert retry.status_code == 200, retry.text
-    assert retry.json()['data']['payment_url'] == 'https://passport.duitku.com/checkout/test'
+    retry = await invoice(async_client, test_data)
+    assert retry.status_code == 400, retry.text
+    assert duitku.await_count == 1
 
 
 def callback(payment, **overrides):
@@ -106,19 +110,112 @@ async def test_method_list_is_static_without_provider_call(async_client, test_da
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('bad', [{'statusCode': '01'}, {'statusCode': '00', 'reference': 'r', 'paymentUrl': 'javascript:alert(1)'}])
-async def test_unusable_inquiry_is_rejected_and_method_can_switch(async_client, test_data, duitku, bad):
-    duitku.return_value = bad
+async def test_status_requires_valid_token(async_client, test_data, duitku):
+    created = await invoice(async_client, test_data)
+    assert created.status_code == 200, created.text
+    data = created.json()['data']
+    payment_id, token = data['id'], data['status_token']
+    assert token
+    url = f'/api/v1/payments/{payment_id}/status'
+
+    assert (await async_client.get(url)).status_code == 403
+    assert (await async_client.get(url, params={'t': 'x' * 32})).status_code == 403
+    allowed = await async_client.get(url, params={'t': token})
+    assert allowed.status_code == 200, allowed.text
+    assert allowed.json()['data']['id'] == payment_id
+
+
+@pytest.mark.asyncio
+async def test_reconcile_requires_valid_token(async_client, test_data, duitku):
+    created = await invoice(async_client, test_data)
+    assert created.status_code == 200, created.text
+    with patch.object(duitku_service, 'check_transaction_status', new=AsyncMock()) as status_check:
+        denied = await async_client.post(f"/api/v1/payments/{created.json()['data']['id']}/reconcile")
+        assert denied.status_code == 403
+        status_check.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_return_url_contains_status_token(async_client, test_data, duitku):
+    from urllib.parse import parse_qs, urlparse
+
+    created = await invoice(async_client, test_data)
+    assert created.status_code == 200, created.text
+    payment_id = created.json()['data']['id']
+    return_url = duitku.call_args.kwargs['return_url']
+    assert 't=' in return_url
+    assert parse_qs(urlparse(return_url).query)['t'] == [payment_service.status_token(payment_id)]
+
+
+@pytest.mark.asyncio
+async def test_status_response_hides_payment_url_when_not_pending(async_client, test_data, duitku, db_session):
+    created = await invoice(async_client, test_data)
+    assert created.status_code == 200, created.text
+    data = created.json()['data']
+    async with async_session() as fresh:
+        stored = await payment_repo.get_payment(fresh, data['id'])
+        stored.status = PaymentStatus.SUCCESS
+        await fresh.commit()
+    checked = await async_client.get(f"/api/v1/payments/{data['id']}/status", params={'t': data['status_token']})
+    assert checked.status_code == 200, checked.text
+    assert checked.json()['data']['payment_url'] is None
+
+
+@pytest.mark.asyncio
+async def test_timeout_does_not_release_idempotency_key(async_client, test_data, duitku, db_session):
+    import httpx
+    duitku.side_effect = httpx.ReadTimeout('Provider stalled')
     response = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
-    # Invoice tanpa tautan bayar tidak boleh dikunci ke pelanggan.
-    assert response.status_code == 503, response.text
+    assert response.status_code == 200, response.text
+    async with async_session() as fresh:
+        payment = (await payment_repo.list_payments(fresh, event_id=test_data['event'].id, limit=1))[0]
+        assert payment.idempotency_key == test_data['event'].id
+
+
+@pytest.mark.asyncio
+async def test_rejected_inquiry_fails_and_method_can_switch(async_client, test_data, duitku, db_session):
+    duitku.return_value = {'statusCode': '01'}
+    response = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    # Penolakan definitif: FAILED dan idempotency key dilepas.
+    assert response.status_code == 400, response.text
+    async with async_session() as fresh:
+        payment = (await payment_repo.list_payments(fresh, event_id=test_data['event'].id, limit=1))[0]
+        assert payment.status == PaymentStatus.FAILED
+        assert payment.idempotency_key is None
 
     duitku.return_value = {'statusCode': '00', 'reference': 'retry',
-                           'paymentUrl': 'https://passport.duitku.com/checkout/test'}
+                           'paymentUrl': 'https://passport.duitku.com/checkout/test',
+                           'qrString': 'test-qr'}
     retry = await invoice(async_client, test_data, payment_method='DA',
                           idempotency_key=test_data['event'].id)
     assert retry.status_code == 200, retry.text
     assert duitku.call_args.kwargs['payment_method'] == 'DA'
+
+
+@pytest.mark.asyncio
+async def test_malformed_success_stays_unknown_and_blocks_retry(async_client, test_data, duitku):
+    duitku.return_value = {'statusCode': '00', 'reference': 'r', 'paymentUrl': 'javascript:alert(1)'}
+    response = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    # Sukses cacat = tidak pasti: invoice PENDING tanpa tautan bayar.
+    assert response.status_code == 200, response.text
+    data = response.json()['data']
+    assert data['status'] == 'PENDING'
+    assert data['payment_url'] is None
+    assert data['inquiry_state'] == 'unknown'
+
+    duitku.return_value = {'statusCode': '00', 'reference': 'retry',
+                           'paymentUrl': 'https://passport.duitku.com/checkout/test'}
+    # Replay dengan idempotency key yang sama: invoice lama dikembalikan, tanpa order provider baru.
+    replay = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    assert replay.status_code == 200, replay.text
+    assert replay.json()['data']['id'] == data['id']
+    assert replay.json()['data']['payment_url'] is None
+    assert duitku.await_count == 1
+
+    # Retry tanpa idempotency key diblokir selama invoice belum pasti.
+    blocked = await invoice(async_client, test_data)
+    assert blocked.status_code == 400, blocked.text
+    assert duitku.await_count == 1
 
 
 @pytest.mark.asyncio
@@ -415,3 +512,139 @@ async def test_check_transaction_status_handles_errors(monkeypatch):
     with patch.object(duitku_service.httpx, 'AsyncClient', FakeClient):
         with pytest.raises(httpx.HTTPStatusError):
             await duitku_service.check_transaction_status(merchant_order_id='pay-123')
+
+
+# --- Plan 03: callback durability (webhook inbox) ---
+
+
+def _save_inbox(monkeypatch, store):
+    from app.repositories import webhook_log as webhook_log_repo
+    original = webhook_log_repo.create_log
+
+    async def wrapped(session, **kwargs):
+        log = await original(session, **kwargs)
+        store['inbox_id'] = log.id
+        return log
+
+    monkeypatch.setattr(webhook_log_repo, 'create_log', wrapped)
+
+
+@pytest.mark.asyncio
+async def test_callback_for_unknown_order_is_stored_not_404(async_client, test_data, db_session, duitku, monkeypatch):
+    import uuid
+
+    from app.models.webhook_log import WebhookLog
+
+    store = {}
+    _save_inbox(monkeypatch, store)
+    # ID unik per run: database test tidak dibersihkan antar eksekusi.
+    order_id = f'pay-unknown-{uuid.uuid4().hex[:12]}'
+    payload = callback({'id': order_id, 'amount': 15000})
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=payload)
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body['success'] is True
+    assert body['message'] == 'Callback diterima'
+
+    assert 'inbox_id' in store
+    async with async_session() as fresh:
+        log = await fresh.get(WebhookLog, store['inbox_id'])
+    assert log is not None
+    assert log.payment_id is None
+    assert log.merchant_order_id == order_id
+    assert log.provider == 'duitku'
+    assert log.status == 'unmatched'
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 0
+    assert await payment_repo.list_payments(db_session, event_id=test_data['event'].id, limit=10) == []
+
+
+@pytest.mark.asyncio
+async def test_callback_is_logged_with_provider_duitku(async_client, test_data, db_session, duitku):
+    from sqlalchemy import select
+    from app.models.webhook_log import WebhookLog
+
+    payment = (await invoice(async_client, test_data)).json()['data']
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
+    assert response.status_code == 200, response.text
+
+    async with async_session() as fresh:
+        log = (await fresh.execute(
+            select(WebhookLog).where(WebhookLog.payment_id == payment['id'])
+        )).scalars().one()
+    assert log.provider == 'duitku'
+    assert log.merchant_order_id == payment['id']
+    assert log.status == 'processed'
+
+
+@pytest.mark.asyncio
+async def test_callback_uppercase_signature_is_accepted(async_client, test_data, duitku):
+    payment = (await invoice(async_client, test_data)).json()['data']
+    payload = callback(payment)
+    assert payload['signature'] == payload['signature'].lower()
+    payload['signature'] = payload['signature'].upper()
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=payload)
+    assert response.status_code == 200, response.text
+    async with async_session() as fresh:
+        assert await vote_log_repo.get_vote_count_for_team(fresh, test_data['team'].id) == 3
+
+
+@pytest.mark.asyncio
+async def test_callback_success_after_timeout_settles_once(async_client, test_data, db_session, duitku):
+    # Callback without reference asks the service to reconcile; simulate provider
+    # without touching the degraded ``check_transaction_status`` fixture.
+    from app.services import payment_service
+    reconcile = AsyncMock()
+
+    async def fake_reconcile(session, payment_id):
+        found = await payment_repo.get_payment(session, payment_id, for_update=True)
+        found.duitku_reference = 'reconciled-reference'
+        await session.flush()
+        return payment_service.ReconcileResult(
+            found, False, payment_service.ReconcileVerdict.PRESENT
+        )
+
+    reconcile.side_effect = fake_reconcile
+    duitku.side_effect = httpx.ReadTimeout('Provider stalled')
+    await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    payment = (await payment_repo.list_payments(db_session, event_id=test_data['event'].id, limit=1))[0]
+    assert payment.duitku_payload['_inquiry_state'] == 'unknown'
+
+    payload = callback({'id': payment.id, 'amount': payment.amount}, reference='reconciled-reference')
+    with patch.object(payment_service, 'reconcile_duitku_payment', reconcile):
+        payment.duitku_reference = None
+        await db_session.flush()
+        for _ in range(2):
+            response = await async_client.post('/api/v1/payments/duitku/callback', data=payload)
+            assert response.status_code == 200, response.text
+    async with async_session() as fresh:
+        assert await vote_log_repo.get_vote_count_for_team(fresh, test_data['team'].id) == 3
+        settled = await payment_repo.get_payment(fresh, payment.id)
+    assert settled.status == PaymentStatus.SUCCESS
+
+
+@pytest.mark.asyncio
+async def test_callback_success_on_expired_payment_settles(async_client, test_data, db_session, duitku):
+    payment = (await invoice(async_client, test_data)).json()['data']
+    stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
+    stored.status = PaymentStatus.EXPIRED
+    await db_session.commit()
+
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
+    assert response.status_code == 200, response.text
+    async with async_session() as fresh:
+        assert (await payment_repo.get_payment(fresh, payment['id'])).status == PaymentStatus.SUCCESS
+        assert await vote_log_repo.get_vote_count_for_team(fresh, test_data['team'].id) == 3
+
+
+@pytest.mark.asyncio
+async def test_callback_pending_after_success_does_not_downgrade(async_client, test_data, duitku):
+    payment = (await invoice(async_client, test_data)).json()['data']
+    response = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
+    assert response.status_code == 200, response.text
+    response = await async_client.post(
+        '/api/v1/payments/duitku/callback', data=callback(payment, resultCode='01')
+    )
+    assert response.status_code == 200, response.text
+    async with async_session() as fresh:
+        assert (await payment_repo.get_payment(fresh, payment['id'])).status == PaymentStatus.SUCCESS
+        assert await vote_log_repo.get_vote_count_for_team(fresh, test_data['team'].id) == 3

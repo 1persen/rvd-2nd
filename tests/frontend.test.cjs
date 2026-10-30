@@ -20,6 +20,9 @@ function load(file, globals = {}) {
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
     EventSource: undefined, matchMedia: () => ({ matches: false }),
     document: stubDocument,
+    // Modal mengingat pesanan unresolved: hanya paymentId, token, dan idempotencyKey.
+    sessionStorage: { _d: {}, getItem(k){ return this._d[k] ?? null; },
+                      setItem(k,v){ this._d[k]=String(v); }, removeItem(k){ delete this._d[k]; } },
     // window.location.href dipakai untuk navigasi ke halaman pembayaran.
     window: { addEventListener() {}, location: { href: '', search: '' } },
     ...globals,
@@ -173,6 +176,84 @@ test('selecting a gift sets its package qty and dropping the qty releases the gi
   form.setQty(3);
   form.enforceEffectRule();
   assert.equal(form.form.effect, '');
+});
+
+// Pesanan unresolved: respons 200 PENDING tanpa tautan bayar.
+function unresolvedResponse(overrides = {}) {
+  return { ok: true, status: 200, json: async () => ({ success: true, data: {
+    id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 3, amount: 3000,
+    inquiry_state: 'unknown', needs_manual_review: false, status_token: 'tok-123', ...overrides,
+  } }) };
+}
+
+test('checkout keeps unresolved order and shows status instead of error', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
+  await form.createInvoice();
+  assert.ok(form.order);
+  assert.equal(form.order.id, 'preview-payment');
+  assert.equal(form.error, '');
+  assert.match(form.orderLabel, /sedang kami periksa/);
+});
+
+test('checkout does not reset idempotency key while unresolved', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const context = load('vote_modal.js', { fetch });
+  const form = context.voteModal();
+  form.$nextTick = (fn) => fn();
+  // Tangkap callback $watch untuk form.method, lalu picu seperti Alpine.
+  let onMethodChange = () => {};
+  form.$watch = (path, cb) => { if (path === 'form.method') onMethodChange = cb; };
+  // Template menonaktifkan tombol metode saat formLocked; helper mencerminkan itu.
+  const changeMethod = (code) => { if (!form.formLocked) form.form.method = code; };  form.init();
+  form.show({ team: { id: 'team', name: 'Tim Uji' }, event: { id: 'event', name: 'Event Uji', is_voting_open: true, price_per_vote: 1000 } });
+  Object.assign(form.form, { name: 'Preview supporter', phone: '81234567890', email: 'sandbox-test@example.com', method: 'NQ' });
+  form.form.qty = 1;
+  await form.createInvoice();
+  const key = form.idempotencyKey;
+  assert.ok(key);
+  assert.equal(form.orderUnresolved, true);
+  // Pengguna mencoba metode lain: pilihan metode dikembalikan, kunci tetap.
+  changeMethod('DA');
+  onMethodChange();
+  assert.equal(form.form.method, 'NQ');
+  assert.equal(form.idempotencyKey, key);
+});
+
+test('checkout remembers order in session storage', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const { form, context } = checkout({ fetch });
+  form.form.qty = 1;
+  await form.createInvoice();
+  const raw = context.sessionStorage.getItem(form.storageKey());
+  assert.ok(raw);
+  const saved = JSON.parse(raw);
+  assert.equal(saved.paymentId, 'preview-payment');
+  assert.equal(saved.token, 'tok-123');
+  const serialized = JSON.stringify(saved);
+  assert.equal(serialized.includes('sandbox-test@example.com'), false);
+  assert.equal(serialized.includes('81234567890'), false);
+});
+
+test('checkout offers new invoice only after absent verdict', async () => {
+  const { form } = checkout();
+  form.reconcileVerdict = '';
+  assert.equal(form.canStartNewInvoice, false);
+  form.reconcileVerdict = 'ABSENT_CONFIRMED';
+  assert.equal(form.canStartNewInvoice, true);
+});
+
+test('checkout never renders raw status', async () => {
+  const raw = ['EXPIRED', 'CANCELED', 'FAILED', 'PENDING'];
+  const { form } = checkout();
+  for (const status of raw) {
+    form.order = { id: 'x', status, inquiry_state: 'unknown', needs_manual_review: false, payment_url: null, votes: 1 };
+    for (const verdict of ['', 'PRESENT', 'INDETERMINATE', 'ABSENT_CONFIRMED']) {
+      form.reconcileVerdict = verdict;
+      for (const word of raw) assert.equal(form.orderLabel.includes(word), false, form.orderLabel);
+    }
+  }
 });
 
 test('event API failures show a retryable error instead of a false empty list', async () => {

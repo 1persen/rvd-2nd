@@ -35,26 +35,39 @@ function voteModal() {
     methods: [],
     methodsLoaded: false,
     payment: null,
+    // Sumber kebenaran panel status. `payment` hanya respons pembuatan invoice.
+    // order: { id, status, inquiry_state, needs_manual_review, payment_url, votes, token }
+    order: null,
+    isChecking: false,
+    reconcileVerdict: '',
+    pollTimer: null,
+    pollCount: 0,
     error: '',
     isLoading: false,
     isNavigating: false,
     idempotencyKey: '',
-    statusText: '',
-    statusCheckedFor: '',
     lastFocus: null,
 
     init() {
       window.addEventListener('vote:open', (e) => this.show(e.detail || {}));
       window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.open) this.close(); });
-      this.$watch('form.method', () => { this.idempotencyKey = ''; this.payment = null; });
+      // Metode tidak boleh berganti selama pesanan lama belum pasti: kunci
+      // idempotensi harus tetap agar retry tidak membuat tagihan kedua.
+      this.$watch('form.method', () => {
+        if (this.orderUnresolved) return;
+        this.idempotencyKey = '';
+        this.payment = null;
+      });
       // Setiap perubahan isi pesanan adalah invoice berbeda: kunci idempotensi
       // harus dibuat ulang agar retry tidak mengembalikan invoice lama.
       for (const field of ['qty', 'effect', 'message', 'name', 'phone']) {
-        this.$watch('form.' + field, () => { if (!this.payment) this.idempotencyKey = ''; });
+        this.$watch('form.' + field, () => {
+          if (!this.payment && !this.orderUnresolved) this.idempotencyKey = '';
+        });
       }
       this.$watch('form.qty', () => this.enforceEffectRule());
       const params = new URLSearchParams(window.location.search);
-      if (params.get('payment')) this.checkReturn(params.get('payment'));
+      if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
     },
 
     show({ event, team }) {
@@ -63,18 +76,30 @@ function voteModal() {
       this.lastFocus = document.activeElement;
       this.event = event;
       this.team = team;
-      this.error = '';
-      this.payment = null;
-      // Invoice lama bukan invoice untuk peserta ini: jangan pernah replay kuncinya.
+      this.resetCheckoutState();
+      // Pesanan lama hanya dipulihkan untuk peserta yang sama.
       if (changedTarget) this.idempotencyKey = '';
+      if (!changedTarget) this.restoreOrder();
       this.open = true;
       document.body.style.overflow = 'hidden';
       this.loadMethods();
+      if (this.order?.id) this.checkStatus();
       this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
+    },
+
+    // Reset state pesanan tanpa menyentuh penyimpanan atau order yang dipulihkan.
+    resetCheckoutState() {
+      this.stopPolling();
+      this.error = '';
+      this.isChecking = false;
+      this.reconcileVerdict = '';
+      this.order = null;
+      this.payment = null;
     },
 
     close() {
       if (this.isLoading) return;
+      this.stopPolling();
       this.open = false;
       document.body.style.overflow = '';
       if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus();
@@ -151,7 +176,7 @@ function voteModal() {
 
     submit() {
       // Invoice yang sudah punya tautan bayar tidak boleh diganti diam-diam.
-      if (this.isLoading || this.payment?.payment_url) return;
+      if (this.isLoading || this.payment?.payment_url || this.formLocked) return;
       this.error = this.validate();
       if (this.error) return;
       this.createInvoice();
@@ -176,17 +201,20 @@ function voteModal() {
           }),
         });
         const body = await res.json();
-        if (!res.ok || !body.success) throw new Error(body.message || 'Pembayaran belum dapat dibuat. Silakan coba lagi.');
+        if (!res.ok || !body.success) {
+          // Guard backend menolak tagihan kedua: pesanan lama tetap dipegang.
+          throw new Error(body.message || 'Pembayaran belum dapat dibuat. Silakan coba lagi.');
+        }
         this.payment = body.data;
-        if (this.payment.status === 'SUCCESS') {
-          this.statusText = 'Pembayaran sudah berhasil. Terima kasih atas dukunganmu.';
+        if (body.data.status === 'SUCCESS') {
+          // Pesanan selesai: tidak ada tautan bayar yang perlu dibuka.
+          this.adoptOrder(body.data);
+          this.stopPolling();
           return;
         }
-        if (this.payment.status === 'PENDING' && !this.payment.payment_url) {
-          // Tidak ada tautan bayar: jangan kunci pelanggan pada invoice ini.
-          this.payment = null;
-          this.idempotencyKey = '';
-          this.error = 'Pembayaran gagal dibuat. Coba lagi atau pilih metode lain: QRIS, ShopeePay, atau DANA.';
+        if (body.data.status === 'PENDING' && !body.data.payment_url) {
+          // Hasil inquiry tidak pasti: pertahankan pesanan dan tunjukkan status.
+          this.adoptOrder(body.data);
           return;
         }
         // Satu klik: invoice berhasil dibuat langsung diarahkan ke halaman Duitku.
@@ -199,28 +227,226 @@ function voteModal() {
     },
 
     goToPayment() {
-      if (this.isNavigating || !this.payment?.payment_url) return;
+      const url = this.order?.payment_url || this.payment?.payment_url;
+      if (this.isNavigating || !url) return;
       this.isNavigating = true;
-      window.location.href = this.payment.payment_url;
+      window.location.href = url;
     },
 
-    // Kembali dari Duitku: tampilkan status dari backend. Tidak memicu animasi.
-    async checkReturn(paymentId) {
-      if (this.statusCheckedFor === paymentId) return;
-      this.statusCheckedFor = paymentId;
+    // Panel status membaca order, bukan payment.    orderFrom(data) {
+      if (!data || !data.id) return null;
+      return {
+        id: data.id,
+        status: data.status,
+        inquiry_state: data.inquiry_state || null,
+        needs_manual_review: Boolean(data.needs_manual_review),
+        payment_url: data.payment_url || null,
+        votes: Number(data.votes || 0),
+        status_token: data.status_token || (this.order?.id === data.id ? this.order.status_token : ''),
+      };
+    },
+
+    get orderUnresolved() {
+      return Boolean(this.order && this.order.status === 'PENDING');
+    },
+
+    // Selama pesanan unresolved, form dan metode pembayaran dikunci.
+    get formLocked() {
+      return this.orderUnresolved;
+    },
+
+    get canStartNewInvoice() {
+      return this.reconcileVerdict === 'ABSENT_CONFIRMED';
+    },
+
+    // Pesanan baru dipakai hanya bila tidak ada pesanan unresolved yang dipegang.
+    adoptOrder(data) {
+      if (this.orderUnresolved && this.order.id !== data?.id) return;
+      const order = this.orderFrom(data);
+      if (!order) return;
+      this.order = order;
+      this.reconcileVerdict = '';
+      this.rememberOrder();
+      if (order.status === 'PENDING') this.startPolling();
+    },
+
+    storageKey() { return 'rvd.checkout.' + this.event.id + '.' + this.team.id; },
+
+    rememberOrder() {
+      if (!this.order?.id || !this.order?.status_token) return;
       try {
-        const res = await fetch('/api/v1/payments/' + encodeURIComponent(paymentId) + '/status');
+        sessionStorage.setItem(this.storageKey(), JSON.stringify({
+          paymentId: this.order.id,
+          token: this.order.status_token,
+          idempotencyKey: this.idempotencyKey,
+          savedAt: Date.now(),
+        }));
+      } catch (_) {}
+    },
+
+    // Hanya paymentId, token, idempotencyKey, dan stempel waktu. Tidak ada kontak.
+    restoreOrder() {
+      let saved = null;
+      try {
+        saved = JSON.parse(sessionStorage.getItem(this.storageKey()) || 'null');
+      } catch (_) {
+        saved = null;
+      }
+      if (!saved || !saved.paymentId || !saved.token) return;
+      if (!saved.savedAt || Date.now() - Number(saved.savedAt) > 24 * 60 * 60 * 1000) {
+        this.forgetOrder();
+        return;
+      }
+      this.order = {
+        id: saved.paymentId,
+        token: saved.token,
+        status_token: saved.token,
+        status: 'PENDING',
+        inquiry_state: null,
+        needs_manual_review: false,
+        payment_url: null,
+        votes: 0,
+      };
+      if (saved.idempotencyKey) this.idempotencyKey = saved.idempotencyKey;
+      this.reconcileVerdict = '';
+    },
+
+    forgetOrder() { try { sessionStorage.removeItem(this.storageKey()); } catch (_) {} },
+
+    // Baca status lokal dari backend. Tidak pernah memanggil Duitku langsung.
+    async checkStatus() {
+      const order = this.order;
+      if (!order?.id || !(order.status_token || order.token)) return;
+      const token = order.status_token || order.token;
+      try {
+        const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
+          + '/status?t=' + encodeURIComponent(token));
+        if (res.status === 403) {
+          this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
+          this.order = null;
+          this.stopPolling();
+          this.forgetOrder();
+          return;
+        }
         const body = await res.json();
         if (!res.ok || !body.success) return;
-        const status = body.data.status;
-        this.statusText = status === 'SUCCESS'
-          ? 'Pembayaran berhasil. Dukunganmu sudah tercatat.'
-          : status === 'PENDING'
-            ? 'Pembayaran sedang menunggu konfirmasi. Muat ulang halaman ini setelah pembayaran selesai untuk melihat status terbaru.'
-            : 'Pembayaran belum berhasil (' + status + ').';
+        this.hydrateForm(body.data);
+        this.order = this.orderFrom(body.data);
+        this.error = '';
+        if (this.order.status === 'SUCCESS') {
+          this.stopPolling();
+          return;
+        }
+        if (this.order.status !== 'PENDING') this.stopPolling();
       } catch (_) {
-        this.statusText = 'Status pembayaran belum dapat dimuat. Coba muat ulang halaman.';
+        // Gangguan jaringan bukan perubahan status: order dipertahankan.
       }
+    },
+
+    // Isi ulang form dari backend; telepon dikembalikan tanpa awalan +62.
+    hydrateForm(data) {
+      if (!data) return;
+      if (!this.form.name && data.supporter_name) this.form.name = data.supporter_name;
+      if (!this.form.email && data.supporter_email) this.form.email = data.supporter_email;
+      if (!this.form.message && data.support_message) this.form.message = data.support_message;
+      const phone = String(data.supporter_phone || '').replace(/^\+?62/, '').replace(/^0+/, '');
+      if (!this.form.phone && phone) this.form.phone = phone;
+    },
+
+    // Polling lokal 8 detik: hanya GET /status, berhenti setelah ~10 menit.
+    startPolling() {
+      this.stopPolling();
+      if (typeof setInterval !== 'function') return;
+      this.pollCount = 0;
+      this.pollTimer = setInterval(() => {
+        this.pollCount += 1;
+        if (this.pollCount > 75) { this.stopPolling(); return; }
+        if (!this.open || !this.order || this.order.status !== 'PENDING') { this.stopPolling(); return; }
+        this.checkStatus();
+      }, 8000);
+    },
+
+    stopPolling() { clearInterval(this.pollTimer); this.pollTimer = null; },
+
+    // Aksi eksplisit: satu cek ke provider lewat backend (bukan dari browser).
+    async reconcileOrder() {
+      if (this.isChecking || !this.order?.id) return;
+      const order = this.order;
+      const token = order.status_token || order.token;
+      this.isChecking = true;
+      try {
+        const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
+          + '/reconcile?t=' + encodeURIComponent(token), { method: 'POST' });
+        if (res.status === 403) {
+          this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
+          return;
+        }
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok || !body.success) {
+          // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
+          this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+          return;
+        }
+        this.hydrateForm(body.data);
+        this.order = this.orderFrom(body.data);
+        this.reconcileVerdict = body.data.reconcile_verdict || '';
+        this.error = '';
+        if (this.order.status === 'SUCCESS') this.stopPolling();
+      } catch (_) {
+        this.error = 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+      } finally {
+        this.isChecking = false;
+      }
+    },
+
+    startNewInvoice() {
+      this.stopPolling();
+      this.order = null;
+      this.payment = null;
+      this.reconcileVerdict = '';
+      this.forgetOrder();
+      this.idempotencyKey = '';
+      this.error = '';
+      this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
+    },
+
+    // Kembali dari Duitku: token dari tautan kembali (return_url) diperiksa backend.
+    // Tanpa token, backend menolak dan pelanggan melihat pesan tautan tidak valid.
+    async checkReturn(paymentId, token) {
+      if (this.order?.id !== paymentId) {
+        this.order = {
+          id: paymentId,
+          token: token || '',
+          status_token: token || '',
+          status: 'PENDING',
+          inquiry_state: null,
+          needs_manual_review: false,
+          payment_url: null,
+          votes: 0,
+        };
+      }
+      // Token dari tautan kembali dipakai untuk polling; idempotencyKey lama tetap.
+      const storedToken = this.order.status_token || this.order.token;
+      this.order.status_token = token || storedToken;
+      this.order.token = token || storedToken;
+      if (token) this.rememberOrder();
+      await this.checkStatus();
+      if (this.order?.status === 'PENDING') this.startPolling();
+    },
+
+    get orderLabel() {
+      const o = this.order;
+      if (!o) return '';
+      if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
+      if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
+      if (o.needs_manual_review) return 'Pesanan sedang kami periksa.';
+      return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
+    },
+
+    get helpUrl() {
+      const id = this.order?.id || '';
+      const text = 'Halo, saya butuh bantuan untuk pesanan ' + id;
+      return 'https://wa.me/6285602623817?text=' + encodeURIComponent(text);
     },
   };
 }

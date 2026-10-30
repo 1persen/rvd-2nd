@@ -1,0 +1,11 @@
+[Unit]
+Description=RVD Duitku reconciliation pass
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/rvd/current
+EnvironmentFile=/etc/rvd/production.env
+ExecStart=/srv/rvd/venv/bin/python scripts/reconcile_duitku.py --limit 50 --apply
+User=rvd
+Group=rvd

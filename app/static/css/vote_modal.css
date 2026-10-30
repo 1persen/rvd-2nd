@@ -272,6 +272,80 @@
 .vote-modal-pay { margin-top: 14px; }
 .vote-modal-pay p { font-size: 13px; line-height: 1.6; color: var(--muted, #666a70); }
 
+/* Panel status pesanan (placeholder pembayaran, pengganti blok pay lama). */
+.vote-order {
+  flex: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #e4e6df);
+  border-radius: 6px;
+  background: #f3efe3;
+}
+
+.vote-order-kicker {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted, #666a70);
+}
+
+.vote-order-title {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink, #172b32);
+}
+
+.vote-order-meta {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.vote-order-meta div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vote-order-meta dt {
+  color: var(--muted, #666a70);
+}
+
+.vote-order-meta dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--ink, #172b32);
+}
+
+.vote-order-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted, #666a70);
+}
+
+.vote-order-actions {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.vote-order-actions .btn {
+  text-decoration: none;
+}
+
 /* Ticker dan efek dukungan */
 /* Mobile: ticker menempel tepat di bawah navbar. */
 .support-stage {

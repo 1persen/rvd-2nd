@@ -10,15 +10,17 @@ import logging
 from typing import Optional
 from urllib.parse import parse_qsl
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
+from app.enums.payment_gateway import PaymentGateway
 from app.enums.payment_status import PaymentStatus
 from app.repositories import payment as payment_repo
 from app.repositories import team as team_repo
+from app.repositories import webhook_log as webhook_log_repo
 from app.schemas.common import ok
 from app.schemas.payment import PaymentCreate, PaymentSimulateRequest
 from app.services import leaderboard_service, payment_service, duitku_service
@@ -67,8 +69,12 @@ async def list_payment_methods():
 @router.get("/payments/{payment_id}/status")
 async def payment_status(
     payment_id: str,
+    t: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ):
+    # Token diperiksa SEBELUM membaca invoice: tidak ada bypass header/IP/Referer.
+    if not payment_service.verify_status_token(payment_id, t):
+        raise HTTPException(status_code=403, detail="Tautan status tidak valid")
     payment = await payment_repo.get_payment(session, payment_id)
     if not payment:
         raise HTTPException(status_code=404, detail="Invoice tidak ditemukan")
@@ -77,7 +83,8 @@ async def payment_status(
     if payment.status == PaymentStatus.PENDING and payment.expires_at:
         from datetime import datetime, timezone
 
-        if datetime.now(timezone.utc) > payment.expires_at:
+        if (payment.payment_gateway == PaymentGateway.MIDTRANS
+                and datetime.now(timezone.utc) > payment.expires_at):
             await payment_repo.expire_if_pending(session, payment.id)
             await session.commit()
             await session.refresh(payment)
@@ -88,18 +95,27 @@ async def payment_status(
 
 
 @router.post("/payments/{payment_id}/reconcile")
-async def reconcile_payment(payment_id: str, session: AsyncSession = Depends(get_db)):
-    """Explicit recovery, separately throttled per invoice across workers."""
+async def reconcile_payment(
+    payment_id: str,
+    t: str | None = Query(default=None),
+    session: AsyncSession = Depends(get_db),
+):
+    """Explicit recovery; parallel checks are serialised by a per-invoice lease."""
+    # Token diperiksa sebelum lease, provider, atau status apa pun disentuh.
+    if not payment_service.verify_status_token(payment_id, t):
+        raise HTTPException(status_code=403, detail="Tautan status tidak valid")
     try:
-        payment, voted_now = await payment_service.reconcile_duitku_payment(session, payment_id)
+        result = await payment_service.reconcile_duitku_payment(session, payment_id)
     except payment_service.PaymentNotFound as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except payment_service.PaymentUnavailable as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except payment_service.PaymentError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    payment, voted_now = result.payment, result.voted_now
     team = await team_repo.get_team(session, payment.team_id)
     data = payment_service.to_payment_out(payment, team).model_dump()
+    data["reconcile_verdict"] = result.verdict.value
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
@@ -190,14 +206,37 @@ async def duitku_callback(request: Request, session: AsyncSession = Depends(get_
         raise HTTPException(status_code=400, detail="Invalid callback payload")
     if not duitku_service.valid_callback(payload):
         raise HTTPException(status_code=403, detail="Signature tidak valid")
+    # Inbox: simpan callback valid SEBELUM pencocokan (payload tidak di-log).
+    log = await webhook_log_repo.create_log(
+        session,
+        provider="duitku",
+        payment_id=None,
+        merchant_order_id=payload["merchantOrderId"],
+        payload=payload,
+        signature=payload["signature"],
+        is_valid=True,
+    )
+    # Commit terpisah: inbox harus durable walau pemrosesan berikutnya gagal.
+    inbox_id = log.id
+    await session.commit()
     try:
-        payment, voted_now = await payment_service.process_duitku_callback(session, payload)
-    except payment_service.PaymentNotFound as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        payment, voted_now = await payment_service.process_duitku_callback(
+            session, payload, inbox_id=inbox_id
+        )
+    except payment_service.PaymentNotFound:
+        await webhook_log_repo.mark_processed(session, inbox_id, "unmatched")
+        await session.commit()
+        return ok({"message": "Callback diterima"}, "Callback diterima")
     except payment_service.PaymentUnavailable as exc:
+        await webhook_log_repo.mark_processed(session, inbox_id, "deferred")
+        await session.commit()
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except payment_service.PaymentError as exc:
+        await session.rollback()
+        await webhook_log_repo.mark_processed(session, inbox_id, "rejected")
+        await session.commit()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    await webhook_log_repo.mark_processed(session, inbox_id, "processed")
     await session.commit()
     if voted_now:
         await leaderboard_service.schedule_push(payment.event_id)
