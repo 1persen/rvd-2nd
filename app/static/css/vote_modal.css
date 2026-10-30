@@ -258,11 +258,18 @@
 .vote-modal-pay p { font-size: 13px; line-height: 1.6; color: var(--muted, #666a70); }
 
 /* Ticker dan efek dukungan */
-/* Ticker menempel tepat di bawah navbar saat halaman di-scroll. */
+/* Ticker menempel tepat di bawah navbar, di kedua mode. */
 .support-stage {
   position: sticky;
-  top: var(--event-header-height, 80px);
+  /* Tinggi navbar event: 65px di mobile, 81px di desktop. */
+  top: var(--event-header-height, 65px);
   z-index: 45;
+  /* Desktop: jangan tertutup bottom nav bila halaman pendek. */
+  margin-bottom: 10px;
+}
+
+@media (min-width: 701px) {
+  .support-stage { top: var(--event-header-height, 81px); }
 }
 
 .support-ticker {
@@ -491,15 +498,8 @@
   .vote-gift-icon { width: 42px; height: 42px; }
   .vote-gift-icon svg { width: 30px; height: 30px; }
   .vote-modal-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
-  /* Mobile: ticker menempel tetap di atas navbar agar tidak menutupinya. */
-  .support-stage {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 70;
-  }
-  .support-ticker { border-top: 0; box-shadow: 0 2px 8px rgba(18, 28, 32, .08); }
+  /* Mobile: sama seperti desktop, menempel di bawah navbar (bukan menutupinya). */
+  .support-stage { top: var(--event-header-height, 65px); margin-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
