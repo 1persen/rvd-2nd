@@ -18,10 +18,11 @@
     <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
     <div class="notice" role="status" x-show="statusText" x-cloak x-text="statusText"></div>
 
+    {# Cadangan: hanya tampil jika browser gagal membuka halaman Duitku otomatis. #}
     <template x-if="payment && payment.status === 'PENDING' && payment.payment_url">
       <div class="vote-modal-pay">
-        <p>Invoice dibuat. Lanjutkan ke pembayaran. Suara dihitung setelah pembayaran berhasil.</p>
-        <button type="button" class="btn btn-secondary vote-modal-full" @click="goToPayment()" :disabled="isNavigating">Lanjutkan pembayaran</button>
+        <p>Invoice sudah dibuat. Suara dihitung setelah pembayaran berhasil.</p>
+        <button type="button" class="btn btn-secondary vote-modal-full" @click="goToPayment()" :disabled="isNavigating">Buka halaman pembayaran</button>
       </div>
     </template>
 

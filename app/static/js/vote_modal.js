@@ -187,7 +187,10 @@ function voteModal() {
           this.payment = null;
           this.idempotencyKey = '';
           this.error = 'Pembayaran gagal dibuat. Coba lagi atau pilih metode lain: QRIS, ShopeePay, atau DANA.';
+          return;
         }
+        // Satu klik: invoice berhasil dibuat langsung diarahkan ke halaman Duitku.
+        this.goToPayment();
       } catch (err) {
         this.error = err.message || 'Tidak dapat menghubungi layanan pembayaran.';
       } finally {
