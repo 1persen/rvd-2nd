@@ -101,11 +101,15 @@
 
       <label class="vote-field">
         <span>Metode pembayaran <em>*</em></span>
-        <select x-model="form.method" x-show="methods.length" x-cloak required>
-          <template x-for="m in methods" :key="m.code"><option :value="m.code" x-text="m.name"></option></template>
-        </select>
+        <div class="vote-methods" role="radiogroup" aria-label="Metode pembayaran">
+          <template x-for="m in methods" :key="m.code">
+            <button type="button" role="radio" :aria-checked="form.method === m.code"
+              :class="{ 'is-active': form.method === m.code }" @click="form.method = m.code"
+              x-text="m.name"></button>
+          </template>
+        </div>
         <small class="vote-hint" x-show="methodsLoaded && !methods.length" x-cloak>Metode pembayaran belum tersedia. Hubungi panitia.</small>
-        <small class="vote-hint" x-show="methods.length" x-cloak>Pilih QRIS, ShopeePay, atau DANA. Pembayaran diselesaikan di halaman Duitku.</small>
+        <small class="vote-hint" x-show="methods.length" x-cloak>Pilih salah satu. Jika satu metode gagal, kamu bisa langsung beralih ke metode lain.</small>
       </label>
 
       </div>
@@ -117,8 +121,11 @@
           <strong x-text="'Rp ' + total.toLocaleString('id-ID')"></strong>
         </div>
         <p class="vote-hint">Harga per suara: Rp <span x-text="pricePerVote.toLocaleString('id-ID')"></span>. Total dihitung ulang oleh server.</p>
-        <button type="submit" class="btn btn-primary vote-modal-full" :disabled="isLoading || !votingOpen || !event?.payments_configured || payment?.status === 'PENDING'" :aria-busy="isLoading">
-          <span x-show="!isLoading">Lanjutkan pembayaran · <span x-text="form.qty"></span> suara</span>
+        {# Tombol ini hanya untuk membuat invoice; setelah tautan bayar ada,
+           tombol di blok pembayaran di atas yang dipakai (tidak dobel). #}
+        <button type="submit" class="btn btn-primary vote-modal-full" x-show="!payment?.payment_url"
+          :disabled="isLoading || !votingOpen || !event?.payments_configured" :aria-busy="isLoading">
+          <span x-show="!isLoading"><span x-text="payment ? 'Coba lagi' : 'Lanjutkan pembayaran'"></span> · <span x-text="form.qty"></span> suara</span>
           <span x-show="isLoading" x-cloak>Membuat invoice…</span>
         </button>
         <p class="notice" x-show="!votingOpen" x-cloak>Event ini sedang tidak menerima suara.</p>

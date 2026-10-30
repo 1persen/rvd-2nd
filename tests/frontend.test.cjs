@@ -109,13 +109,16 @@ test('pending invoice with payment URL is stored for direct navigation', async (
   assert.equal(form.isLoading, false);
 });
 
-test('pending invoice without payment URL shows error and does not navigate', async () => {
+test('invoice without payment URL is released so the user can retry', async () => {
   const { fetch } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 1, amount: 1000 } }) }));
   const { form } = checkout({ fetch });
   form.form.qty = 1;
+  form.idempotencyKey = 'key-1';
   await form.createInvoice();
-  assert.equal(form.payment.id, 'preview-payment');
-  assert.match(form.error, /Tautan pembayaran belum tersedia/);
+  // Tidak ada tautan bayar: invoice dilepas, bukan dikunci ke pelanggan.
+  assert.equal(form.payment, null);
+  assert.equal(form.idempotencyKey, '');
+  assert.match(form.error, /metode lain/);
   assert.equal(form.isNavigating, false);
 });
 

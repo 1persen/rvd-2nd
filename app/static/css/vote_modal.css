@@ -150,6 +150,21 @@
 .vote-row .vote-field input { height: 42px; box-sizing: border-box; }
 .vote-row small { display: block; margin-top: 2px; }
 
+.vote-methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vote-methods button {
+  padding: 11px 8px;
+  border: 1px solid #d9d3c2;
+  border-radius: 6px;
+  background: #fdfbf5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.vote-methods button.is-active { border-color: #a58852; background: #f0e3c4; }
+.vote-methods button:focus-visible { outline: 2px solid #a58852; outline-offset: 2px; }
+
 .vote-qty { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; }
 .vote-qty input { text-align: center; font-weight: 700; }
 .vote-qty .btn { padding: 10px 0; }

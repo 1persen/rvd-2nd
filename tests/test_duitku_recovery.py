@@ -26,6 +26,16 @@ def provider(monkeypatch):
     return inquiry, status
 
 
+@pytest.fixture
+def provider_ok(provider):
+    """Inquiry berhasil: dipakai tes yang butuh invoice dengan tautan bayar."""
+    inquiry, status = provider
+    inquiry.side_effect = None
+    inquiry.return_value = {'statusCode': '00', 'reference': 'test-reference',
+                            'paymentUrl': 'https://sandbox.duitku.com/checkout/test'}
+    return inquiry, status
+
+
 def body(data):
     return {'event_id': data['event'].id, 'team_id': data['team'].id, 'qty': 3,
             'supporter_name': 'Recovery Test', 'supporter_phone': '081000000002',
@@ -49,44 +59,26 @@ def callback(payment):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('code,expected,votes', [('01', 'PENDING', 0), ('00', 'SUCCESS', 3), ('02', 'CANCELED', 0)])
-async def test_official_status_without_payment_url_recovers_invoice(async_client, test_data, db_session, provider, code, expected, votes):
-    inquiry, status = provider
-    status.side_effect = status_response(code)
+async def test_failed_inquiry_is_rejected_and_does_not_block_new_payment(async_client, test_data, provider):
+    """Tanpa tautan bayar, invoice dibatalkan agar pelanggan bisa beralih metode."""
+    inquiry, _ = provider
     response = await async_client.post('/api/v1/payments', json=body(test_data))
-    assert response.status_code == 200, response.text
-    payment = response.json()['data']
-    assert payment['status'] == expected
-    assert payment['is_sandbox']
-    assert payment['payment_url'] is None  # Never fabricate a checkout URL.
+    assert response.status_code == 503, response.text
+
+    inquiry.side_effect = None
+    inquiry.return_value = {'statusCode': '00', 'reference': 'test-reference',
+                            'paymentUrl': 'https://sandbox.duitku.com/checkout/test'}
     retry = await async_client.post('/api/v1/payments', json=body(test_data))
-    assert retry.json()['data']['id'] == payment['id']
-    assert inquiry.await_count == 1
-    assert await payment_repo.get_payment(db_session, payment['id']) is not None
-    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == votes
-    if code in ('00', '01'):
-        for _ in range(2):
-            delivered = await async_client.post('/api/v1/payments/duitku/callback', data=callback(payment))
-            assert delivered.status_code == 200, delivered.text
-        assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3
+    assert retry.status_code == 200, retry.text
+    assert retry.json()['data']['payment_url'] == 'https://sandbox.duitku.com/checkout/test'
 
 
 @pytest.mark.asyncio
-async def test_unknown_result_remains_durable_and_manual_checks_are_throttled(async_client, test_data, db_session, provider):
-    inquiry, status = provider
-    status.side_effect = httpx.ReadTimeout('Status unavailable too')
+async def test_official_status_is_reconciled_on_confirmed_invoice(async_client, test_data, db_session, provider_ok):
+    inquiry, status = provider_ok
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     assert payment['status'] == 'PENDING'
-    assert payment['message']
-    assert payment['is_sandbox']
-    # Ordinary browser polling must never poll Duitku.
-    for _ in range(3):
-        assert (await async_client.get(f"/api/v1/payments/{payment['id']}/status")).status_code == 200
-        assert (await async_client.post(f"/api/v1/payments/{payment['id']}/reconcile")).status_code == 200
-    assert status.await_count == 1
-    saved = await payment_repo.get_payment(db_session, payment['id'])
-    saved.duitku_payload = {**saved.duitku_payload, '_status_checked_at': 0}
-    await db_session.commit()
+    assert payment['payment_url']
     status.side_effect = status_response('00')
     response = await async_client.post(f"/api/v1/payments/{payment['id']}/reconcile")
     assert response.json()['data']['status'] == 'SUCCESS'
@@ -95,8 +87,8 @@ async def test_unknown_result_remains_durable_and_manual_checks_are_throttled(as
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('overrides', [{'amount': '1'}, {'merchantOrderId': 'other-order'}, {'reference': ''}, {'statusCode': 'bogus'}])
-async def test_untrusted_status_cannot_credit_votes(async_client, test_data, db_session, provider, overrides):
-    _, status = provider
+async def test_untrusted_status_cannot_credit_votes(async_client, test_data, db_session, provider_ok, overrides):
+    _, status = provider_ok
     status.side_effect = status_response('00', **overrides)
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     assert payment['status'] == 'PENDING'
@@ -125,8 +117,8 @@ async def test_callback_can_arrive_before_inquiry_returns(async_client, test_dat
 
 
 @pytest.mark.asyncio
-async def test_parallel_retries_issue_only_one_provider_order(async_client, test_data, provider):
-    inquiry, status = provider
+async def test_parallel_retries_issue_only_one_provider_order(async_client, test_data, provider_ok):
+    inquiry, status = provider_ok
     status.side_effect = status_response('01')
     replies = await asyncio.gather(*(async_client.post('/api/v1/payments', json=body(test_data)) for _ in range(4)))
     assert all(r.status_code == 200 for r in replies), [r.text for r in replies]
@@ -165,8 +157,8 @@ async def test_status_reference_mismatch_cannot_credit_votes(async_client, test_
 
 
 @pytest.mark.asyncio
-async def test_reconciliation_cannot_use_credentials_from_another_environment(async_client, test_data, provider, monkeypatch):
-    _, status = provider
+async def test_reconciliation_cannot_use_credentials_from_another_environment(async_client, test_data, provider_ok, monkeypatch):
+    _, status = provider_ok
     status.side_effect = status_response('01')
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     status.reset_mock()

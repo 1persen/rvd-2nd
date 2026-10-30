@@ -213,11 +213,19 @@ async def create_payment(
         session, event.id, payload.supporter_phone
     )
     if existing:
-        raise PaymentError(
-            "Anda masih memiliki invoice pembayaran yang belum selesai "
-            "untuk event ini. Silakan selesaikan pembayaran atau tunggu "
-            "invoice tersebut kedaluwarsa."
-        )
+        # Invoice lama tanpa tautan bayar tidak bisa dibayar, jadi tidak boleh
+        # memblokir percobaan baru (mis. setelah metode sebelumnya error).
+        existing_url = (existing.duitku_payload or {}).get("paymentUrl")
+        if existing.payment_gateway == PaymentGateway.MIDTRANS or not duitku_service.valid_payment_url(existing_url):
+            existing.status = PaymentStatus.CANCELED
+            existing.idempotency_key = None
+            await session.flush()
+        else:
+            raise PaymentError(
+                "Anda masih memiliki invoice pembayaran yang belum selesai "
+                "untuk event ini. Selesaikan pembayaran tersebut, atau tunggu "
+                "invoice itu kedaluwarsa."
+            )
 
     payment = Payment(
         id=new_id("pay"),
@@ -289,21 +297,30 @@ async def create_payment(
             if (not isinstance(result, dict) or result.get("statusCode") != "00"
                     or not result.get("reference")
                     or not duitku_service.valid_payment_url(result.get("paymentUrl"))):
-                raise ValueError("Invalid Duitku inquiry response")
+                reason = ""
+                if isinstance(result, dict):
+                    reason = str(result.get("statusMessage") or result.get("Message") or "").strip()
+                error = ValueError("Invalid Duitku inquiry response")
+                error.duitku_reason = reason
+                raise error
         except (httpx.HTTPError, ValueError) as exc:
-            logger.warning("Duitku inquiry unresolved for payment %s (method=%s, error=%s)",
-                           payment.id, payment.duitku_payment_method, type(exc).__name__)
+            # Tanpa tautan bayar, invoice ini tidak bisa dipakai. Batalkan dan
+            # bebaskan idempotency key supaya pelanggan bisa langsung mencoba
+            # lagi atau beralih ke metode lain.
+            logger.warning("Duitku inquiry failed for payment %s (method=%s, error=%s, reason=%s)",
+                           payment.id, payment.duitku_payment_method, type(exc).__name__,
+                           getattr(exc, "duitku_reason", ""))
             payment = await payment_repo.get_payment(session, payment.id, for_update=True)
-            payment.duitku_payload = {**(payment.duitku_payload or {}), '_inquiry_state': 'unknown'}
+            payment.status = PaymentStatus.CANCELED
+            payment.idempotency_key = None
+            payment.duitku_payload = {**(payment.duitku_payload or {}), '_inquiry_state': 'failed'}
             await session.commit()
-            payment_id = payment.id
-            try:
-                payment, _ = await reconcile_duitku_payment(session, payment_id)
-            except PaymentError:
-                # Keep the durable order even when status is temporarily unknown.
-                await session.rollback()
-                payment = await payment_repo.get_payment(session, payment_id)
-            return payment
+            reason = getattr(exc, "duitku_reason", "")
+            detail = f" ({reason})" if reason else ""
+            raise PaymentUnavailable(
+                "Pembayaran gagal dibuat" + detail + ". Silakan coba lagi atau "
+                "pilih metode lain: QRIS, ShopeePay, atau DANA."
+            ) from exc
         payment = await payment_repo.get_payment(session, payment.id, for_update=True)
         if payment.duitku_reference and payment.duitku_reference != result['reference']:
             raise PaymentError("Referensi pembayaran tidak sesuai")

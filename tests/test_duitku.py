@@ -44,14 +44,20 @@ async def test_duitku_requires_valid_email_before_contacting_gateway(async_clien
 
 
 @pytest.mark.asyncio
-async def test_gateway_timeout_returns_saved_order_with_actionable_message(async_client, test_data, duitku):
+async def test_gateway_timeout_rejects_invoice_and_allows_retry(async_client, test_data, duitku):
     import httpx
     duitku.side_effect = httpx.ReadTimeout('Provider stalled')
     response = await invoice(async_client, test_data)
-    assert response.status_code == 200
-    assert response.json()['data']['status'] == 'PENDING'
-    assert 'Duitku' in response.json()['data']['message']
-    assert 'disimpan' in response.json()['data']['message']
+    # Tanpa tautan bayar, invoice tidak disimpan dan pelanggan boleh mencoba lagi.
+    assert response.status_code == 503, response.text
+    assert 'metode lain' in response.json()['message']
+
+    duitku.side_effect = None
+    duitku.return_value = {'statusCode': '00', 'reference': 'retry',
+                           'paymentUrl': 'https://passport.duitku.com/checkout/test'}
+    retry = await invoice(async_client, test_data, payment_method='SA')
+    assert retry.status_code == 200, retry.text
+    assert retry.json()['data']['payment_url'] == 'https://passport.duitku.com/checkout/test'
 
 
 def callback(payment, **overrides):
@@ -101,17 +107,18 @@ async def test_method_list_is_static_without_provider_call(async_client, test_da
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('bad', [{'statusCode': '01'}, {'statusCode': '00', 'reference': 'r', 'paymentUrl': 'javascript:alert(1)'}])
-async def test_unusable_inquiry_retains_order_for_safe_retry(async_client, test_data, duitku, bad):
+async def test_unusable_inquiry_is_rejected_and_method_can_switch(async_client, test_data, duitku, bad):
     duitku.return_value = bad
     response = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
-    assert response.status_code == 200
-    assert response.json()['data']['payment_url'] is None
-    # A malformed response must not cause another provider order on retry.
-    duitku.return_value = {'statusCode': '00', 'reference': 'retry', 'paymentUrl': 'https://passport.duitku.com/checkout/test'}
-    retry = await invoice(async_client, test_data, idempotency_key=test_data['event'].id)
+    # Invoice tanpa tautan bayar tidak boleh dikunci ke pelanggan.
+    assert response.status_code == 503, response.text
+
+    duitku.return_value = {'statusCode': '00', 'reference': 'retry',
+                           'paymentUrl': 'https://passport.duitku.com/checkout/test'}
+    retry = await invoice(async_client, test_data, payment_method='DA',
+                          idempotency_key=test_data['event'].id)
     assert retry.status_code == 200, retry.text
-    assert retry.json()['data']['id'] == response.json()['data']['id']
-    assert duitku.await_count == 1
+    assert duitku.call_args.kwargs['payment_method'] == 'DA'
 
 
 @pytest.mark.asyncio

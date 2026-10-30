@@ -150,7 +150,8 @@ function voteModal() {
     },
 
     submit() {
-      if (this.isLoading || this.payment?.status === 'PENDING') return;
+      // Invoice yang sudah punya tautan bayar tidak boleh diganti diam-diam.
+      if (this.isLoading || this.payment?.payment_url) return;
       this.error = this.validate();
       if (this.error) return;
       this.createInvoice();
@@ -182,7 +183,10 @@ function voteModal() {
           return;
         }
         if (this.payment.status === 'PENDING' && !this.payment.payment_url) {
-          this.error = 'Tautan pembayaran belum tersedia. Invoice ini sudah disimpan; coba lagi setelah satu menit. Jangan membuat pembayaran baru.';
+          // Tidak ada tautan bayar: jangan kunci pelanggan pada invoice ini.
+          this.payment = null;
+          this.idempotencyKey = '';
+          this.error = 'Pembayaran gagal dibuat. Coba lagi atau pilih metode lain: QRIS, ShopeePay, atau DANA.';
         }
       } catch (err) {
         this.error = err.message || 'Tidak dapat menghubungi layanan pembayaran.';
