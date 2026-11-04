@@ -82,7 +82,7 @@ const zlib = require('node:zlib');
       await layout(`podium ${width}`);
       await capture('leaderboard', width);
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-      await page.getByLabel('Nama lengkap').waitFor({ state: 'visible' });
+      await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
       await layout(`checkout ${width}`);
       await capture('checkout', width);
       await page.getByRole('button', { name: 'Aktifkan tema gelap' }).click();
@@ -114,7 +114,7 @@ const zlib = require('node:zlib');
         await route.fulfill({ status: 200, body: 'ok' });
       });
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-      await page.getByLabel('Nama lengkap').fill(`Browser Navigation ${width}`);
+      await page.getByLabel('Nama pendukung').fill(`Browser Navigation ${width}`);
       await page.getByLabel('Nomor WhatsApp').fill('81000000002');
       await page.getByLabel('Email', { exact: true }).fill(`navigation${width}@example.com`);
       await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
@@ -127,7 +127,7 @@ const zlib = require('node:zlib');
       assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0, `${width}: no status button`);
       assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).filter({ visible: true }).count(), 0, `${width}: no missing URL error`);
       assert.equal(creations, 1, `${width}: single payment creation`);
-      // Click "Lanjutkan pembayaran" → navigates to backend payment_url.
+      // Click "Lanjutkan pembayaran" -> navigates to backend payment_url.
       await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
       await page.waitForTimeout(1000);
       assert.equal(navigatedTo, 'https://sandbox.duitku.com/checkout/test', `${width}: navigated to backend payment_url`);
