@@ -233,7 +233,8 @@ function voteModal() {
       window.location.href = url;
     },
 
-    // Panel status membaca order, bukan payment.    orderFrom(data) {
+    // Panel status membaca order, bukan payment.
+    orderFrom(data) {
       if (!data || !data.id) return null;
       return {
         id: data.id,
@@ -439,7 +440,12 @@ function voteModal() {
       if (!o) return '';
       if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
       if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
-      if (o.needs_manual_review) return 'Pesanan sedang kami periksa.';
+      if (o.needs_manual_review) return 'Pesanan perlu diperiksa tim bantuan.';
+      if (o.status === 'PENDING') {
+        return o.payment_url
+          ? 'Pesanan menunggu pembayaran.'
+          : 'Pesanan sedang kami periksa.';
+      }
       return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
     },
 

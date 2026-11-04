@@ -25,6 +25,7 @@ function load(file, globals = {}) {
                       setItem(k,v){ this._d[k]=String(v); }, removeItem(k){ delete this._d[k]; } },
     // window.location.href dipakai untuk navigasi ke halaman pembayaran.
     window: { addEventListener() {}, location: { href: '', search: '' } },
+    URLSearchParams,
     ...globals,
   });
   vm.runInContext(readFileSync(join(__dirname, '../app/static/js', file), 'utf8'), context);
@@ -112,16 +113,19 @@ test('pending invoice with payment URL is stored for direct navigation', async (
   assert.equal(form.isLoading, false);
 });
 
-test('invoice without payment URL is released so the user can retry', async () => {
-  const { fetch } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 1, amount: 1000 } }) }));
+test('invoice without payment URL is held as an unresolved order, not released', async () => {
+  const { fetch } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 1, amount: 1000, inquiry_state: 'unknown', needs_manual_review: false, status_token: 'tok-123' } }) }));
   const { form } = checkout({ fetch });
   form.form.qty = 1;
   form.idempotencyKey = 'key-1';
   await form.createInvoice();
-  // Tidak ada tautan bayar: invoice dilepas, bukan dikunci ke pelanggan.
-  assert.equal(form.payment, null);
-  assert.equal(form.idempotencyKey, '');
-  assert.match(form.error, /metode lain/);
+  // Hasil inquiry tidak pasti: pesanan dipegang, bukan dilepas ke pelanggan.
+  assert.ok(form.order);
+  assert.equal(form.order.id, 'preview-payment');
+  assert.equal(form.orderUnresolved, true);
+  assert.equal(form.formLocked, true);
+  assert.equal(form.idempotencyKey, 'key-1');
+  assert.equal(form.error, '');
   assert.equal(form.isNavigating, false);
 });
 
@@ -263,4 +267,13 @@ test('event API failures show a retryable error instead of a false empty list', 
   assert.ok(page.error.peserta);
   assert.equal(page.loading.peserta, false);
   assert.equal(page.loadedTabs.peserta, undefined);
+});
+
+test('orderLabel distinguishes pending with payment url from pending under verification', () => {
+  const { form } = checkout();
+  form.order = { id: 'p1', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/pay', needs_manual_review: false };
+  assert.match(form.orderLabel, /menunggu pembayaran/);
+
+  form.order = { id: 'p2', status: 'PENDING', payment_url: null, needs_manual_review: false };
+  assert.match(form.orderLabel, /sedang kami periksa/);
 });
