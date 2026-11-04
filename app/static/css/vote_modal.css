@@ -1,0 +1,614 @@
+/* Modal voting, ticker dukungan, dan overlay efek. */
+.vote-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(23, 43, 50, .55);
+  backdrop-filter: blur(3px);
+}
+
+/* Panel setinggi layar (maks): header tetap, isi form bisa di-scroll. */
+.vote-modal-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 48px);
+  padding: 22px 22px 0;
+  border: 1px solid var(--line, #e4e6df);
+  border-radius: 6px;
+  background: #fbf7ea;
+  color: var(--ink, #172b32);
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 28px 60px rgba(18, 28, 32, .28);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.vote-modal-panel > .notice,
+.vote-modal-pay { flex: none; }
+
+/* Scroll halus di dalam modal, dengan bayangan tipis sebagai petunjuk. */
+.vote-modal-form,
+.vote-modal-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #cdbd96 transparent;
+  padding: 0 6px 22px 0;
+  margin-right: -6px;
+}
+.vote-modal-form::-webkit-scrollbar { width: 8px; }
+.vote-modal-form::-webkit-scrollbar-thumb { background: #cdbd96; border-radius: 8px; }
+.vote-modal-form::-webkit-scrollbar-track { background: transparent; }
+
+.vote-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line, #e4e6df);
+}
+
+.vote-modal-kicker {
+  margin: 0 0 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted, #666a70);
+}
+
+.vote-modal-title {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(21px, 4vw, 27px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.03em;
+  text-transform: uppercase;
+}
+
+.vote-modal-votes {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted, #666a70);
+}
+
+.vote-modal-votes span { color: #a58852; }
+
+.vote-modal-close {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink, #172b32);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.vote-modal-close:hover { background: rgba(23, 43, 50, .07); }
+
+.vote-modal-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin-top: 16px;
+}
+.vote-modal-scroll { display: grid; gap: 15px; padding-bottom: 4px; }
+.vote-modal-footer {
+  flex: none;
+  display: grid;
+  gap: 8px;
+  padding: 12px 0 18px;
+  border-top: 1px solid var(--line, #e4e6df);
+  background: linear-gradient(to bottom, rgba(251, 247, 234, .92), #fbf7ea 30%);
+  box-shadow: 0 -12px 18px -14px rgba(18, 28, 32, .35);
+}
+
+.vote-field { display: grid; gap: 6px; }
+.vote-field > span { font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+.vote-field em { color: #a58852; font-style: normal; }
+.vote-field small { font-weight: 400; color: var(--muted, #666a70); }
+
+.vote-field input,
+.vote-field textarea,
+.vote-field select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d9d3c2;
+  border-radius: 4px;
+  background: #fdfbf5;
+  color: var(--ink, #172b32);
+  font: inherit;
+  font-size: 14px;
+}
+
+.vote-field textarea { resize: vertical; min-height: 76px; }
+.vote-field input:focus,
+.vote-field textarea:focus,
+.vote-field select:focus { outline: 2px solid #a58852; outline-offset: 1px; }
+
+.vote-counter { text-align: right; font-size: 11px; color: var(--muted, #666a70); }
+
+.vote-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.rv-phone-input { display: flex; align-items: stretch; height: 42px; box-sizing: border-box; border: 1px solid #d9d3c2; border-radius: 4px; background: #fdfbf5; overflow: hidden; }
+.rv-phone-input span { display: flex; align-items: center; padding: 0 10px; font-size: 13px; color: var(--muted, #666a70); border-right: 1px solid #e6e0d0; }
+.rv-phone-input input { flex: 1; min-width: 0; height: 100%; padding: 0 12px; border: 0; border-radius: 0; background: transparent; box-sizing: border-box; }
+.vote-row .vote-field input[type="email"] { height: 42px; padding-block: 0; box-sizing: border-box; }
+.vote-row .vote-field input { height: 42px; box-sizing: border-box; }
+.vote-row small { display: block; margin-top: 2px; }
+
+.vote-methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.vote-methods button {
+  padding: 11px 8px;
+  border: 1px solid #d9d3c2;
+  border-radius: 6px;
+  background: #fdfbf5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.vote-methods button.is-active { border-color: #a58852; background: #f0e3c4; }
+.vote-methods button:focus-visible { outline: 2px solid #a58852; outline-offset: 2px; }
+
+.vote-qty { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; }
+.vote-qty input { text-align: center; font-weight: 700; }
+.vote-qty .btn { padding: 10px 0; }
+
+.vote-chips { display: flex; gap: 8px; margin-top: 8px; }
+.vote-chips button {
+  min-width: 42px;
+  padding: 6px 12px;
+  border: 1px solid #d9d3c2;
+  border-radius: 999px;
+  background: #fdfbf5;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vote-chips button.is-active { border-color: #a58852; background: #f0e3c4; }
+
+.vote-gifts {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.vote-gifts button {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 4px 8px;
+  border: 1px solid #d9d3c2;
+  border-radius: 6px;
+  background: #fdfbf5;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color .15s ease, background .15s ease;
+}
+.vote-gifts button:focus-visible { outline: 2px solid #a58852; outline-offset: 2px; }
+.vote-gift-icon {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, #fffdf6, #f4ecd8);
+  box-shadow: inset 0 0 0 1px rgba(165, 136, 82, .22);
+}
+.vote-gift-icon svg { width: 34px; height: 34px; }
+/* Kategori Sultan: judul terpusat di atas 3 gift. */
+.vote-gifts-sultan { margin-top: 12px; }
+.vote-gifts-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .3em;
+  text-transform: uppercase;
+  text-align: center;
+  color: #a58852;
+}
+.vote-gifts-title::before,
+.vote-gifts-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  max-width: 70px;
+  background: linear-gradient(to right, transparent, #d8c49a, transparent);
+}
+.vote-gifts-title span { font-size: 9px; }
+.vote-gifts--sultan {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 340px;
+  margin: 0 auto;
+}
+
+.vote-gifts button:hover .vote-gift-icon { background: radial-gradient(circle at 50% 30%, #fffdf6, #f0e2c0); }
+.vote-gifts button.is-active .vote-gift-icon {
+  background: radial-gradient(circle at 50% 30%, #fffdf6, #f6dfa4);
+  box-shadow: inset 0 0 0 1px rgba(165, 136, 82, .5), 0 2px 6px rgba(165, 136, 82, .18);
+}
+.vote-gifts button b { font-size: 12px; }
+.vote-gifts button small { font-size: 9px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #666a70); }
+.vote-gifts button em { font-style: normal; font-size: 10px; font-weight: 700; color: #a58852; }
+.vote-gifts button.is-active { border-color: #a58852; background: #f0e3c4; }
+.vote-gifts button:disabled { opacity: .4; cursor: not-allowed; }
+
+.gift-svg-library { display: none; }
+
+.vote-hint { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted, #666a70); }
+
+.vote-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: 12px;
+  border-top: 1px solid var(--line, #e4e6df);
+  font-size: 14px;
+}
+.vote-total strong { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; }
+
+.vote-modal-full { width: 100%; justify-content: center; }
+.vote-modal-pay { margin-top: 14px; }
+.vote-modal-pay p { font-size: 13px; line-height: 1.6; color: var(--muted, #666a70); }
+
+/* Panel status pesanan (placeholder pembayaran, pengganti blok pay lama). */
+.vote-order {
+  flex: none;
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line, #e4e6df);
+  border-radius: 6px;
+  background: #f3efe3;
+}
+
+.vote-order-kicker {
+  margin: 0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--muted, #666a70);
+}
+
+.vote-order-title {
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink, #172b32);
+}
+
+.vote-order-meta {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.vote-order-meta div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.vote-order-meta dt {
+  color: var(--muted, #666a70);
+}
+
+.vote-order-meta dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+  overflow-wrap: anywhere;
+  color: var(--ink, #172b32);
+}
+
+.vote-order-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--muted, #666a70);
+}
+
+.vote-order-actions {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.vote-order-actions .btn {
+  text-decoration: none;
+}
+
+/* Ticker dan efek dukungan */
+/* Mobile: ticker menempel tepat di bawah navbar. */
+.support-stage {
+  position: sticky;
+  top: var(--event-header-height, 65px);
+  z-index: 45;
+}
+
+/* Desktop: ticker menempel di dasar area konten, tepat di atas footer.
+   Kelas .is-at-footer ditambahkan JS saat footer mulai terlihat, sehingga
+   ticker berhenti di atas footer dan tidak menutupinya. */
+@media (min-width: 701px) {
+  .support-stage {
+    position: fixed;
+    top: auto; /* batalkan sticky top dari aturan mobile */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 0;
+    z-index: 45;
+    transition: bottom .15s ease-out;
+  }
+  .support-stage .support-ticker {
+    box-shadow: 0 -2px 10px rgba(18, 28, 32, .10);
+    border-bottom: 0;
+  }
+}
+
+.support-ticker {
+  overflow: hidden;
+  border-bottom: 1px solid var(--line, #e4e6df);
+  background: #f3efe3;
+  padding: 7px 0;
+}
+
+.support-ticker-track {
+  display: flex;
+  gap: 40px;
+  width: max-content;
+  padding-inline: 20px;
+  /* Digeser oleh requestAnimationFrame di vote_modal.js, jadi tetap berjalan
+     walau browser mematikan animasi CSS (prefers-reduced-motion). */
+  will-change: transform;
+  transform: translateX(0);
+}
+
+.support-ticker-item {
+  max-width: 46ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--ink, #172b32);
+}
+
+
+
+
+/* Efek gift. Ringan: hanya transform/opacity, maksimal 8 partikel, satu efek
+   aktif per waktu. Filter hanya statis (bayangan ikon), tidak dianimasikan. */
+.support-effect {
+  position: fixed;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint;
+  animation: fx-fade var(--gift-ms, 2500ms) linear forwards;
+}
+
+.support-effect > span { position: absolute; will-change: transform, opacity; }
+
+.fx-backdrop {
+  inset: 0;
+  background: rgba(16, 26, 30, .32);
+  opacity: 0;
+  animation: fx-dim var(--gift-ms) ease-in-out forwards;
+}
+
+.fx-wave, .fx-trail, .fx-glint, .fx-flash { opacity: 0; }
+
+.fx-name {
+  bottom: 22%;
+  font-family: 'Poppins', sans-serif;
+  font-size: clamp(14px, 3vw, 20px);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #f6e7bf;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, .45);
+  opacity: 0;
+}
+
+.fx-particles { inset: 0; }
+.fx-particles i {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #f1d48a;
+  opacity: 0;
+  animation: fx-particle var(--gift-ms) ease-out forwards;
+}
+
+.support-effect-icon {
+  position: relative;
+  display: block;
+  width: 120px;
+  height: 120px;
+  color: #b8893a;
+  filter: drop-shadow(0 10px 14px rgba(23, 43, 50, .3));
+  transform-origin: 50% 50%;
+}
+.support-effect-icon svg { width: 100%; height: 100%; }
+
+/* Gift 1: bintang membesar, berputar, memudar (1,5 dtk). */
+.support-effect--star .support-effect-icon { animation: gift-star var(--gift-ms) ease-out forwards; }
+.support-effect--star .fx-glint { inset: 0; background: radial-gradient(circle, rgba(255, 233, 160, .55), transparent 60%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+
+/* Gift 2: mawar mekar, kelopak berjatuhan (2 dtk). */
+.support-effect--rose .support-effect-icon { animation: gift-rose var(--gift-ms) ease-out forwards; }
+.support-effect--rose .fx-particles i { background: #d9737a; }
+
+/* Gift 3: mahkota turun dengan kilau emas (2,5 dtk). */
+.support-effect--crown .support-effect-icon { animation: gift-crown var(--gift-ms) ease-out forwards; }
+.support-effect--crown .fx-glint { inset: 0; background: radial-gradient(circle at 50% 35%, rgba(255, 221, 120, .6), transparent 55%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+
+/* Gift 4: paus. Layar meredup, gelombang, paus melintas dan menyemburkan air,
+   lalu nama event kembali tampil (4,5 dtk). */
+.support-effect--whale .support-effect-icon { animation: gift-whale var(--gift-ms) ease-in-out forwards; }
+.support-effect--whale .fx-wave {
+  left: -10%; right: -10%; bottom: 12%; height: 22%;
+  background: linear-gradient(transparent, rgba(60, 150, 190, .55));
+  border-radius: 50% 50% 0 0 / 60% 60% 0 0;
+  animation: fx-wave var(--gift-ms) ease-in-out forwards;
+}
+.support-effect--whale .fx-trail { left: 55%; bottom: 30%; width: 14px; height: 36px; border-radius: 50%; background: rgba(190, 235, 255, .9); animation: fx-spout var(--gift-ms) ease-out forwards; }
+.support-effect--whale .fx-name { animation: fx-name-return var(--gift-ms) ease-out forwards; }
+.support-effect--whale .fx-particles i { background: #bfe6f5; }
+
+/* Gift 5: roket melesat diagonal dengan jejak cahaya dan ledakan bintang (3 dtk). */
+.support-effect--rocket .support-effect-icon { animation: gift-rocket var(--gift-ms) ease-in forwards; }
+.support-effect--rocket .fx-trail { left: 20%; bottom: 20%; width: 120px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, transparent, #ffd27a); transform-origin: left center; animation: fx-trail-rocket var(--gift-ms) ease-in forwards; }
+.support-effect--rocket .fx-flash { inset: 0; background: radial-gradient(circle at 75% 25%, rgba(255, 240, 180, .7), transparent 35%); animation: fx-flash var(--gift-ms) ease-out forwards; }
+.support-effect--rocket .fx-particles i { background: #ffe39a; }
+
+/* Gift 6: phoenix terbang melintas, sayap api terbuka, partikel menyebar (4 dtk). */
+.support-effect--phoenix .support-effect-icon { animation: gift-phoenix var(--gift-ms) ease-in-out forwards; }
+.support-effect--phoenix .fx-glint { inset: 0; background: radial-gradient(circle, rgba(255, 150, 60, .45), transparent 60%); animation: fx-flash var(--gift-ms) ease-in-out forwards; }
+.support-effect--phoenix .fx-particles i { background: #ff9a3c; }
+
+/* Gift 7: naga mengitari layar, energi menyambar, kilatan final (5,5 dtk). */
+.support-effect--dragon .support-effect-icon { animation: gift-dragon var(--gift-ms) linear forwards; }
+.support-effect--dragon .fx-flash { inset: 0; background: rgba(255, 255, 255, .0); animation: fx-final-flash var(--gift-ms) linear forwards; }
+.support-effect--dragon .fx-particles i { background: #7fe3c4; }
+
+.fx-particles i:nth-child(2n) { animation-delay: 80ms; }
+.fx-particles i:nth-child(3n) { animation-delay: 160ms; }
+
+@keyframes fx-fade { 0%, 88% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-dim { 0%, 100% { opacity: 0; } 15%, 80% { opacity: 1; } }
+@keyframes fx-flash { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes fx-final-flash { 0%, 90% { opacity: 0; } 94% { opacity: 1; background: rgba(255, 255, 255, .85); } 100% { opacity: 0; } }
+@keyframes fx-particle {
+  0% { opacity: 0; transform: translate(0, 0) scale(.6); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1); }
+}
+@keyframes fx-wave {
+  0% { opacity: 0; transform: translateY(40px) scaleY(.6); }
+  25% { opacity: 1; transform: translateY(0) scaleY(1); }
+  75% { opacity: 1; transform: translateY(0) scaleY(1); }
+  100% { opacity: 0; transform: translateY(20px) scaleY(.8); }
+}
+@keyframes fx-spout {
+  0%, 30% { opacity: 0; transform: scaleY(0); }
+  40% { opacity: 1; transform: scaleY(1.2); }
+  60% { opacity: 0; transform: scaleY(1.6) translateY(-20px); }
+  100% { opacity: 0; }
+}
+@keyframes fx-name-return {
+  0%, 70% { opacity: 0; transform: translateY(12px); }
+  85% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes fx-trail-rocket {
+  0% { opacity: 0; transform: translate(0, 0) rotate(-35deg) scaleX(0); }
+  20% { opacity: 1; transform: translate(0, 0) rotate(-35deg) scaleX(1); }
+  100% { opacity: 0; transform: translate(40vw, -40vh) rotate(-35deg) scaleX(1.4); }
+}
+
+@keyframes gift-star {
+  0% { transform: scale(.2) rotate(0); opacity: 0; }
+  40% { transform: scale(1.15) rotate(200deg); opacity: 1; }
+  100% { transform: scale(1) rotate(360deg); opacity: 0; }
+}
+@keyframes gift-rose {
+  0% { transform: scale(.3); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  80% { transform: scale(1); opacity: 1; }
+  100% { transform: translateY(40px) scale(.9); opacity: 0; }
+}
+@keyframes gift-crown {
+  0% { transform: translateY(-120px) scale(.9); opacity: 0; }
+  50% { transform: translateY(0) scale(1.05); opacity: 1; }
+  100% { transform: translateY(0) scale(1); opacity: 0; }
+}
+@keyframes gift-whale {
+  0% { transform: translateX(-60vw); opacity: 0; }
+  20% { opacity: 1; }
+  80% { transform: translateX(60vw); opacity: 1; }
+  100% { transform: translateX(70vw); opacity: 0; }
+}
+@keyframes gift-rocket {
+  0% { transform: translate(-40vw, 30vh) rotate(-35deg) scale(.6); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(40vw, -40vh) rotate(-35deg) scale(1.1); opacity: 0; }
+}
+@keyframes gift-phoenix {
+  0% { transform: translateX(-70vw) scaleX(-1); opacity: 0; }
+  25% { opacity: 1; }
+  100% { transform: translateX(70vw) scaleX(-1); opacity: 0; }
+}
+@keyframes gift-dragon {
+  0% { transform: translate(-50vw, 10vh) rotate(0); opacity: 0; }
+  25% { transform: translate(-10vw, -20vh) rotate(60deg); opacity: 1; }
+  50% { transform: translate(20vw, 10vh) rotate(-60deg); opacity: 1; }
+  75% { transform: translate(-5vw, 20vh) rotate(40deg); opacity: 1; }
+  100% { transform: translate(0, 0) rotate(0); opacity: 0; }
+}
+
+@media (max-width: 640px) {
+  .vote-modal { padding: 0; align-items: stretch; }
+  .vote-modal-panel {
+    width: 100%;
+    max-height: 100dvh;
+    height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 18px 16px 0;
+  }
+  .vote-row { grid-template-columns: 1fr; }
+  .vote-gifts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .vote-gifts--sultan { max-width: none; }
+  .vote-gift-icon { width: 42px; height: 42px; }
+  .vote-gift-icon svg { width: 30px; height: 30px; }
+  .vote-modal-footer { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+  /* Mobile: sama seperti desktop, menempel di bawah navbar (bukan menutupinya). */
+  .support-stage { top: var(--event-header-height, 65px); margin-bottom: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .support-effect *, .support-effect *::before, .support-effect *::after {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .fx-particles, .fx-backdrop, .fx-wave, .fx-trail, .fx-glint, .fx-flash { display: none; }
+}
+

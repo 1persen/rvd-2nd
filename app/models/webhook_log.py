@@ -18,8 +18,12 @@ class WebhookLog(TimestampMixin, UUIDMixin, Base):
     id: Mapped[str] = mapped_column(
         String(40), primary_key=True, default=lambda: new_id("wlog")
     )
-    payment_id: Mapped[str] = mapped_column(
-        ForeignKey("payments.id", ondelete="RESTRICT"), nullable=False, index=True
+    # Nullable: a valid callback can arrive before its payment is matched (inbox).
+    payment_id: Mapped[Optional[str]] = mapped_column(
+        ForeignKey("payments.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
+    merchant_order_id: Mapped[Optional[str]] = mapped_column(
+        String(100), nullable=True, index=True
     )
     provider: Mapped[str] = mapped_column(String(40), default="midtrans", nullable=False)
     payload: Mapped[dict] = mapped_column(JSON, nullable=False)

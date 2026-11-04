@@ -11,8 +11,8 @@ const zlib = require('node:zlib');
   fs.mkdirSync('tests/browser/artifacts', { recursive: true });
   let page;
   try {
-    const context = await browser.newContext({ colorScheme: 'dark' });
-    page = await context.newPage();
+    const context = await browser.newContext();
+        page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -58,6 +58,13 @@ const zlib = require('node:zlib');
         assert.equal(await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).isVisible(), true);
       }
       await capture('landing', width);
+      // Theme toggle test on landing page (has theme-toggle in public_base.html)
+      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).click();
+      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), true);
+      await page.getByRole('button', { name: 'Aktifkan tema terang' }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Aktifkan tema terang' }).click();
+      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), false);
       if (width <= 700) {
         await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).click();
       } else {
@@ -82,14 +89,9 @@ const zlib = require('node:zlib');
       await layout(`podium ${width}`);
       await capture('leaderboard', width);
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-      await page.getByLabel('Nama lengkap').waitFor({ state: 'visible' });
+      await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
       await layout(`checkout ${width}`);
       await capture('checkout', width);
-      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).click();
-      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), true);
-      const ticket = await page.locator('.rv-ticket').evaluate(el => getComputedStyle(el).backgroundImage);
-      assert.ok(!ticket.includes('rgb(252, 247, 229)'), 'dark ticket keeps readable contrast');
-      await page.getByRole('button', { name: 'Aktifkan tema terang' }).click();
       await page.goto(`${baseURL}/admin/login`);
       await page.getByLabel('Alamat email', { exact: true }).waitFor({ state: 'visible' });
       await layout(`admin login ${width}`);
@@ -104,18 +106,29 @@ const zlib = require('node:zlib');
       await page.setViewportSize({ width, height: 900 });
       let creations = 0;
       let navigatedTo = null;
+      // Mock ONLY the create invoice POST, not the status GET
       await page.route('**/api/v1/payments', async route => {
-        assert.ok(route.request().headers()['idempotency-key']);
-        creations++;
-        await route.fulfill({ json: { success: true, data: pending } });
+        if (route.request().method() === 'POST') {
+          assert.ok(route.request().headers()['idempotency-key']);
+          creations++;
+          await route.fulfill({ json: { success: true, data: pending } });
+        } else {
+          await route.continue();
+        }
       });
       await page.route('**/sandbox.duitku.com/**', async route => {
         navigatedTo = route.request().url();
         await route.fulfill({ status: 200, body: 'ok' });
       });
+      // Clear any stored order from previous test iterations
+      await page.goto(baseURL);
+      await page.evaluate(() => sessionStorage.clear());
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
-      await page.getByLabel('Nama lengkap').fill(`Browser Navigation ${width}`);
+      await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
+      await page.getByLabel('Nama pendukung').fill(`Browser Navigation ${width}`);
+      await page.getByLabel('Nomor WhatsApp').waitFor({ state: 'visible' });
       await page.getByLabel('Nomor WhatsApp').fill('81000000002');
+      await page.getByLabel('Email', { exact: true }).waitFor({ state: 'visible' });
       await page.getByLabel('Email', { exact: true }).fill(`navigation${width}@example.com`);
       await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
       // createInvoice() is called directly after form submit; no "Buat pembayaran" button.
@@ -127,7 +140,7 @@ const zlib = require('node:zlib');
       assert.equal(await page.getByRole('button', { name: 'Periksa status', exact: true }).count(), 0, `${width}: no status button`);
       assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).filter({ visible: true }).count(), 0, `${width}: no missing URL error`);
       assert.equal(creations, 1, `${width}: single payment creation`);
-      // Click "Lanjutkan pembayaran" → navigates to backend payment_url.
+      // Click "Lanjutkan pembayaran" -> navigates to backend payment_url.
       await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
       await page.waitForTimeout(1000);
       assert.equal(navigatedTo, 'https://sandbox.duitku.com/checkout/test', `${width}: navigated to backend payment_url`);

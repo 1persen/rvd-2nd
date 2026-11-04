@@ -4,24 +4,68 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const vm = require('node:vm');
 
+// DOM minimal: modal menyentuh document saat dibuka/ditutup dan saat efek gift.
+const stubDocument = {
+  body: { style: {} },
+  activeElement: null,
+  querySelector: () => null,
+  getElementById: () => null,
+  addEventListener() {},
+};
+
 function load(file, globals = {}) {
-  const context = vm.createContext({ Intl, Date, crypto: require('node:crypto').webcrypto, console: { error() {} }, setInterval: () => 1, clearInterval() {}, ...globals });
+  const context = vm.createContext({
+    Intl, Date, crypto: require('node:crypto').webcrypto, console: { error() {} },
+    setInterval: () => 1, clearInterval() {}, setTimeout: () => 1, clearTimeout() {},
+    requestAnimationFrame: () => 1, cancelAnimationFrame() {},
+    EventSource: undefined, matchMedia: () => ({ matches: false }),
+    document: stubDocument,
+    // Modal mengingat pesanan unresolved: hanya paymentId, token, dan idempotencyKey.
+    sessionStorage: { _d: {}, getItem(k){ return this._d[k] ?? null; },
+                      setItem(k,v){ this._d[k]=String(v); }, removeItem(k){ delete this._d[k]; } },
+    // window.location.href dipakai untuk navigasi ke halaman pembayaran.
+    window: { addEventListener() {}, location: { href: '', search: '' } },
+    URLSearchParams,
+    ...globals,
+  });
   vm.runInContext(readFileSync(join(__dirname, '../app/static/js', file), 'utf8'), context);
   return context;
 }
 
+// Checkout voting sekarang ada di modal (vote_modal.js), pengganti vote.js.
 function checkout(globals = {}) {
-  const context = load('vote.js', globals);
-  const form = context.votePage({ id: 'team' }, { id: 'event', is_voting_open: true, price_per_vote: 1000 }, '/payments', '/payments');
-  form.voter = { name: 'Preview supporter', phone: '81234567890', email: 'sandbox-test@example.com' };
-  return { form };
+  const context = load('vote_modal.js', globals);
+  const form = context.voteModal();
+  // $nextTick dan $watch disediakan Alpine saat komponen dipasang ke DOM.
+  form.$nextTick = (fn) => fn();
+  form.$watch = () => {};
+  form.show({ team: { id: 'team', name: 'Tim Uji' }, event: { id: 'event', name: 'Event Uji', is_voting_open: true, price_per_vote: 1000 } });
+  Object.assign(form.form, { name: 'Preview supporter', phone: '81234567890', email: 'sandbox-test@example.com', method: 'NQ' });
+  return { form, context };
+}
+
+// Alur yang dites adalah alur yang dipakai tombol submit.
+function submit(form) {
+  form.submit();
+}
+
+// Panggilan fetch dicatat agar jumlah berat dan isi body bisa diperiksa.
+function recordingFetch(responder) {
+  const calls = [];
+  const fetch = async (url, options) => {
+    calls.push({ url, options });
+    return responder(url, options);
+  };
+  // Hanya panggilan pembuatan invoice, bukan daftar metode/status/feed.
+  const invoices = () => calls.filter(c => String(c.url).endsWith('/api/v1/payments'));
+  return { fetch, calls, invoices };
 }
 
 test('checkout rejects fractional, zero and excessive vote quantities', () => {
   for (const qty of [0, -1, 1.5, 10001]) {
     const { form } = checkout();
-    form.qty = qty;
-    form.nextStep();
+    form.form.qty = qty;
+    form.submit();
     assert.ok(form.error);
     assert.equal(form.payment, null);
   }
@@ -29,8 +73,9 @@ test('checkout rejects fractional, zero and excessive vote quantities', () => {
 
 test('closed voting cannot enter payment confirmation', () => {
   const { form } = checkout();
+  form.form.qty = 1;
   form.event.closes_at = '2000-01-01T00:00:00Z';
-  form.nextStep();
+  form.submit();
   assert.match(form.error, /Voting/);
   assert.equal(form.payment, null);
 });
@@ -38,15 +83,18 @@ test('closed voting cannot enter payment confirmation', () => {
 test('checkout requires a valid payer email before confirmation', () => {
   for (const email of ['', 'invalid', 'a b@example.com', 'a'.repeat(40) + '@example.com']) {
     const { form } = checkout();
-    form.voter.email = email;
-    form.nextStep();
+    form.form.qty = 1;
+    form.form.email = email;
+    form.submit();
     assert.match(form.error, /email/);
     assert.equal(form.payment, null);
   }
 });
 
 test('invoice rejection leaves the confirmation available for retry', async () => {
-  const { form } = checkout({ fetch: async () => ({ ok: false, json: async () => ({ success: false, message: 'Service unavailable' }) }) });
+  const { fetch } = recordingFetch(async () => ({ ok: false, json: async () => ({ success: false, message: 'Service unavailable' }) }));
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
   await form.createInvoice();
   assert.equal(form.payment, null);
   assert.equal(form.error, 'Service unavailable');
@@ -54,7 +102,9 @@ test('invoice rejection leaves the confirmation available for retry', async () =
 });
 
 test('pending invoice with payment URL is stored for direct navigation', async () => {
-  const { form } = checkout({ fetch: async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/checkout/test', votes: 1, amount: 1000 } }) }) });
+  const { fetch } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/checkout/test', votes: 1, amount: 1000 } }) }));
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
   await form.createInvoice();
   assert.equal(form.payment.id, 'preview-payment');
   assert.equal(form.payment.status, 'PENDING');
@@ -63,44 +113,151 @@ test('pending invoice with payment URL is stored for direct navigation', async (
   assert.equal(form.isLoading, false);
 });
 
-test('pending invoice without payment URL shows error and does not navigate', async () => {
-  const { form } = checkout({ fetch: async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 1, amount: 1000 } }) }) });
+test('invoice without payment URL is held as an unresolved order, not released', async () => {
+  const { fetch } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 1, amount: 1000, inquiry_state: 'unknown', needs_manual_review: false, status_token: 'tok-123' } }) }));
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
+  form.idempotencyKey = 'key-1';
   await form.createInvoice();
-  assert.equal(form.payment.id, 'preview-payment');
-  assert.match(form.error, /Tautan pembayaran belum tersedia/);
+  // Hasil inquiry tidak pasti: pesanan dipegang, bukan dilepas ke pelanggan.
+  assert.ok(form.order);
+  assert.equal(form.order.id, 'preview-payment');
+  assert.equal(form.orderUnresolved, true);
+  assert.equal(form.formLocked, true);
+  assert.equal(form.idempotencyKey, 'key-1');
+  assert.equal(form.error, '');
   assert.equal(form.isNavigating, false);
 });
 
-test('goToPayment navigates to payment URL', () => {
-  let navigatedTo = null;
-  const { form } = checkout({});
+test('goToPayment navigates once to the payment URL', () => {
+  const { form, context } = checkout();
+  context.window.location.href = '';
   form.payment = { id: 'preview-payment', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/checkout/test' };
-  form.goToPayment = function() { if (!this.isNavigating && this.payment?.payment_url) { this.isNavigating = true; navigatedTo = this.payment.payment_url; } };
   form.goToPayment();
-  assert.equal(navigatedTo, 'https://sandbox.duitku.com/checkout/test');
+  assert.equal(context.window.location.href, 'https://sandbox.duitku.com/checkout/test');
   assert.equal(form.isNavigating, true);
 });
 
 test('goToPayment does nothing without payment URL', () => {
-  let navigatedTo = null;
-  const { form } = checkout({});
+  const { form, context } = checkout();
+  context.window.location.href = '';
   form.payment = { id: 'preview-payment', status: 'PENDING', payment_url: null };
-  form.goToPayment = function() { if (!this.isNavigating && this.payment?.payment_url) { this.isNavigating = true; navigatedTo = this.payment.payment_url; } };
   form.goToPayment();
-  assert.equal(navigatedTo, null);
+  assert.equal(context.window.location.href, '');
   assert.equal(form.isNavigating, false);
 });
 
 test('network retry reuses the same invoice idempotency key', async () => {
-  const keys = [];
-  const { form } = checkout({ fetch: async (_, options) => {
-    keys.push(options.headers['Idempotency-Key']);
-    throw new Error('Response lost');
-  } });
+  const { fetch, invoices } = recordingFetch(async () => { throw new Error('Response lost'); });
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
   await form.createInvoice();
   await form.createInvoice();
+  const keys = invoices().map(c => c.options.headers['Idempotency-Key']);
   assert.ok(keys[0]);
   assert.equal(keys[0], keys[1]);
+});
+
+test('invoice sends the chosen method, gift-free qty and public fields only', async () => {
+  const { fetch, invoices } = recordingFetch(async () => ({ ok: true, json: async () => ({ success: true, data: { id: 'p', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/x' } }) }));
+  const { form } = checkout({ fetch });
+  form.form.qty = 3;
+  form.form.method = 'DA';
+  await form.createInvoice();
+  const body = JSON.parse(invoices()[0].options.body);
+  assert.equal(body.payment_method, 'DA');
+  assert.equal(body.qty, 3);
+  assert.equal(body.effect_code, null);
+  assert.equal(body.supporter_email, 'sandbox-test@example.com');
+});
+
+test('selecting a gift sets its package qty and dropping the qty releases the gift', () => {
+  const { form } = checkout();
+  form.event.vote_effects = [{ code: 'mawar', label: 'Mawar', level: 'Basic', votes: 50, duration_ms: 2000, animation: 'rose' }];
+  form.toggleEffect(form.allEffects[0]);
+  assert.equal(form.form.qty, 50);
+  assert.equal(form.form.effect, 'mawar');
+  form.setQty(3);
+  form.enforceEffectRule();
+  assert.equal(form.form.effect, '');
+});
+
+// Pesanan unresolved: respons 200 PENDING tanpa tautan bayar.
+function unresolvedResponse(overrides = {}) {
+  return { ok: true, status: 200, json: async () => ({ success: true, data: {
+    id: 'preview-payment', status: 'PENDING', payment_url: null, votes: 3, amount: 3000,
+    inquiry_state: 'unknown', needs_manual_review: false, status_token: 'tok-123', ...overrides,
+  } }) };
+}
+
+test('checkout keeps unresolved order and shows status instead of error', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const { form } = checkout({ fetch });
+  form.form.qty = 1;
+  await form.createInvoice();
+  assert.ok(form.order);
+  assert.equal(form.order.id, 'preview-payment');
+  assert.equal(form.error, '');
+  assert.match(form.orderLabel, /sedang kami periksa/);
+});
+
+test('checkout does not reset idempotency key while unresolved', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const context = load('vote_modal.js', { fetch });
+  const form = context.voteModal();
+  form.$nextTick = (fn) => fn();
+  // Tangkap callback $watch untuk form.method, lalu picu seperti Alpine.
+  let onMethodChange = () => {};
+  form.$watch = (path, cb) => { if (path === 'form.method') onMethodChange = cb; };
+  // Template menonaktifkan tombol metode saat formLocked; helper mencerminkan itu.
+  const changeMethod = (code) => { if (!form.formLocked) form.form.method = code; };  form.init();
+  form.show({ team: { id: 'team', name: 'Tim Uji' }, event: { id: 'event', name: 'Event Uji', is_voting_open: true, price_per_vote: 1000 } });
+  Object.assign(form.form, { name: 'Preview supporter', phone: '81234567890', email: 'sandbox-test@example.com', method: 'NQ' });
+  form.form.qty = 1;
+  await form.createInvoice();
+  const key = form.idempotencyKey;
+  assert.ok(key);
+  assert.equal(form.orderUnresolved, true);
+  // Pengguna mencoba metode lain: pilihan metode dikembalikan, kunci tetap.
+  changeMethod('DA');
+  onMethodChange();
+  assert.equal(form.form.method, 'NQ');
+  assert.equal(form.idempotencyKey, key);
+});
+
+test('checkout remembers order in session storage', async () => {
+  const { fetch } = recordingFetch(async () => unresolvedResponse());
+  const { form, context } = checkout({ fetch });
+  form.form.qty = 1;
+  await form.createInvoice();
+  const raw = context.sessionStorage.getItem(form.storageKey());
+  assert.ok(raw);
+  const saved = JSON.parse(raw);
+  assert.equal(saved.paymentId, 'preview-payment');
+  assert.equal(saved.token, 'tok-123');
+  const serialized = JSON.stringify(saved);
+  assert.equal(serialized.includes('sandbox-test@example.com'), false);
+  assert.equal(serialized.includes('81234567890'), false);
+});
+
+test('checkout offers new invoice only after absent verdict', async () => {
+  const { form } = checkout();
+  form.reconcileVerdict = '';
+  assert.equal(form.canStartNewInvoice, false);
+  form.reconcileVerdict = 'ABSENT_CONFIRMED';
+  assert.equal(form.canStartNewInvoice, true);
+});
+
+test('checkout never renders raw status', async () => {
+  const raw = ['EXPIRED', 'CANCELED', 'FAILED', 'PENDING'];
+  const { form } = checkout();
+  for (const status of raw) {
+    form.order = { id: 'x', status, inquiry_state: 'unknown', needs_manual_review: false, payment_url: null, votes: 1 };
+    for (const verdict of ['', 'PRESENT', 'INDETERMINATE', 'ABSENT_CONFIRMED']) {
+      form.reconcileVerdict = verdict;
+      for (const word of raw) assert.equal(form.orderLabel.includes(word), false, form.orderLabel);
+    }
+  }
 });
 
 test('event API failures show a retryable error instead of a false empty list', async () => {
@@ -110,4 +267,13 @@ test('event API failures show a retryable error instead of a false empty list', 
   assert.ok(page.error.peserta);
   assert.equal(page.loading.peserta, false);
   assert.equal(page.loadedTabs.peserta, undefined);
+});
+
+test('orderLabel distinguishes pending with payment url from pending under verification', () => {
+  const { form } = checkout();
+  form.order = { id: 'p1', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/pay', needs_manual_review: false };
+  assert.match(form.orderLabel, /menunggu pembayaran/);
+
+  form.order = { id: 'p2', status: 'PENDING', payment_url: null, needs_manual_review: false };
+  assert.match(form.orderLabel, /sedang kami periksa/);
 });

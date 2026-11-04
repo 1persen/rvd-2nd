@@ -1,5 +1,6 @@
 """Checks for the standalone staging load-test report and safety boundary."""
 import importlib.util
+import sys
 from pathlib import Path
 
 import pytest
@@ -65,6 +66,7 @@ async def test_unready_sse_aborts_before_invoice_creation(monkeypatch):
     assert '/api/v1/payments' not in paths
 
 
+@pytest.mark.skipif(sys.platform == 'win32', reason='resource.getrlimit unavailable on Windows; loadtest.py handles the same way.')
 @pytest.mark.asyncio
 async def test_low_descriptor_limit_stops_before_any_http(monkeypatch):
     import httpx

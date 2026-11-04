@@ -124,6 +124,11 @@ def _fan_out(raw: str) -> None:
                 for queue in list(queues):
                     _deliver(queue, frame)
         return
+    if message.get("type") == "support":
+        # Public support events are event-wide; only the default stream carries them.
+        for queue in list(_subscribers.get((message.get("event_id"), None), ())):
+            _deliver(queue, frame)
+        return
     if message.get("type") != "leaderboard":
         return
     key = (message.get("event_id"), message.get("level"))
