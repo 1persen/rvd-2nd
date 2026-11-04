@@ -106,15 +106,23 @@ const zlib = require('node:zlib');
       await page.setViewportSize({ width, height: 900 });
       let creations = 0;
       let navigatedTo = null;
+      // Mock ONLY the create invoice POST, not the status GET
       await page.route('**/api/v1/payments', async route => {
-        assert.ok(route.request().headers()['idempotency-key']);
-        creations++;
-        await route.fulfill({ json: { success: true, data: pending } });
+        if (route.request().method() === 'POST') {
+          assert.ok(route.request().headers()['idempotency-key']);
+          creations++;
+          await route.fulfill({ json: { success: true, data: pending } });
+        } else {
+          await route.continue();
+        }
       });
       await page.route('**/sandbox.duitku.com/**', async route => {
         navigatedTo = route.request().url();
         await route.fulfill({ status: 200, body: 'ok' });
       });
+      // Clear any stored order from previous test iterations
+      await page.goto(baseURL);
+      await page.evaluate(() => sessionStorage.clear());
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
       await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
       await page.getByLabel('Nama pendukung').fill(`Browser Navigation ${width}`);
