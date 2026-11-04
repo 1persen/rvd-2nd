@@ -116,8 +116,11 @@ const zlib = require('node:zlib');
         await route.fulfill({ status: 200, body: 'ok' });
       });
       await page.goto(`${baseURL}/events/${fixture.event_id}/vote/${fixture.team_id}`);
+      await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
       await page.getByLabel('Nama pendukung').fill(`Browser Navigation ${width}`);
+      await page.getByLabel('Nomor WhatsApp').waitFor({ state: 'visible' });
       await page.getByLabel('Nomor WhatsApp').fill('81000000002');
+      await page.getByLabel('Email', { exact: true }).waitFor({ state: 'visible' });
       await page.getByLabel('Email', { exact: true }).fill(`navigation${width}@example.com`);
       await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
       // createInvoice() is called directly after form submit; no "Buat pembayaran" button.
