@@ -11,8 +11,8 @@ const zlib = require('node:zlib');
   fs.mkdirSync('tests/browser/artifacts', { recursive: true });
   let page;
   try {
-    const context = await browser.newContext({ colorScheme: 'dark' });
-    page = await context.newPage();
+    const context = await browser.newContext();
+        page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
