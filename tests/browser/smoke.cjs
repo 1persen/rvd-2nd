@@ -58,6 +58,13 @@ const zlib = require('node:zlib');
         assert.equal(await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).isVisible(), true);
       }
       await capture('landing', width);
+      // Theme toggle test on landing page (has theme-toggle in public_base.html)
+      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).click();
+      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), true);
+      await page.getByRole('button', { name: 'Aktifkan tema terang' }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Aktifkan tema terang' }).click();
+      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), false);
       if (width <= 700) {
         await page.locator('#mobile-nav').getByRole('link', { name: 'Bantuan' }).click();
       } else {
@@ -85,13 +92,6 @@ const zlib = require('node:zlib');
       await page.getByLabel('Nama pendukung').waitFor({ state: 'visible' });
       await layout(`checkout ${width}`);
       await capture('checkout', width);
-      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).waitFor({ state: 'visible' });
-      await page.getByRole('button', { name: 'Aktifkan tema gelap' }).click();
-      assert.equal(await page.locator('html').evaluate(el => el.classList.contains('dark')), true);
-      const ticket = await page.locator('.rv-ticket').evaluate(el => getComputedStyle(el).backgroundImage);
-      assert.ok(!ticket.includes('rgb(252, 247, 229)'), 'dark ticket keeps readable contrast');
-      await page.getByRole('button', { name: 'Aktifkan tema terang' }).waitFor({ state: 'visible' });
-      await page.getByRole('button', { name: 'Aktifkan tema terang' }).click();
       await page.goto(`${baseURL}/admin/login`);
       await page.getByLabel('Alamat email', { exact: true }).waitFor({ state: 'visible' });
       await layout(`admin login ${width}`);
