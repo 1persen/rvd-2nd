@@ -68,3 +68,6 @@ class PaymentOut(BaseModel):
     reconcile_verdict: Optional[str] = None
     # Token baca-status untuk GET /status dan POST /reconcile (deterministik, tidak di DB).
     status_token: Optional[str] = None
+    # True bila ini replay pesanan existing (bukan invoice baru), supaya frontend
+    # bisa pre-fill form & tampilkan panel "Lanjutkan Pembayaran" tanpa redirect otomatis.
+    is_existing_order: bool = False
