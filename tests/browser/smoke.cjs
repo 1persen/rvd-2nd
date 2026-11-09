@@ -12,7 +12,7 @@ const zlib = require('node:zlib');
   let page;
   try {
     const context = await browser.newContext();
-        page = await context.newPage();
+    page = await context.newPage();
     page.setDefaultTimeout(15000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -130,10 +130,10 @@ const zlib = require('node:zlib');
       await page.getByLabel('Nomor WhatsApp').fill('81000000002');
       await page.locator('#vote-modal-email').waitFor({ state: 'visible' });
       await page.locator('#vote-modal-email').fill(`navigation${width}@example.com`);
-      await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
+      await page.getByRole('button', { name: `Lanjutkan pembayaran · 1 suara`, exact: true }).click();
       // createInvoice() is called directly after form submit; no "Buat pembayaran" button.
       // "Lanjutkan pembayaran" appears when PENDING with payment_url.
-      await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).waitFor({ state: 'visible' });
+      await page.getByRole('button', { name: 'Lanjutkan Pembayaran', exact: true }).waitFor({ state: 'visible' });
       // No intermediate dialog, no "Buka pembayaran Duitku", no "Periksa status".
       assert.equal(await page.getByRole('dialog').count(), 0, `${width}: no dialog`);
       assert.equal(await page.getByRole('link', { name: 'Buka pembayaran Duitku' }).count(), 0, `${width}: no Duitku link`);
@@ -141,7 +141,7 @@ const zlib = require('node:zlib');
       assert.equal(await page.getByText('Tautan pembayaran belum tersedia.', { exact: false }).filter({ visible: true }).count(), 0, `${width}: no missing URL error`);
       assert.equal(creations, 1, `${width}: single payment creation`);
       // Click "Lanjutkan pembayaran" -> navigates to backend payment_url.
-      await page.getByRole('button', { name: 'Lanjutkan pembayaran', exact: true }).click();
+      await page.getByRole('button', { name: 'Lanjutkan Pembayaran', exact: true }).click();
       await page.waitForTimeout(1000);
       assert.equal(navigatedTo, 'https://sandbox.duitku.com/checkout/test', `${width}: navigated to backend payment_url`);
       await page.unroute('**/api/v1/payments');
