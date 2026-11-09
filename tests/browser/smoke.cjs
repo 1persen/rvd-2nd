@@ -128,8 +128,8 @@ const zlib = require('node:zlib');
       await page.getByLabel('Nama pendukung').fill(`Browser Navigation ${width}`);
       await page.getByLabel('Nomor WhatsApp').waitFor({ state: 'visible' });
       await page.getByLabel('Nomor WhatsApp').fill('81000000002');
-      await page.getByLabel('Email', { exact: true }).waitFor({ state: 'visible' });
-      await page.getByLabel('Email', { exact: true }).fill(`navigation${width}@example.com`);
+      await page.locator('#vote-modal-email').waitFor({ state: 'visible' });
+      await page.locator('#vote-modal-email').fill(`navigation${width}@example.com`);
       await page.getByRole('button', { name: 'Periksa dukungan', exact: true }).click();
       // createInvoice() is called directly after form submit; no "Buat pembayaran" button.
       // "Lanjutkan pembayaran" appears when PENDING with payment_url.
