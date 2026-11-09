@@ -60,7 +60,10 @@ async def test_gateway_timeout_keeps_invoice_unresolved(async_client, test_data,
 
     duitku.side_effect = None
     retry = await invoice(async_client, test_data)
-    assert retry.status_code == 400, retry.text
+    # Replay dengan idempotency key sama: mengembalikan invoice existing, is_existing_order=true
+    assert retry.status_code == 200, retry.text
+    assert retry.json()['data']['id'] == data['id']
+    assert retry.json()['data']['is_existing_order'] is True
     assert duitku.await_count == 1
 
 
@@ -214,7 +217,10 @@ async def test_malformed_success_stays_unknown_and_blocks_retry(async_client, te
 
     # Retry tanpa idempotency key diblokir selama invoice belum pasti.
     blocked = await invoice(async_client, test_data)
-    assert blocked.status_code == 400, blocked.text
+    # Replay tanpa idempotency key (phone+event sama): mengembalikan invoice existing
+    assert blocked.status_code == 200, blocked.text
+    assert blocked.json()['data']['id'] == data['id']
+    assert blocked.json()['data']['is_existing_order'] is True
     assert duitku.await_count == 1
 
 

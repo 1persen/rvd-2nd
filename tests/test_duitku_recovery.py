@@ -19,7 +19,6 @@ from app.repositories import payment as payment_repo, vote_log as vote_log_repo
 from app.schemas.payment import PaymentCreate
 from app.seeds.admin import seed_admin
 from app.services import duitku_service, payment_service
-from app.services.payment_service import PaymentError
 
 
 @pytest.fixture
@@ -138,10 +137,10 @@ async def test_duitku_pending_past_expiry_still_blocks(async_client, test_data, 
     stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     await db_session.commit()
 
-    # Request lain (wajah berbeda) harus tetap diblokir guard meski invoice
-    # sudah lewat expires_at: expiry lokal tidak menyentuh invoice Duitku.
-    with pytest.raises(PaymentError):
-        await payment_service.create_payment(db_session, PaymentCreate(**other_request(test_data)))
+    # Request lain (wajah berbeda) dikembalikan sebagai replay, bukan invoice baru,
+    # meski invoice sudah lewat expires_at: expiry lokal tidak menyentuh invoice Duitku.
+    replay = await payment_service.create_payment(db_session, PaymentCreate(**other_request(test_data)))
+    assert replay.id == payment['id']
     db_session.expire_all()
     still = await payment_repo.get_payment(db_session, payment['id'])
     assert still.status == PaymentStatus.PENDING
@@ -154,8 +153,13 @@ async def test_creating_state_blocks_new_invoice(async_client, test_data, db_ses
     stored.duitku_payload = {**stored.duitku_payload, '_inquiry_state': 'creating'}
     await db_session.commit()
 
-    with pytest.raises(PaymentError):
-        await payment_service.create_payment(db_session, PaymentCreate(**other_request(test_data)))
+    # Request lain (wajah berbeda) tidak boleh memicu invoice baru: replay
+    # mengembalikan invoice existing, bukan membuat invoice baru.
+    replay = await payment_service.create_payment(db_session, PaymentCreate(**other_request(test_data)))
+    assert replay.id == payment['id']
+    async with async_session() as fresh:
+        payments = await payment_repo.list_payments(fresh, event_id=test_data['event'].id)
+        assert all(p.id == payment['id'] for p in payments)
 
 
 @pytest.mark.asyncio
@@ -426,12 +430,12 @@ async def test_manual_review_after_max_attempts(async_client, test_data, db_sess
     assert stored.status == PaymentStatus.PENDING
     assert stored.duitku_payload['_attempts'] == 10
 
-    # Tetap memblokir pembuatan invoice baru (D13). Body identik akan dijawab
-    # replay sebelum guard dievaluasi, jadi pakai request lain untuk phone+event.
+    # Tidak lagi memblokir: request lain (wajah berbeda) dikembalikan sebagai
+    # replay (is_existing_order=true) agar pelanggan tidak kehilangan akses.
     blocked = await async_client.post('/api/v1/payments', json=other_request(test_data))
-    assert blocked.status_code == 400, blocked.text
-    # API memakai envelope {success, message, data} (lihat app/main.py).
-    assert 'masih kami proses' in blocked.json()['message']
+    assert blocked.status_code == 200, blocked.text
+    assert blocked.json()['data']['id'] == payment['id']
+    assert blocked.json()['data']['is_existing_order'] is True
 
 
 @pytest.mark.asyncio
