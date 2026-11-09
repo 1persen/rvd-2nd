@@ -161,6 +161,9 @@ def _replay_or_raise(existing: Payment, payload: PaymentCreate) -> Payment:
             "Pesanan sebelumnya masih kami proses. Jangan membuat pembayaran "
             "baru. Buka status pesanan untuk memeriksa atau melanjutkan."
         )
+    # Replay: kembalikan pesanan existing tanpa error. Frontend akan pre-fill
+    # form & tampilkan panel "Lanjutkan Pembayaran" (bukan redirect otomatis).
+    existing._is_replay = True
     return existing
 
 
@@ -308,10 +311,21 @@ async def create_payment(
                 existing.idempotency_key = None
                 await session.flush()
             else:
-                raise PaymentError(
-                    "Pesanan sebelumnya masih kami proses. Jangan membuat pembayaran "
-                    "baru. Buka status pesanan untuk memeriksa atau melanjutkan."
-                )
+                # Pesanan Duitku existing: kembalikan ke pelanggan (pre-fill form
+                # + tautan bayar) daripada menolak. Frontend mengenali replay via
+                # is_existing_order dan menampilkan panel "Lanjutkan Pembayaran".
+                existing._is_replay = True
+                await session.flush()
+                team = await team_repo.get_team(session, existing.team_id)
+                out = to_payment_out(existing, team).model_dump()
+                # Sertakan data pendukung supaya frontend bisa pre-fill form.
+                class _ReplayPaymentOut:
+                    pass
+                # Kembalikan lewat objek pembayaran; router akan commit & balas.
+                # Karena service biasanya return Payment, kita pakai payment
+                # dengan flag replay; router to_payment_out akan menyertakan
+                # is_existing_order.
+                return existing
 
     payment = Payment(
         id=new_id("pay"),
@@ -704,6 +718,7 @@ def to_payment_out(payment: Payment, team: Team) -> PaymentOut:
                     and (duitku_service.is_sandbox_payment_url(duitku_payload.get("paymentUrl"))
                          if duitku_service.valid_payment_url(duitku_payload.get('paymentUrl'))
                          else duitku_payload.get('_environment') == 'sandbox')),
+        is_existing_order=bool(getattr(payment, '_is_replay', False)),
     )
 
 

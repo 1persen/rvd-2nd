@@ -212,8 +212,8 @@ function voteModal() {
           this.stopPolling();
           return;
         }
-        if (body.data.status === 'PENDING' && !body.data.payment_url) {
-          // Hasil inquiry tidak pasti: pertahankan pesanan dan tunjukkan status.
+        if (body.data.is_existing_order || (body.data.status === 'PENDING' && !body.data.payment_url)) {
+          // Hasil inquiry tidak pasti atau pesanan lama: pertahankan pesanan dan tunjukkan status.
           this.adoptOrder(body.data);
           return;
         }
@@ -344,63 +344,67 @@ function voteModal() {
       }
     },
 
-    // Isi ulang form dari backend; telepon dikembalikan tanpa awalan +62.
-    hydrateForm(data) {
-      if (!data) return;
-      if (!this.form.name && data.supporter_name) this.form.name = data.supporter_name;
-      if (!this.form.email && data.supporter_email) this.form.email = data.supporter_email;
-      if (!this.form.message && data.support_message) this.form.message = data.support_message;
-      const phone = String(data.supporter_phone || '').replace(/^\+?62/, '').replace(/^0+/, '');
-      if (!this.form.phone && phone) this.form.phone = phone;
-    },
+        // Isi ulang form dari backend; telepon dikembalikan tanpa awalan +62.
+        hydrateForm(data) {
+          if (!data) return;
+          if (!this.form.name && data.supporter_name) this.form.name = data.supporter_name;
+          if (!this.form.email && data.supporter_email) this.form.email = data.supporter_email;
+          if (!this.form.message && data.support_message) this.form.message = data.support_message;
+          const phone = String(data.supporter_phone || '').replace(/^\+?62/, '').replace(/^0+/, '');
+          if (!this.form.phone && phone) this.form.phone = phone;
+          if (!this.form.qty && data.qty) this.form.qty = Number(data.qty);
+          if (!this.form.effect && data.effect_code) this.form.effect = data.effect_code;
+          const method = data.payment_channel || (data.duitku_payment_method || '').toUpperCase();
+          if (!this.form.method && method) this.form.method = method;
+        },
 
-    // Polling lokal 8 detik: hanya GET /status, berhenti setelah ~10 menit.
-    startPolling() {
-      this.stopPolling();
-      if (typeof setInterval !== 'function') return;
-      this.pollCount = 0;
-      this.pollTimer = setInterval(() => {
-        this.pollCount += 1;
-        if (this.pollCount > 75) { this.stopPolling(); return; }
-        if (!this.open || !this.order || this.order.status !== 'PENDING') { this.stopPolling(); return; }
-        this.checkStatus();
-      }, 8000);
-    },
+        // Polling lokal 8 detik: hanya GET /status, berhenti setelah ~10 menit.
+        startPolling() {
+          this.stopPolling();
+          if (typeof setInterval !== 'function') return;
+          this.pollCount = 0;
+          this.pollTimer = setInterval(() => {
+            this.pollCount += 1;
+            if (this.pollCount > 75) { this.stopPolling(); return; }
+            if (!this.open || !this.order || this.order.status !== 'PENDING') { this.stopPolling(); return; }
+            this.checkStatus();
+          }, 8000);
+        },
 
-    stopPolling() { clearInterval(this.pollTimer); this.pollTimer = null; },
+        stopPolling() { clearInterval(this.pollTimer); this.pollTimer = null; },
 
-    // Aksi eksplisit: satu cek ke provider lewat backend (bukan dari browser).
-    async reconcileOrder() {
-      if (this.isChecking || !this.order?.id) return;
-      const order = this.order;
-      const token = order.status_token || order.token;
-      this.isChecking = true;
-      try {
-        const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
-          + '/reconcile?t=' + encodeURIComponent(token), { method: 'POST' });
-        if (res.status === 403) {
-          this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
-          return;
-        }
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok || !body.success) {
-          // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
-          this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
-          return;
-        }
-        this.hydrateForm(body.data);
-        this.order = this.orderFrom(body.data);
-        this.reconcileVerdict = body.data.reconcile_verdict || '';
-        this.error = '';
-        if (this.order.status === 'SUCCESS') this.stopPolling();
-      } catch (_) {
-        this.error = 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
-      } finally {
-        this.isChecking = false;
-      }
-    },
+        // Aksi eksplisit: satu cek ke provider lewat backend (bukan dari browser).
+        async reconcileOrder() {
+          if (this.isChecking || !this.order?.id) return;
+          const order = this.order;
+          const token = order.status_token || order.token;
+          this.isChecking = true;
+          try {
+            const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
+              + '/reconcile?t=' + encodeURIComponent(token), { method: 'POST' });
+            if (res.status === 403) {
+              this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
+              return;
+            }
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok || !body.success) {
+              // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
+              this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+              return;
+            }
+            this.hydrateForm(body.data);
+            this.order = this.orderFrom(body.data);
+            this.reconcileVerdict = body.data.reconcile_verdict || '';
+            this.error = '';
+            if (this.order.status === 'SUCCESS') this.stopPolling();
+          } catch (_) {
+            this.error = 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+          } finally {
+            this.isChecking = false;
+          }
+        },
 
-    startNewInvoice() {
+        startNewInvoice() {
       this.stopPolling();
       this.order = null;
       this.payment = null;
