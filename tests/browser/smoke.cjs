@@ -3,10 +3,13 @@ const assert = require('node:assert/strict');
 const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 const zlib = require('node:zlib');
+const { platform } = require('node:process');
+
+const PYTHON = platform === 'win32' ? '.venv/Scripts/python' : '.venv/bin/python';
 
 (async () => {
   const baseURL = 'http://127.0.0.1:8765';
-  const fixture = JSON.parse(execFileSync('.venv/Scripts/python', ['tests/browser/seed.py'], { encoding: 'utf8' }));
+  const fixture = JSON.parse(execFileSync(PYTHON, ['tests/browser/seed.py'], { encoding: 'utf8' }));
   const browser = await chromium.launch({ headless: true });
   fs.mkdirSync('tests/browser/artifacts', { recursive: true });
   let page;
