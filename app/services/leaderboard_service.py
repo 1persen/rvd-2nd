@@ -1,5 +1,5 @@
-"""
-Leaderboard service — ranking, trend, cache and SSE push.
+﻿"""
+Leaderboard service â€” ranking, trend, cache and SSE push.
 
 Read path: one query on teams (trend comes from teams.current_rank vs
 teams.previous_rank), cached for CACHE_TTL seconds and refreshed on every push.
@@ -126,3 +126,23 @@ async def schedule_push(event_id: str) -> None:
     task = asyncio.create_task(_push_later(event_id, interval))
     _pending_pushes.add(task)
     task.add_done_callback(_pending_pushes.discard)
+
+
+async def publish_support(session, payment) -> None:
+    """Broadcast one confirmed support (ticker + effect) to public SSE clients.
+
+    Call only after the payment's vote was granted in this request (voted_now).
+    Contains only public fields: no email, phone, or Duitku references.
+    """
+    team = await session.get(Team, payment.team_id)
+    await cache.publish({
+        "type": "support",
+        "event_id": payment.event_id,
+        "level": None,
+        "payment_id": payment.id,
+        "supporter_name": "Anonim" if payment.is_anonymous else payment.supporter_name,
+        "team_name": team.name if team else "",
+        "votes": payment.votes,
+        "support_message": payment.support_message or "",
+        "effect_code": payment.effect_code,
+    })

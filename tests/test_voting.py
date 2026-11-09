@@ -4,10 +4,13 @@ Tests for the voting and payment workflow.
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from unittest.mock import AsyncMock
+import httpx
 
 from datetime import datetime, timedelta, timezone
 
-from app.services import payment_service
+from app.core.config import settings
+from app.services import duitku_service, payment_service
 
 # Fixtures (db_session, async_client, test_data) live in conftest.py.
 
@@ -122,10 +125,29 @@ async def test_failed_payment_does_not_add_vote(async_client: AsyncClient, db_se
     assert team_votes == 0
 
 
+@pytest.fixture
+def duitku_guard(monkeypatch):
+    """Midtrans legacy disabled; Duitku create_transaction returns an unknown
+    inquiry_state so the duplicate guard is exercised on the real path."""
+    monkeypatch.setattr(settings, 'MIDTRANS_MOCK_MODE', False)
+    monkeypatch.setattr(settings, 'DUITKU_MERCHANT_CODE', 'test-merchant')
+    monkeypatch.setattr(settings, 'DUITKU_API_KEY', 'test-only-key')
+    gateway = AsyncMock(return_value={
+        'statusCode': '00', 'reference': 'test-reference',
+        'paymentUrl': 'https://passport.duitku.com/checkout/test', 'qrString': 'test-qr',
+    })
+    monkeypatch.setattr(duitku_service, 'create_transaction', gateway)
+    monkeypatch.setattr(duitku_service, 'check_transaction_status', AsyncMock(side_effect=httpx.ReadTimeout('Status unavailable')))
+    return gateway
+
+
 @pytest.mark.asyncio
-async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_session: AsyncSession, test_data: dict):
+async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_session: AsyncSession, test_data: dict, duitku_guard):
     """
-    Tests that creating a second payment with the same phone+event returns 400.
+    A second invoice with the same phone+event must be rejected with 400.
+    The payment gateway is a third party: when it only reports a result, the
+    system cannot track or override its status, so the guard must hold the
+    order open instead of letting a duplicate through.
     """
     event = test_data["event"]
     team = test_data["team"]
@@ -136,6 +158,7 @@ async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_sessi
         "qty": 1,
         "supporter_name": "Duplicate Voter",
         "supporter_phone": "081234567890",
+        "supporter_email": "sandbox-test@example.com",
     }
 
     # First creation should succeed
@@ -147,7 +170,8 @@ async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_sessi
     # Second creation with same phone+event should fail with 400
     response2 = await async_client.post("/api/v1/payments", json=create_payload)
     assert response2.status_code == 400
-    assert "invoice pembayaran" in response2.json()["message"]
+    assert "masih kami proses" in response2.json()["message"]
+    assert "Jangan membuat pembayaran baru" in response2.json()["message"]
 
     # Verify only one PENDING payment exists for this phone+event
     from app.repositories import payment as payment_repo

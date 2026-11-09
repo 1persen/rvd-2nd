@@ -16,6 +16,7 @@ from typing import Any, Optional
 from pydantic import ValidationError
 
 from app.core.config import settings
+from app.core.effects import public_effects
 from app.enums.education_level import EDUCATION_LABELS
 from app.enums.event_status import EventStatus
 from app.schemas.event import ThemeConfig
@@ -307,6 +308,9 @@ def event_dict(
         "total_votes": total_votes,
         "total_supporters": total_supporters,
         "progress": progress,
+        # Syarat bundling efek dari backend; frontend tidak boleh menentukannya sendiri.
+        "vote_effects": public_effects(),
+        "payments_configured": settings.payments_configured,
     }
 
 

@@ -7,6 +7,18 @@ from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Metode Duitku yang ditawarkan. Kode dikirim apa adanya sebagai
+# `paymentMethod` saat inquiry; Duitku yang menentukan penyedia di halaman
+# pembayarannya. Tidak ada setting env: daftar ini satu-satunya sumber.
+#   NQ = QRIS, SA = ShopeePay, DA = DANA.
+PAYMENT_METHODS = (
+    {"code": "NQ", "label": "QRIS"},
+    {"code": "SA", "label": "ShopeePay"},
+    {"code": "DA", "label": "DANA"},
+)
+PAYMENT_METHOD_CODES = tuple(m["code"] for m in PAYMENT_METHODS)
+PAYMENT_METHOD_LABELS = {m["code"]: m["label"] for m in PAYMENT_METHODS}
+
 
 class Settings(BaseSettings):
     APP_NAME: str = "Web Voting Championship"
@@ -53,7 +65,6 @@ class Settings(BaseSettings):
     DUITKU_MERCHANT_CODE: str = ""
     DUITKU_API_KEY: str = ""
     DUITKU_ENVIRONMENT: Literal["sandbox", "production"] = "sandbox"
-    DUITKU_PAYMENT_METHOD: Literal["SP", "NQ", "SQ"] = "SP"
 
     REDIS_URL: str = "redis://localhost:6379/0"
     CLOUDFLARE_API_KEY: str = ""

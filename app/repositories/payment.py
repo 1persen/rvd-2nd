@@ -9,6 +9,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.payment import Payment
+from app.enums.payment_gateway import PaymentGateway
 from app.enums.payment_status import PaymentStatus
 
 
@@ -91,6 +92,32 @@ async def list_donations(session: AsyncSession, event_id: str, limit: int = 5000
             Payment.votes,
             Payment.created_at,
         )
+        .where(Payment.event_id == event_id, Payment.status.in_(_SUCCESS_STATUSES))
+        .order_by(Payment.created_at.desc())
+        .limit(limit)
+    )
+    result = await session.execute(stmt)
+    return result.all()
+
+
+async def recent_supports(session: AsyncSession, event_id: str, limit: int = 30):
+    """Dukungan sukses terbaru untuk running text.
+
+    Hanya nama, jumlah vote, tim yang divote, dan pesan. Email dan nomor
+    telepon sengaja tidak diambil.
+    """
+    from app.models.team import Team
+
+    stmt = (
+        select(
+            Payment.id,
+            Payment.supporter_name,
+            Payment.support_message,
+            Payment.votes,
+            Payment.is_anonymous,
+            Team.name.label("team_name"),
+        )
+        .join(Team, Team.id == Payment.team_id)
         .where(Payment.event_id == event_id, Payment.status.in_(_SUCCESS_STATUSES))
         .order_by(Payment.created_at.desc())
         .limit(limit)
@@ -193,6 +220,23 @@ async def expire_if_pending(session: AsyncSession, payment_id: str) -> None:
     )
 
 
+async def get_pending_by_phone_and_event_for_update(
+    session: AsyncSession, event_id: str, phone: str
+) -> Optional[Payment]:
+    """PENDING terbaru tanpa filter expires_at, dengan pessimistic lock."""
+    stmt = (
+        select(Payment)
+        .where(Payment.event_id == event_id)
+        .where(Payment.supporter_phone == phone)
+        .where(Payment.status == PaymentStatus.PENDING)
+        .order_by(Payment.created_at.desc())
+        .limit(1)
+        .with_for_update()
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none()
+
+
 async def expire_old_pendings_by_phone_and_event(
     session: AsyncSession, event_id: str, phone: str
 ) -> int:
@@ -203,6 +247,7 @@ async def expire_old_pendings_by_phone_and_event(
         .where(Payment.event_id == event_id)
         .where(Payment.supporter_phone == phone)
         .where(Payment.status == PaymentStatus.PENDING)
+        .where(Payment.payment_gateway == PaymentGateway.MIDTRANS)
         .where(Payment.expires_at <= datetime.now(timezone.utc))
         .values(status=PaymentStatus.EXPIRED)
     )

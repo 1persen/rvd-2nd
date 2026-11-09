@@ -150,6 +150,35 @@ async def list_donors(
     return ok(payload)
 
 
+@router.get("/events/{event_id}/support-feed")
+async def support_feed(
+    event_id: str,
+    session: AsyncSession = Depends(get_db),
+):
+    """Dukungan sukses terbaru untuk mengisi running text saat halaman dibuka.
+
+    Hanya field publik: nama (atau 'Anonim'), pesan yang sudah disensor, jumlah
+    vote, dan efek. Email, telepon, dan referensi pembayaran tidak dikirim.
+    """
+    from app.repositories import payment as payment_repo
+
+    await event_service.get_public_event_or_404(session, event_id)
+    rows = await payment_repo.recent_supports(session, event_id)
+    items = [
+        {
+            "type": "support",
+            "event_id": event_id,
+            "payment_id": row.id,
+            "supporter_name": "Anonim" if row.is_anonymous else row.supporter_name,
+            "team_name": row.team_name,
+            "votes": row.votes,
+            "support_message": row.support_message or "",
+        }
+        for row in rows
+    ]
+    return ok(items)
+
+
 @router.get("/leaderboard")
 async def leaderboard(
     event_id: str = Query(..., description="ID event"),

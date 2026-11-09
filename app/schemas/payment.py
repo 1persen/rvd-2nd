@@ -22,6 +22,11 @@ class PaymentCreate(BaseModel):
     supporter_phone: str = Field(min_length=1, max_length=20)
     is_anonymous: bool = False
     idempotency_key: Optional[str] = Field(default=None, max_length=64)
+    # Kode metode Duitku yang dipilih pelanggan. Kosong = pakai DUITKU_PAYMENT_METHOD.
+    payment_method: Optional[str] = Field(default=None, min_length=2, max_length=2, pattern=r"^[A-Z0-9]{2}$")
+    # Pesan dukungan opsional (disensor di backend) dan satu efek bundling.
+    support_message: Optional[str] = Field(default=None, max_length=150)
+    effect_code: Optional[str] = Field(default=None, max_length=20)
 
 
 class PaymentOut(BaseModel):
@@ -56,3 +61,10 @@ class PaymentOut(BaseModel):
     is_anonymous: bool = False
     is_mock: bool = False
     is_sandbox: bool = False
+    support_message: Optional[str] = None
+    effect_code: Optional[str] = None
+    inquiry_state: Optional[str] = None
+    needs_manual_review: bool = False
+    reconcile_verdict: Optional[str] = None
+    # Token baca-status untuk GET /status dan POST /reconcile (deterministik, tidak di DB).
+    status_token: Optional[str] = None
