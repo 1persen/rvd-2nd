@@ -78,7 +78,8 @@ function voteModal() {
             });
           }
           this.$watch('form.qty', () => this.enforceEffectRule());
-          const params = new URLSearchParams(window.location.search);
+                    this.$watch('hasCheckedStatus', (val) => console.log('[watch] hasCheckedStatus changed to:', val));
+                    const params = new URLSearchParams(window.location.search);
           if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
         },
 
@@ -453,8 +454,9 @@ function voteModal() {
                                         this.hydrateForm(body.data);
                                         this.order = this.orderFrom(body.data);
                                         this.reconcileVerdict = body.data.reconcile_verdict || '';
-                                        console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
-                                        this.hasCheckedStatus = true;
+                                                                                console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
+                                                                                this.hasCheckedStatus = true;
+                                                                                console.log('[reconcileOrder] this.hasCheckedStatus set to:', this.hasCheckedStatus);
                     this.error = '';
                     if (this.order.status === 'SUCCESS') this.stopPolling();
                   } catch (_) {
