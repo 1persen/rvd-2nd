@@ -153,7 +153,7 @@
 .public-site .countdown>span { display:flex; align-items:center; gap:7px; color:var(--muted); font-size:10px; }
 .public-site .countdown .icon { width:14px; height:14px; }
 .public-site .countdown>div { display:flex; align-items:baseline; gap:7px; margin-top:8px; }
-.public-site .countdown b { font-size:23px; font-weight:500; font-variant-numeric:tabular-nums; }
+.public-site .countdown b { font-size:23px; font-weight:500; font-variant-numeric:tabular-nums; color: var(--ink); }
 .public-site .countdown small { color:var(--muted); margin-right:13px; font-size:10px; }
 /* The podium keeps the first place centered, including incomplete rankings. */
 .public-site .award-stage { position:relative; isolation:isolate; overflow:hidden; border-radius:16px; background:radial-gradient(ellipse at 50% 30%,#46493466 0,transparent 49%),linear-gradient(135deg,#162a32,#101d28 55%,#1a2b33); color:#f8f5ec; padding:45px 40px 0; border:1px solid #31404a; }
@@ -615,7 +615,7 @@ html.dark .public-site .theme-toggle:hover { background: var(--brand-soft); }
 .public-site .home-hero-copy { max-width:610px; position:relative; z-index:2; padding-bottom:16px; }
 .public-site .home-hero-kicker { display:flex; align-items:center; gap:10px; color:#5f645f; font-size:11px; font-weight:700; letter-spacing:.1em; }
 .public-site .home-hero-kicker>span { width:8px; height:8px; flex:none; border-radius:50%; background:#a78045; box-shadow:0 0 0 4px #d8b36a30; }
-.public-site .home-hero-copy h1 { max-width:680px; margin:22px 0 17px; font-size:clamp(46px,5.7vw,76px); line-height:1.07; letter-spacing:-.065em; font-weight:800; }
+.public-site .home-hero-copy h1 { max-width:680px; margin:22px 0 17px; font-size:clamp(46px,5.7vw,76px); line-height:1.07; letter-spacing:-.065em; font-weight:800; color: var(--ink); }
 .public-site .home-hero-copy h1 em { display:inline-block; color:#8b6b31; font-style:normal; font-family:Manrope,sans-serif; font-weight:500; letter-spacing:-.06em; }
 .public-site .home-hero-lead { max-width:480px; color:#5f6969; font-size:15px; line-height:1.8; }
 .public-site .home-hero-copy .hero-actions { align-items:center; gap:22px; margin-top:27px; }
@@ -1493,7 +1493,7 @@ html.dark .public-site .support-chevron { background-color: var(--muted); }
 .public-site .participant-countdown-label { display:block; margin-bottom:12px; font-size:11px; font-weight:800; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); }
 .public-site .participant-countdown .countdown-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; max-width:420px; margin:0 auto; }
 .public-site .participant-countdown .countdown-grid>div { background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 4px; }
-.public-site .participant-countdown .countdown-grid b { font-size:22px; font-weight:800; }
+.public-site .participant-countdown .countdown-grid b { font-size:22px; font-weight:800; color: var(--ink); }
 .public-site .participant-card { display:flex; flex-direction:column; border:2px solid #d4a036; border-radius:14px; overflow:hidden; background:#fff; }
 .public-site .participant-card-link { display:block; color:inherit; }
 .public-site .participant-card:hover { transform:none; }

@@ -524,7 +524,7 @@ function voteModal() {
                 if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
                 if (o.status === 'PENDING') {
                   return o.payment_url
-                    ? 'Pesanan menunggu pembayaran.'
+                    ? 'Menunggu pembayaran.'
                     : 'Pesanan sedang kami periksa.';
                 }
                 return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
