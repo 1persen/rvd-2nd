@@ -44,8 +44,8 @@
           <span x-show="isChecking" x-cloak>Memeriksa status…</span>
         </button>
         <button type="button" class="btn btn-secondary vote-modal-full"
-                        x-show="(reconcileVerdict === 'ABSENT_CONFIRMED' || reconcileVerdict === 'INDETERMINATE') && !order?.payment_url"
-                        @click="startNewInvoice()">Coba Buat Tagihan Baru</button>
+                                x-show="reconcileVerdict === 'ABSENT_CONFIRMED'"
+                                @click="startNewInvoice()">Coba Buat Tagihan Baru</button>
         <a class="btn btn-secondary vote-modal-full" :href="helpUrl" target="_blank" rel="noopener">Hubungi Bantuan</a>
       </div>
     </div>

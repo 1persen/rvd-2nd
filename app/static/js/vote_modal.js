@@ -254,11 +254,19 @@ function voteModal() {
     },
 
     goToPayment() {
-      const url = this.order?.payment_url || this.payment?.payment_url;
-      if (this.isNavigating || !url) return;
-      this.isNavigating = true;
-      window.location.href = url;
-    },
+          const url = this.order?.payment_url || this.payment?.payment_url;
+          if (this.isNavigating || !url) {
+            if (this.order?.id) {
+              // URL hilang/kadaluarsa: cek status ulang ke provider.
+              this.reconcileOrder();
+            } else {
+              this.error = 'Tautan pembayaran tidak tersedia. Klik "Periksa Status Pesanan" atau coba buat tagihan baru.';
+            }
+            return;
+          }
+          this.isNavigating = true;
+          window.location.href = url;
+        },
 
     // Panel status membaca order, bukan payment.
     orderFrom(data) {
