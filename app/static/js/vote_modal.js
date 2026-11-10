@@ -443,15 +443,18 @@ function voteModal() {
                       return;
                     }
                     const body = await res.json().catch(() => ({}));
-                    if (!res.ok || !body.success) {
-                      // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
-                      this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
-                      return;
-                    }
-                    this.hydrateForm(body.data);
-                    this.order = this.orderFrom(body.data);
-                    this.reconcileVerdict = body.data.reconcile_verdict || '';
-                    this.hasCheckedStatus = true;
+                                        if (!res.ok || !body.success) {
+                                          // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
+                                          this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+                                          return;
+                                        }
+                                        console.log('[reconcileOrder] body.data:', body.data);
+                                        console.log('[reconcileOrder] reconcile_verdict:', body.data?.reconcile_verdict);
+                                        this.hydrateForm(body.data);
+                                        this.order = this.orderFrom(body.data);
+                                        this.reconcileVerdict = body.data.reconcile_verdict || '';
+                                        console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
+                                        this.hasCheckedStatus = true;
                     this.error = '';
                     if (this.order.status === 'SUCCESS') this.stopPolling();
                   } catch (_) {
@@ -499,6 +502,7 @@ function voteModal() {
 
     get orderLabel() {
               const o = this.order;
+              console.log('[orderLabel] called, o:', o, 'reconcileVerdict:', this.reconcileVerdict, 'hasCheckedStatus:', this.hasCheckedStatus);
               if (!o) return 'Memuat status…';
               if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
               if (this.reconcileVerdict === 'PRESENT') {
