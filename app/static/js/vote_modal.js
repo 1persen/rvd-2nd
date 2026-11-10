@@ -452,8 +452,11 @@ function voteModal() {
                                         console.log('[reconcileOrder] body.data:', body.data);
                                         console.log('[reconcileOrder] reconcile_verdict:', body.data?.reconcile_verdict);
                                         this.hydrateForm(body.data);
-                                        this.order = this.orderFrom(body.data);
-                                        this.reconcileVerdict = body.data.reconcile_verdict || '';
+                                                                                this.order = this.orderFrom(body.data);
+                                                                                console.log('[reconcileOrder] this.order:', this.order);
+                                                                                console.log('[reconcileOrder] this.order.status:', this.order?.status);
+                                                                                console.log('[reconcileOrder] this.order.payment_url:', this.order?.payment_url);
+                                                                                this.reconcileVerdict = body.data.reconcile_verdict || '';
                                                                                 console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
                                                                                 this.hasCheckedStatus = true;
                                                                                 console.log('[reconcileOrder] this.hasCheckedStatus set to:', this.hasCheckedStatus);
