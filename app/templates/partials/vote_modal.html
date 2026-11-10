@@ -23,9 +23,11 @@
       <p class="vote-order-kicker">Status pembayaran</p>
       <h3 class="vote-order-title" x-text="orderLabel"></h3>
       <dl class="vote-order-meta">
-        <div><dt>Pesanan</dt><dd x-text="(order?.votes || 0) + ' vote'"></dd></div>
-        <div><dt>ID Transaksi</dt><dd x-text="order?.id"></dd></div>
-      </dl>
+              <div><dt>Nama</dt><dd x-text="order?.supporter_name"></dd></div>
+              <div><dt>Nomor HP</dt><dd x-text="order?.supporter_phone"></dd></div>
+              <div><dt>Pesanan</dt><dd x-text="(order?.votes || 0) + ' vote'"></dd></div>
+              <div><dt>ID Transaksi</dt><dd x-text="order?.id"></dd></div>
+            </dl>
       <p class="vote-order-hint" x-show="order?.status === 'PENDING'">
         Jangan melakukan pembayaran melalui tagihan lain.
       </p>
@@ -40,7 +42,7 @@
           <span x-show="isChecking" x-cloak>Memeriksa status…</span>
         </button>
         <button type="button" class="btn btn-secondary vote-modal-full"
-                x-show="reconcileVerdict === 'ABSENT_CONFIRMED'"
+                x-show="reconcileVerdict === 'ABSENT_CONFIRMED' || reconcileVerdict === 'INDETERMINATE'"
                 @click="startNewInvoice()">Coba Buat Tagihan Baru</button>
         <a class="btn btn-secondary vote-modal-full" :href="helpUrl" target="_blank" rel="noopener">Hubungi Bantuan</a>
       </div>

@@ -259,6 +259,8 @@ function voteModal() {
     // Panel status membaca order, bukan payment.
     orderFrom(data) {
       if (!data || !data.id) return null;
+      const prev = this.order?.id === data.id ? this.order : null;
+      const phoneRaw = String(this.form.phone || '').replace(/^0+/, '');
       return {
         id: data.id,
         status: data.status,
@@ -266,6 +268,8 @@ function voteModal() {
         needs_manual_review: Boolean(data.needs_manual_review),
         payment_url: data.payment_url || null,
         votes: Number(data.votes || 0),
+        supporter_name: data.supporter_name || prev?.supporter_name || this.form.name || '',
+        supporter_phone: data.supporter_phone || prev?.supporter_phone || (phoneRaw ? ('08' + phoneRaw) : '') || '',
         status_token: data.status_token || (this.order?.id === data.id ? this.order.status_token : ''),
       };
     },
@@ -475,7 +479,8 @@ function voteModal() {
       if (!o) return '';
       if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
       if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
-      if (o.needs_manual_review) return 'Pesanan perlu diperiksa tim bantuan.';
+      if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
+      if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
       if (o.status === 'PENDING') {
         return o.payment_url
           ? 'Pesanan menunggu pembayaran.'
