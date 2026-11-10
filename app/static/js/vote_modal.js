@@ -314,43 +314,51 @@ function voteModal() {
     storageKey() { return 'rvd.checkout.' + this.event.id + '.' + this.team.id; },
 
     rememberOrder() {
-      if (!this.order?.id || !this.order?.status_token) return;
-      try {
-        sessionStorage.setItem(this.storageKey(), JSON.stringify({
-          paymentId: this.order.id,
-          token: this.order.status_token,
-          idempotencyKey: this.idempotencyKey,
-          savedAt: Date.now(),
-        }));
-      } catch (_) {}
-    },
+          if (!this.order?.id || !this.order?.status_token) return;
+          try {
+            sessionStorage.setItem(this.storageKey(), JSON.stringify({
+              paymentId: this.order.id,
+              token: this.order.status_token,
+              idempotencyKey: this.idempotencyKey,
+              savedAt: Date.now(),
+              supporter_name: this.order.supporter_name || '',
+              supporter_phone: this.order.supporter_phone || '',
+              votes: this.order.votes || 0,
+              expires_at: this.order.expires_at || null,
+              payment_url: this.order.payment_url || null,
+            }));
+          } catch (_) {}
+        },
 
     // Hanya paymentId, token, idempotencyKey, dan stempel waktu. Tidak ada kontak.
-    restoreOrder() {
-      let saved = null;
-      try {
-        saved = JSON.parse(sessionStorage.getItem(this.storageKey()) || 'null');
-      } catch (_) {
-        saved = null;
-      }
-      if (!saved || !saved.paymentId || !saved.token) return;
-      if (!saved.savedAt || Date.now() - Number(saved.savedAt) > 24 * 60 * 60 * 1000) {
-        this.forgetOrder();
-        return;
-      }
-      this.order = {
-        id: saved.paymentId,
-        token: saved.token,
-        status_token: saved.token,
-        status: 'PENDING',
-        inquiry_state: null,
-        needs_manual_review: false,
-        payment_url: null,
-        votes: 0,
-      };
-      if (saved.idempotencyKey) this.idempotencyKey = saved.idempotencyKey;
-      this.reconcileVerdict = '';
-    },
+        restoreOrder() {
+          let saved = null;
+          try {
+            saved = JSON.parse(sessionStorage.getItem(this.storageKey()) || 'null');
+          } catch (_) {
+            saved = null;
+          }
+          if (!saved || !saved.paymentId || !saved.token) return;
+          if (!saved.savedAt || Date.now() - Number(saved.savedAt) > 24 * 60 * 60 * 1000) {
+            this.forgetOrder();
+            return;
+          }
+          this.order = {
+            id: saved.paymentId,
+            token: saved.token,
+            status_token: saved.token,
+            status: 'PENDING',
+            inquiry_state: null,
+            needs_manual_review: false,
+            payment_url: saved.payment_url || null,
+            votes: saved.votes || 0,
+            supporter_name: saved.supporter_name || '',
+            supporter_phone: saved.supporter_phone || '',
+            expires_at: saved.expires_at || null,
+          };
+          if (saved.idempotencyKey) this.idempotencyKey = saved.idempotencyKey;
+          this.reconcileVerdict = '';
+        },
 
     forgetOrder() { try { sessionStorage.removeItem(this.storageKey()); } catch (_) {} },
 
