@@ -152,6 +152,7 @@ async def build_donors(session: AsyncSession, event_id: str) -> dict:
             donor_map[key] = {
                 "name": supporter_name.strip(),
                 "team_name": team_map.get(team_id, ""),
+                "team_names": [],
                 "amount": 0,
                 "votes": 0,
                 "transactions": 0,
@@ -164,6 +165,11 @@ async def build_donors(session: AsyncSession, event_id: str) -> dict:
         if created_at and created_at > donor["last_payment"]:
             donor["last_payment"] = created_at
             donor["team_name"] = team_map.get(team_id, donor["team_name"])
+        # Satu pendukung bisa mendukung beberapa tim. Catat semua tim yang
+        # pernah didukung, dedupe tanpa mengganggu urutan transaksi.
+        team_label = team_map.get(team_id, "")
+        if team_label and team_label not in donor["team_names"]:
+            donor["team_names"].append(team_label)
 
     entries = sorted(donor_map.values(), key=lambda x: x["amount"], reverse=True)
     for i, entry in enumerate(entries, start=1):

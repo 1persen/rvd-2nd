@@ -180,6 +180,9 @@
 .public-site .podium-medal { position:absolute; left:calc(50% - 14px); bottom:-13px; width:28px; height:31px; display:grid; place-items:center; clip-path:polygon(0 0,100% 0,100% 78%,50% 100%,0 78%); background:linear-gradient(120deg,var(--metal),#fff1d3 40%,var(--metal-dark)); color:#283137; font-size:13px; font-weight:700; padding-bottom:3px; }
 .public-site .podium-person h3 { font-family:Manrope,sans-serif; color:#f5f2e9; font-size:17px; font-weight:600; letter-spacing:-.03em; overflow-wrap:anywhere; padding-inline:4px; }
 .public-site .podium-origin { color:#a1afb4; font-size:10px; margin:6px 0 22px; padding-inline:4px; min-height:15px; overflow-wrap:anywhere; }
+.public-site .podium-teams { margin-top:6px; }
+.public-site .podium-teams-label { display:block; font-size:10px; color:var(--muted); margin-bottom:4px; }
+.public-site .podium-team { display:inline-block; font-size:10px; color:var(--muted); background:#f0f1eb; border-radius:999px; padding:2px 9px; white-space:nowrap; }
 .public-site .podium-plinth { background:linear-gradient(115deg,#d7b77411,transparent 50%),linear-gradient(#beac7a19,#14222d 90%); border:1px solid #bca47130; border-top:2px solid var(--metal); border-bottom:0; min-height:163px; border-radius:9px 9px 0 0; padding:25px 10px 20px; position:relative; overflow:hidden; }
 .public-site .podium-person[data-place="1"] .podium-plinth { min-height:195px; background:linear-gradient(110deg,#dfc28020,transparent 50%),linear-gradient(#7e6a402e,#1b2a30 90%); }
 .public-site .podium-person[data-place="3"] .podium-plinth { min-height:144px; }
@@ -332,6 +335,8 @@
 .public-site .row-action .icon { width:17px; height:17px; }
 .public-site .leaderboard-page { padding-top:32px; }
 .public-site .supporter-list { margin-top:25px; }
+.public-site .row-teams { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+.public-site .row-team-tag { display:inline-block; font-size:10px; color:var(--muted); background:#f0f1eb; border-radius:999px; padding:2px 9px; white-space:nowrap; }
 .public-site .podium .donor-score,.public-site .podium-person[data-place="1"] .donor-score { font-size:clamp(15px,2vw,27px); }
 .public-site .empty-state { text-align:center; padding:70px 20px; }
 .public-site .empty-state>.icon { margin:0 auto 20px; width:45px; height:45px; color:#a58a57; }
