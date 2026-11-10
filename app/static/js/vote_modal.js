@@ -49,43 +49,58 @@ function voteModal() {
     lastFocus: null,
 
     init() {
-      window.addEventListener('vote:open', (e) => this.show(e.detail || {}));
-      window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.open) this.close(); });
-      // Metode tidak boleh berganti selama pesanan lama belum pasti: kunci
-      // idempotensi harus tetap agar retry tidak membuat tagihan kedua.
-      this.$watch('form.method', () => {
-        if (this.orderUnresolved) return;
-        this.idempotencyKey = '';
-        this.payment = null;
-      });
-      // Setiap perubahan isi pesanan adalah invoice berbeda: kunci idempotensi
-      // harus dibuat ulang agar retry tidak mengembalikan invoice lama.
-      for (const field of ['qty', 'effect', 'message', 'name', 'phone']) {
-        this.$watch('form.' + field, () => {
-          if (!this.payment && !this.orderUnresolved) this.idempotencyKey = '';
-        });
-      }
-      this.$watch('form.qty', () => this.enforceEffectRule());
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
-    },
+          window.addEventListener('vote:open', (e) => this.show(e.detail || {}));
+          window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.open) this.close(); });
+          // Pause polling & SSE saat tab hidden; resume saat visible.
+          this._visibilityHandler = () => {
+            if (document.hidden) {
+              this.stopPolling();
+              if (this._supportFeed?.source) this._supportFeed.source.close();
+            } else if (this.open && this.order?.status === 'PENDING') {
+              this.startPolling();
+              if (this._supportFeed?.init) this._supportFeed.init(this.event?.id, this._supportFeed.catalog, this._supportFeed.eventName);
+            }
+          };
+          document.addEventListener('visibilitychange', this._visibilityHandler);
+          // Metode tidak boleh berganti selama pesanan lama belum pasti: kunci
+          // idempotensi harus tetap agar retry tidak membuat tagihan kedua.
+          this.$watch('form.method', () => {
+            if (this.orderUnresolved) return;
+            this.idempotencyKey = '';
+            this.payment = null;
+          });
+          // Setiap perubahan isi pesanan adalah invoice berbeda: kunci idempotensi
+          // harus dibuat ulang agar retry tidak mengembalikan invoice lama.
+          for (const field of ['qty', 'effect', 'message', 'name', 'phone']) {
+            this.$watch('form.' + field, () => {
+              if (!this.payment && !this.orderUnresolved) this.idempotencyKey = '';
+            });
+          }
+          this.$watch('form.qty', () => this.enforceEffectRule());
+          const params = new URLSearchParams(window.location.search);
+          if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
+        },
 
     show({ event, team }) {
-      if (!event || !team) return;
-      const changedTarget = this.event?.id !== event.id || this.team?.id !== team.id;
-      this.lastFocus = document.activeElement;
-      this.event = event;
-      this.team = team;
-      this.resetCheckoutState();
-      // Pesanan lama hanya dipulihkan untuk peserta yang sama.
-      if (changedTarget) this.idempotencyKey = '';
-      if (!changedTarget) this.restoreOrder();
-      this.open = true;
-      document.body.style.overflow = 'hidden';
-      this.loadMethods();
-      if (this.order?.id) this.checkStatus();
-      this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
-    },
+          if (!event || !team) return;
+          const changedTarget = this.event?.id !== event.id || this.team?.id !== team.id;
+          this.lastFocus = document.activeElement;
+          this.event = event;
+          this.team = team;
+          this.resetCheckoutState();
+          if (changedTarget) this.idempotencyKey = '';
+          if (!changedTarget) this.restoreOrder();
+          this.open = true;
+          document.body.style.overflow = 'hidden';
+          this.loadMethods();
+          if (this.order?.id) this.checkStatus();
+          // init support feed (ticker + SSE) untuk event ini
+          if (event?.id) {
+            this._supportFeed = supportFeed(event.id, event.vote_effects || [], event.name || '');
+            this._supportFeed.init();
+          }
+          this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
+        },
 
     // Reset state pesanan tanpa menyentuh penyimpanan atau order yang dipulihkan.
     resetCheckoutState() {
@@ -98,12 +113,20 @@ function voteModal() {
     },
 
     close() {
-      if (this.isLoading) return;
-      this.stopPolling();
-      this.open = false;
-      document.body.style.overflow = '';
-      if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus();
-    },
+          if (this.isLoading) return;
+          this.stopPolling();
+          if (this._visibilityHandler) {
+            document.removeEventListener('visibilitychange', this._visibilityHandler);
+            this._visibilityHandler = null;
+          }
+          if (this._supportFeed) {
+            this._supportFeed.destroy?.();
+            this._supportFeed = null;
+          }
+          this.open = false;
+          document.body.style.overflow = '';
+          if (this.lastFocus && this.lastFocus.focus) this.lastFocus.focus();
+        },
 
     async loadMethods() {
       if (this.methodsLoaded) return;
@@ -360,18 +383,26 @@ function voteModal() {
 
         // Polling lokal 8 detik: hanya GET /status, berhenti setelah ~10 menit.
         startPolling() {
-          this.stopPolling();
-          if (typeof setInterval !== 'function') return;
-          this.pollCount = 0;
-          this.pollTimer = setInterval(() => {
-            this.pollCount += 1;
-            if (this.pollCount > 75) { this.stopPolling(); return; }
-            if (!this.open || !this.order || this.order.status !== 'PENDING') { this.stopPolling(); return; }
-            this.checkStatus();
-          }, 8000);
-        },
+                  this.stopPolling();
+                  if (typeof setInterval !== 'function') return;
+                  if (document.hidden) return;
+                  this.pollCount = 0;
+                  this.pollIntervalMs = 8000;
+                  const tick = () => {
+                    if (!this.open || !this.order || this.order.status !== 'PENDING' || document.hidden) {
+                      this.stopPolling();
+                      return;
+                    }
+                    this.pollCount += 1;
+                    if (this.pollCount > 75) { this.stopPolling(); return; }
+                    this.checkStatus();
+                    this.pollIntervalMs = Math.min(this.pollIntervalMs * 2, 60000);
+                    this.pollTimer = setTimeout(tick, this.pollIntervalMs);
+                  };
+                  this.pollTimer = setTimeout(tick, this.pollIntervalMs);
+                },
 
-        stopPolling() { clearInterval(this.pollTimer); this.pollTimer = null; },
+                stopPolling() { clearInterval(this.pollTimer); clearTimeout(this.pollTimer); this.pollTimer = null; },
 
         // Aksi eksplisit: satu cek ke provider lewat backend (bukan dari browser).
         async reconcileOrder() {
@@ -529,41 +560,62 @@ function supportFeed(eventId, catalog, eventName) {
       this.effectTimer = setTimeout(() => this.nextEffect(), reduce ? 1200 : this.currentEffect.duration_ms);
     },
     get tickerItems() { return this.queue; },
-    // Desktop: ticker menempel di dasar konten, berhenti tepat di atas footer.
-    trackFooter() {
-      if (!window.matchMedia || !window.matchMedia('(min-width: 701px)').matches) return;
-      const footer = document.querySelector('.public-footer');
-      const stage = this.$el || document.querySelector('.support-stage');
-      if (!footer || !stage) return;
-      const sync = () => {
-        const gap = window.innerHeight - footer.getBoundingClientRect().top;
-        // 0 = menempel di dasar layar; >0 = footer mulai tampil, ikut naik.
-        stage.style.bottom = (gap > 0 ? gap : 0) + 'px';
-      };
-      sync();
-      window.addEventListener('scroll', sync, { passive: true });
-      window.addEventListener('resize', sync);
-    },
-    // Ticker digeser lewat requestAnimationFrame (CSS animasi bisa dimatikan
-    // oleh preferensi reduce-motion, sehingga teks terlihat diam).
-    startTicker() {
-      if (this.tickerRaf) return;
-      let last = 0;
-      const step = (now) => {
-        const el = this.$refs?.track;
-        if (el) {
-          if (!last) last = now;
-          this.offset -= (now - last) * 0.05; // ~50 px/detik
-          const half = el.scrollWidth / 2;
-          if (half > 0 && this.offset <= -half) this.offset += half;
-          el.style.transform = 'translateX(' + this.offset + 'px)';
-        }
-        last = now;
-        this.tickerRaf = requestAnimationFrame(step);
-      };
-      this.tickerRaf = requestAnimationFrame(step);
-    },
-    giftIcon(animation) {
+        // Desktop: ticker menempel di dasar konten, berhenti tepat di atas footer.
+        trackFooter() {
+          if (!window.matchMedia || !window.matchMedia('(min-width: 701px)').matches) return;
+          const footer = document.querySelector('.public-footer');
+          const stage = this.$el || document.querySelector('.support-stage');
+          if (!footer || !stage) return;
+          this._footerSync = () => {
+            const gap = window.innerHeight - footer.getBoundingClientRect().top;
+            stage.style.bottom = (gap > 0 ? gap : 0) + 'px';
+          };
+          this._footerSync();
+          window.addEventListener('scroll', this._footerSync, { passive: true });
+          window.addEventListener('resize', this._footerSync);
+        },
+        // Ticker digeser lewat requestAnimationFrame (CSS animasi bisa dimatikan
+        // oleh preferensi reduce-motion, sehingga teks terlihat diam).
+        startTicker() {
+          if (this.tickerRaf) return;
+          let last = 0;
+          const step = (now) => {
+            const el = this.$refs?.track;
+            if (el) {
+              if (!last) last = now;
+              this.offset -= (now - last) * 0.05;
+              const half = el.scrollWidth / 2;
+              if (half > 0 && this.offset <= -half) this.offset += half;
+              el.style.transform = 'translateX(' + this.offset + 'px)';
+            }
+            last = now;
+            this.tickerRaf = requestAnimationFrame(step);
+          };
+          this.tickerRaf = requestAnimationFrame(step);
+        },
+        stopTicker() {
+          if (this.tickerRaf) {
+            cancelAnimationFrame(this.tickerRaf);
+            this.tickerRaf = null;
+          }
+        },
+        destroy() {
+          this.stopTicker();
+          if (this.source) {
+            this.source.close();
+            this.source = null;
+          }
+          if (this._footerSync) {
+            window.removeEventListener('scroll', this._footerSync);
+            window.removeEventListener('resize', this._footerSync);
+            this._footerSync = null;
+          }
+          if (this.effectTimer) {
+            clearTimeout(this.effectTimer);
+            this.effectTimer = null;
+          }
+        },
+        giftIcon(animation) {
       const tpl = document.querySelector('template[data-gift="' + animation + '"]');
       return tpl ? tpl.innerHTML : '';
     },
