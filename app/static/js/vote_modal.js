@@ -78,6 +78,7 @@ function voteModal() {
             });
           }
           this.$watch('form.qty', () => this.enforceEffectRule());
+                    console.log('[init] registering hasCheckedStatus watcher');
                     this.$watch('hasCheckedStatus', (val) => console.log('[watch] hasCheckedStatus changed to:', val));
                     const params = new URLSearchParams(window.location.search);
           if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
@@ -457,9 +458,10 @@ function voteModal() {
                                                                                 console.log('[reconcileOrder] this.order.status:', this.order?.status);
                                                                                 console.log('[reconcileOrder] this.order.payment_url:', this.order?.payment_url);
                                                                                 this.reconcileVerdict = body.data.reconcile_verdict || '';
-                                                                                console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
-                                                                                this.hasCheckedStatus = true;
-                                                                                console.log('[reconcileOrder] this.hasCheckedStatus set to:', this.hasCheckedStatus);
+                                                                                                                                                                console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
+                                                                                                                                                                this.hasCheckedStatus = true;
+                                                                                                                                                                console.log('[reconcileOrder] this.hasCheckedStatus set to:', this.hasCheckedStatus);
+                                                                                                                                                                this.$nextTick(() => console.log('[reconcileOrder] nextTick fired, hasCheckedStatus:', this.hasCheckedStatus));
                     this.error = '';
                     if (this.order.status === 'SUCCESS') this.stopPolling();
                   } catch (_) {
