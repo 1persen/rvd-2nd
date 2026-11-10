@@ -270,21 +270,22 @@ function voteModal() {
 
     // Panel status membaca order, bukan payment.
     orderFrom(data) {
-      if (!data || !data.id) return null;
-      const prev = this.order?.id === data.id ? this.order : null;
-      const phoneRaw = String(this.form.phone || '').replace(/^0+/, '');
-      return {
-        id: data.id,
-        status: data.status,
-        inquiry_state: data.inquiry_state || null,
-        needs_manual_review: Boolean(data.needs_manual_review),
-        payment_url: data.payment_url || null,
-        votes: Number(data.votes || 0),
-        supporter_name: data.supporter_name || prev?.supporter_name || this.form.name || '',
-        supporter_phone: data.supporter_phone || prev?.supporter_phone || (phoneRaw ? ('08' + phoneRaw) : '') || '',
-        status_token: data.status_token || (this.order?.id === data.id ? this.order.status_token : ''),
-      };
-    },
+          if (!data || !data.id) return null;
+          const prev = this.order?.id === data.id ? this.order : null;
+          const phoneRaw = String(this.form.phone || '').replace(/^0+/, '');
+          return {
+            id: data.id,
+            status: data.status,
+            inquiry_state: data.inquiry_state || null,
+            needs_manual_review: Boolean(data.needs_manual_review),
+            payment_url: data.payment_url || null,
+            votes: Number(data.votes || 0),
+            supporter_name: data.supporter_name || prev?.supporter_name || this.form.name || '',
+            supporter_phone: data.supporter_phone || prev?.supporter_phone || (phoneRaw ? ('08' + phoneRaw) : '') || '',
+            status_token: data.status_token || (this.order?.id === data.id ? this.order.status_token : ''),
+            expires_at: data.expires_at || null,
+          };
+        },
 
     get orderUnresolved() {
       return Boolean(this.order && this.order.status === 'PENDING');
@@ -489,19 +490,23 @@ function voteModal() {
     },
 
     get orderLabel() {
-      const o = this.order;
-      if (!o) return '';
-      if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
-      if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
-      if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
-      if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
-      if (o.status === 'PENDING') {
-        return o.payment_url
-          ? 'Pesanan menunggu pembayaran.'
-          : 'Pesanan sedang kami periksa.';
-      }
-      return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
-    },
+          const o = this.order;
+          if (!o) return '';
+          if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
+          if (this.reconcileVerdict === 'PRESENT') {
+            const exp = o.expires_at ? ' — Berlaku sampai ' + new Date(o.expires_at).toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'}) : '';
+            return 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
+          }
+          if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
+          if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
+          if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
+          if (o.status === 'PENDING') {
+            return o.payment_url
+              ? 'Pesanan menunggu pembayaran.'
+              : 'Pesanan sedang kami periksa.';
+          }
+          return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
+        },
 
     get helpUrl() {
       const id = this.order?.id || '';
