@@ -78,9 +78,7 @@ function voteModal() {
             });
           }
           this.$watch('form.qty', () => this.enforceEffectRule());
-                    console.log('[init] registering hasCheckedStatus watcher');
-                    this.$watch('hasCheckedStatus', (val) => console.log('[watch] hasCheckedStatus changed to:', val));
-                    const params = new URLSearchParams(window.location.search);
+          const params = new URLSearchParams(window.location.search);
           if (params.get('payment')) this.checkReturn(params.get('payment'), params.get('t'));
         },
 
@@ -450,18 +448,10 @@ function voteModal() {
                                           this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
                                           return;
                                         }
-                                        console.log('[reconcileOrder] body.data:', body.data);
-                                        console.log('[reconcileOrder] reconcile_verdict:', body.data?.reconcile_verdict);
                                         this.hydrateForm(body.data);
-                                                                                this.order = this.orderFrom(body.data);
-                                                                                console.log('[reconcileOrder] this.order:', this.order);
-                                                                                console.log('[reconcileOrder] this.order.status:', this.order?.status);
-                                                                                console.log('[reconcileOrder] this.order.payment_url:', this.order?.payment_url);
-                                                                                this.reconcileVerdict = body.data.reconcile_verdict || '';
-                                                                                                                                                                console.log('[reconcileOrder] this.reconcileVerdict set to:', this.reconcileVerdict);
-                                                                                                                                                                this.hasCheckedStatus = true;
-                                                                                                                                                                console.log('[reconcileOrder] this.hasCheckedStatus set to:', this.hasCheckedStatus);
-                                                                                                                                                                this.$nextTick(() => console.log('[reconcileOrder] nextTick fired, hasCheckedStatus:', this.hasCheckedStatus));
+                                        this.order = this.orderFrom(body.data);
+                                        this.reconcileVerdict = body.data.reconcile_verdict || '';
+                                        this.hasCheckedStatus = true;
                     this.error = '';
                     if (this.order.status === 'SUCCESS') this.stopPolling();
                   } catch (_) {
@@ -510,14 +500,11 @@ function voteModal() {
     get orderLabel() {
               try {
                 const o = this.order;
-                console.log('[orderLabel] called, o:', o, 'reconcileVerdict:', this.reconcileVerdict, 'hasCheckedStatus:', this.hasCheckedStatus);
                 if (!o) return 'Memuat status…';
                 if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
                 if (this.reconcileVerdict === 'PRESENT') {
                   const exp = o.expires_at ? ' — Berlaku sampai ' + new Date(o.expires_at).toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'}) : '';
-                  const result = 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
-                  console.log('[orderLabel] returning PRESENT:', result);
-                  return result;
+                  return 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
                 }
                 if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
                 if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
@@ -529,9 +516,8 @@ function voteModal() {
                 }
                 return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
               } catch (e) {
-                console.error('[orderLabel] ERROR:', e);
-                return 'Gagal memuat status';
-              }
+                              return 'Gagal memuat status';
+                            }
             },
 
     get helpUrl() {
