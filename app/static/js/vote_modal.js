@@ -498,23 +498,23 @@ function voteModal() {
     },
 
     get orderLabel() {
-          const o = this.order;
-          if (!o) return '';
-          if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
-          if (this.reconcileVerdict === 'PRESENT') {
-            const exp = o.expires_at ? ' — Berlaku sampai ' + new Date(o.expires_at).toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'}) : '';
-            return 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
-          }
-          if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
-          if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
-          if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
-          if (o.status === 'PENDING') {
-            return o.payment_url
-              ? 'Pesanan menunggu pembayaran.'
-              : 'Pesanan sedang kami periksa.';
-          }
-          return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
-        },
+              const o = this.order;
+              if (!o) return 'Memuat status…';
+              if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
+              if (this.reconcileVerdict === 'PRESENT') {
+                const exp = o.expires_at ? ' — Berlaku sampai ' + new Date(o.expires_at).toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'}) : '';
+                return 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
+              }
+              if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
+              if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
+              if (o.needs_manual_review) return 'Pesanan sedang diperiksa tim bantuan.';
+              if (o.status === 'PENDING') {
+                return o.payment_url
+                  ? 'Pesanan menunggu pembayaran.'
+                  : 'Pesanan sedang kami periksa.';
+              }
+              return 'Pesanan belum selesai. Hubungi bantuan bila sudah membayar.';
+            },
 
     get helpUrl() {
       const id = this.order?.id || '';
