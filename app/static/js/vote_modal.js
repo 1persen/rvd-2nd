@@ -515,7 +515,9 @@ function voteModal() {
                 if (o.status === 'SUCCESS') return 'Pembayaran berhasil. Dukunganmu sudah dicatat.';
                 if (this.reconcileVerdict === 'PRESENT') {
                   const exp = o.expires_at ? ' — Berlaku sampai ' + new Date(o.expires_at).toLocaleString('id-ID', {dateStyle: 'short', timeStyle: 'short'}) : '';
-                  return 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
+                  const result = 'Tagihan aktif. Silakan lanjutkan pembayaran.' + exp;
+                  console.log('[orderLabel] returning PRESENT:', result);
+                  return result;
                 }
                 if (this.reconcileVerdict === 'ABSENT_CONFIRMED') return 'Tagihan sebelumnya tidak dibuat.';
                 if (this.reconcileVerdict === 'INDETERMINATE') return 'Pembayaran belum kami temukan. Klik lagi kalau sudah membayar.';
