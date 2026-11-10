@@ -18,12 +18,12 @@
     <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
 
     {# Panel status pesanan: membaca order, bukan payment. Tidak menampilkan
-           status internal mentah; tindakan mengikuti tabel tindakan plan. #}
-        <div class="vote-order" x-show="order" x-cloak role="status">
-          <template x-if="hasCheckedStatus">
-            <p class="vote-order-kicker">Status pembayaran</p>
-            <h3 class="vote-order-title" x-text="orderLabel"></h3>
-          </template>
+               status internal mentah; tindakan mengikuti tabel tindakan plan. #}
+            <div class="vote-order" x-show="order" x-cloak role="status">
+              <template x-if="hasCheckedStatus">
+                <p class="vote-order-kicker">Status pembayaran</p>
+                <h3 class="vote-order-title" x-text="orderLabel" x-init="console.log('[template] orderLabel evaluated:', $el.textContent)"></h3>
+              </template>
           <dl class="vote-order-meta">
               <div><dt>Nama</dt><dd x-text="order?.supporter_name"></dd></div>
               <div><dt>Nomor HP</dt><dd x-text="order?.supporter_phone"></dd></div>
