@@ -254,19 +254,21 @@ function voteModal() {
     },
 
     goToPayment() {
-          const url = this.order?.payment_url || this.payment?.payment_url;
-          if (this.isNavigating || !url) {
-            if (this.order?.id) {
-              // URL hilang/kadaluarsa: cek status ulang ke provider.
-              this.reconcileOrder();
-            } else {
-              this.error = 'Tautan pembayaran tidak tersedia. Klik "Periksa Status Pesanan" atau coba buat tagihan baru.';
-            }
-            return;
-          }
-          this.isNavigating = true;
-          window.location.href = url;
-        },
+              const url = this.order?.payment_url || this.payment?.payment_url;
+              if (this.isNavigating || !url) {
+                if (this.order?.id) {
+                  // URL hilang/kadaluarsa: cek status ulang ke provider.
+                  this.reconcileOrder();
+                } else {
+                  this.error = 'Tautan pembayaran tidak tersedia. Klik "Periksa Status Pesanan" atau coba buat tagihan baru.';
+                }
+                return;
+              }
+              this.isNavigating = true;
+              // Jika navigasi gagal atau pengguna kembali, reset isNavigating agar tombol tidak stuck disabled.
+              setTimeout(() => { this.isNavigating = false; }, 5000);
+              window.location.href = url;
+            },
 
     // Panel status membaca order, bukan payment.
     orderFrom(data) {
@@ -467,16 +469,25 @@ function voteModal() {
                         },
 
         startNewInvoice() {
-              this.stopPolling();
-              this.order = null;
-              this.payment = null;
-              this.reconcileVerdict = '';
-              this.hasCheckedStatus = false;
-              this.forgetOrder();
-              this.idempotencyKey = '';
-              this.error = '';
-              this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
-            },
+                      this.stopPolling();
+                      this.order = null;
+                      this.payment = null;
+                      this.reconcileVerdict = '';
+                      this.hasCheckedStatus = false;
+                      this.isNavigating = false;
+                      this.forgetOrder();
+                      this.idempotencyKey = '';
+                      this.error = '';
+                      // Bersihkan form agar tidak menampilkan data transaksi sebelumnya (qty, gift, metode).
+                      this.form.name = '';
+                      this.form.email = '';
+                      this.form.phone = '';
+                      this.form.message = '';
+                      this.form.qty = 1;
+                      this.form.effect = '';
+                      this.form.method = '';
+                      this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
+                    },
 
     // Kembali dari Duitku: token dari tautan kembali (return_url) diperiksa backend.
     // Tanpa token, backend menolak dan pelanggan melihat pesan tautan tidak valid.
