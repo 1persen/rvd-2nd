@@ -22,6 +22,8 @@ function eventsPage(event, allEvents, config) {
     countdownTimer: null,
     qrUrl: '',
     qrOpen: false,
+    connectionState: 'disconnected',
+    viewerCount: 0,
 
     get showParticipants() {
       return this.theme.show_participants !== false;
