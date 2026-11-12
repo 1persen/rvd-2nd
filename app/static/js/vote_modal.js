@@ -314,21 +314,19 @@ function voteModal() {
     storageKey() { return 'rvd.checkout.' + this.event.id + '.' + this.team.id; },
 
     rememberOrder() {
-          if (!this.order?.id || !this.order?.status_token) return;
-          try {
-            sessionStorage.setItem(this.storageKey(), JSON.stringify({
-              paymentId: this.order.id,
-              token: this.order.status_token,
-              idempotencyKey: this.idempotencyKey,
-              savedAt: Date.now(),
-              supporter_name: this.order.supporter_name || '',
-              supporter_phone: this.order.supporter_phone || '',
-              votes: this.order.votes || 0,
-              expires_at: this.order.expires_at || null,
-              payment_url: this.order.payment_url || null,
-            }));
-          } catch (_) {}
-        },
+              if (!this.order?.id || !this.order?.status_token) return;
+              try {
+                sessionStorage.setItem(this.storageKey(), JSON.stringify({
+                  paymentId: this.order.id,
+                  token: this.order.status_token,
+                  idempotencyKey: this.idempotencyKey,
+                  savedAt: Date.now(),
+                  votes: this.order.votes || 0,
+                  expires_at: this.order.expires_at || null,
+                  payment_url: this.order.payment_url || null,
+                }));
+              } catch (_) {}
+            },
 
     // Hanya paymentId, token, idempotencyKey, dan stempel waktu. Tidak ada kontak.
         restoreOrder() {

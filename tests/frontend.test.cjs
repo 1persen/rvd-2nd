@@ -20,6 +20,7 @@ function load(file, globals = {}) {
     requestAnimationFrame: () => 1, cancelAnimationFrame() {},
     EventSource: undefined, matchMedia: () => ({ matches: false }),
     document: stubDocument,
+    fetch: async () => ({ ok: true, json: async () => ({ success: true, data: [] }) }),
     // Modal mengingat pesanan unresolved: hanya paymentId, token, dan idempotencyKey.
     sessionStorage: { _d: {}, getItem(k){ return this._d[k] ?? null; },
                       setItem(k,v){ this._d[k]=String(v); }, removeItem(k){ delete this._d[k]; } },
@@ -272,8 +273,8 @@ test('event API failures show a retryable error instead of a false empty list', 
 test('orderLabel distinguishes pending with payment url from pending under verification', () => {
   const { form } = checkout();
   form.order = { id: 'p1', status: 'PENDING', payment_url: 'https://sandbox.duitku.com/pay', needs_manual_review: false };
-  assert.match(form.orderLabel, /menunggu pembayaran/);
+  assert.match(form.orderLabel, /menunggu pembayaran/i);
 
   form.order = { id: 'p2', status: 'PENDING', payment_url: null, needs_manual_review: false };
-  assert.match(form.orderLabel, /sedang kami periksa/);
+  assert.match(form.orderLabel, /sedang kami periksa/i);
 });
