@@ -1,0 +1,13 @@
+{
+  "plugins": ["./stylelint-radius-token.js"],
+  "rules": {
+    "local/radius-token": true
+  },
+  "ignoreFiles": [
+    "app/static/css/tailwind.css",
+    "app/static/css/tailwind.input.css",
+    "**/node_modules/**",
+    "**/*.min.css",
+    "graphify-out/**"
+  ]
+}

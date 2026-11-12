@@ -105,19 +105,18 @@ function scoreboard(initial, opts = {}) {
     _eventId: eventId,
     _level: level,
     _live: live,
+    viewerCount: 0,
+    connectionState: 'connecting', // 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
 
     init() {
       if (!this._live) return;
       if (this._eventId) {
-        this._pollTimer = setInterval(() => {
-          if (document.visibilityState === 'visible') this._poll();
-        }, 10000);
-        this._poll();
+        this._connectSSE();
       }
     },
 
     destroy() {
-      this._disconnectPolling();
+      this._disconnect();
       clearInterval(this._countdownTimer);
     },
 
@@ -138,6 +137,11 @@ function scoreboard(initial, opts = {}) {
         (this._level ? `&level=${encodeURIComponent(this._level)}` : '');
       const source = new EventSource(url);
       this._source = source;
+      this.connectionState = 'connecting';
+
+      source.onopen = () => {
+        this.connectionState = 'connected';
+      };
 
       source.onmessage = (event) => {
         try {
@@ -148,14 +152,23 @@ function scoreboard(initial, opts = {}) {
             // The event became a draft/archive: stop receiving and stop polling.
             this._disconnect();
             this._disconnectPolling?.();
+          } else if (msg.type === 'viewer_count' && typeof msg.count === 'number') {
+            this.viewerCount = msg.count;
           }
         } catch (e) {
           // ignore invalid payload
         }
       };
       source.onerror = () => {
+        this.connectionState = 'reconnecting';
         // Browser auto-reconnects EventSource.
       };
+      source.addEventListener('error', () => {
+        this.connectionState = 'reconnecting';
+      });
+      source.addEventListener('open', () => {
+        this.connectionState = 'connected';
+      });
       window.addEventListener('beforeunload', () => this._disconnect(), { once: true });
     },
 
@@ -273,32 +286,33 @@ function leaderboardPage(initialEvent = null, initialLeaderboard = []) {
     error: false,
     errorMessage: '',
     _eventId: initialEvent?.id || null,
-    connectionStatus: 'Menghubungkan pembaruan...',
-    _sse: null,
-    _pollTimer: null,
-    _reconnectTimer: null,
-    _sseRetry: 0,
-    _countdownTimer: null,
+        viewerCount: 0,
+        connectionState: 'connecting', // 'connecting' | 'connected' | 'reconnecting' | 'disconnected'
+        _sse: null,
+        _pollTimer: null,
+        _reconnectTimer: null,
+        _sseRetry: 0,
+        _countdownTimer: null,
     defaultLogo:
       'data:image/svg+xml;charset=UTF-8,%3Csvg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320"%3E%3Crect width="320" height="320" fill="%23E2E8F0"/%3E%3Ctext x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%236B7280" font-family="Arial,Helvetica,sans-serif" font-size="28"%3ETeam%3C/text%3E%3C/svg%3E',
 
     async init() {
-      this.loadingState();
-      if (!this._eventId) {
-        return this.errorState('Event tidak ditemukan.');
-      }
+          this.loadingState();
+          if (!this._eventId) {
+            return this.errorState('Event tidak ditemukan.');
+          }
 
-      try {
-        await this.loadEvent();
-        await this.loadLeaderboard();
-        this.startPolling();
-        this._startCountdown();
-        this.loading = false;
-        this.isEmpty = !this.rankings.length;
-      } catch (error) {
-        this.errorState(error?.message || 'Gagal memuat peringkat.');
-      }
-    },
+          try {
+            await this.loadEvent();
+            await this.loadLeaderboard();
+            this._connectSSE();
+            this._startCountdown();
+            this.loading = false;
+            this.isEmpty = !this.rankings.length;
+          } catch (error) {
+            this.errorState(error?.message || 'Gagal memuat peringkat.');
+          }
+        },
 
     async loadEvent() {
       const response = await this.fetchJson(`/api/v1/events/${encodeURIComponent(this._eventId)}`);
@@ -407,41 +421,72 @@ function leaderboardPage(initialEvent = null, initialLeaderboard = []) {
       });
     },
 
-    startPolling() {
-      if (!this._eventId) return;
-      this._disconnectPolling();
-      this.connectionStatus = 'Memperbarui peringkat setiap 10 detik';
-      this._pollTimer = setInterval(() => {
-        if (document.visibilityState === 'visible') this._poll();
-      }, 10000);
-      document.addEventListener('visibilitychange', this._visibilityHandler = () => {
-        if (document.visibilityState === 'visible') this._poll();
-      });
-      window.addEventListener('beforeunload', () => this._disconnectPolling(), { once: true });
-    },
+    /**
+         * Establish SSE connection for live leaderboard updates.
+         */
+        _connectSSE() {
+          if (!this._eventId) return;
+          this._disconnectSSE();
+          const url = `/api/v1/leaderboard/stream?event_id=${encodeURIComponent(this._eventId)}`;
+          const source = new EventSource(url);
+          this._sse = source;
+          this.connectionState = 'connecting';
 
-    async _poll() {
-      try {
-        const response = await this.fetchJson(`/api/v1/leaderboard?event_id=${encodeURIComponent(this._eventId)}`);
-        const data = response.data || response;
-        if (Array.isArray(data.entries)) {
-          this._applyLeaderboard(data.entries);
-        }
-      } catch (e) {
-        this.connectionStatus = 'Gagal memperbarui peringkat.';
-      }
-    },
+          source.onopen = () => {
+            this.connectionState = 'connected';
+          };
 
-    _disconnectPolling() {
-      if (this._pollTimer) {
-        clearInterval(this._pollTimer);
-        this._pollTimer = null;
-      }
-      if (this._visibilityHandler) {
-        document.removeEventListener('visibilitychange', this._visibilityHandler);
-        this._visibilityHandler = null;
-      }
-    },
+          source.onmessage = (event) => {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'leaderboard' && Array.isArray(msg.data?.entries)) {
+                this._applyLeaderboard(msg.data.entries);
+              } else if (msg.type === 'event_visibility') {
+                // The event became a draft/archive: stop receiving.
+                this._disconnectSSE();
+              } else if (msg.type === 'viewer_count' && typeof msg.count === 'number') {
+                this.viewerCount = msg.count;
+              }
+            } catch (e) {
+              // ignore invalid payload
+            }
+          };
+
+          source.addEventListener('error', () => {
+            this.connectionState = 'reconnecting';
+          });
+          source.addEventListener('open', () => {
+            this.connectionState = 'connected';
+          });
+          window.addEventListener('beforeunload', () => this._disconnectSSE(), { once: true });
+        },
+
+        /**
+         * Clean up SSE connection.
+         */
+        _disconnectSSE() {
+          if (this._sse) {
+            this._sse.close();
+            this._sse = null;
+          }
+          this.connectionState = 'disconnected';
+        },
+
+        /**
+         * Fallback polling is kept but not started by default.
+         * Can be used if SSE is explicitly disabled.
+         */
+        startPolling() {
+          if (!this._eventId) return;
+          this._disconnectPolling();
+          this._pollTimer = setInterval(() => {
+            if (document.visibilityState === 'visible') this._poll();
+          }, 10000);
+          document.addEventListener('visibilitychange', this._visibilityHandler = () => {
+            if (document.visibilityState === 'visible') this._poll();
+          });
+          window.addEventListener('beforeunload', () => this._disconnectPolling(), { once: true });
+        },
 
     _applyLeaderboard(entries) {
       const prev = new Map(this.teamsRaw.map((team) => [team.id, team.rank]));

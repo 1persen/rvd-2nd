@@ -197,6 +197,11 @@ def subscriber_count() -> int:
     return sum(len(s) for s in _subscribers.values())
 
 
+def active_viewers(event_id: str) -> int:
+    """Total active SSE subscribers for a specific event_id."""
+    return sum(len(queues) for (eid, _lvl), queues in _subscribers.items() if eid == event_id)
+
+
 async def publish(payload: dict[str, Any]) -> None:
     message = dumps(payload)
     if not _use_redis():

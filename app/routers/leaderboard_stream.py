@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["leaderboard"])
 
 KEEPALIVE_SECONDS = 20
+VIEWER_PULSE_SECONDS = 20  # same interval as keepalive for viewer count pulse
 
 
 def _encode_sse(data: dict) -> str:
@@ -41,18 +42,30 @@ async def leaderboard_stream(
     async def event_source() -> AsyncGenerator[str, None]:
         yield f"retry: {random.randint(2000, 7000)}\n\n"
         async with cache.subscription(event_id, level=level) as queue:
+            # Initial leaderboard + current viewer count
             initial = await _load_initial(event_id, level)
             if initial:
                 yield _encode_sse({"type": "leaderboard", "event_id": event_id, "level": level, "data": initial})
+            # Send initial viewer count
+            yield _encode_sse({"type": "viewer_count", "count": cache.active_viewers(event_id)})
+
+            last_pulse = asyncio.get_event_loop().time()
             while True:
                 try:
+                    # Timeout triggers keepalive + viewer pulse
                     frame = await asyncio.wait_for(queue.get(), timeout=KEEPALIVE_SECONDS)
                     yield frame
                     if '"event_visibility"' in frame:
                         # Event stopped being public; close so the client stops.
                         break
                 except asyncio.TimeoutError:
+                    # keepalive comment
                     yield ": keepalive\n\n"
+                    # viewer count pulse
+                    now = asyncio.get_event_loop().time()
+                    if now - last_pulse >= VIEWER_PULSE_SECONDS:
+                        yield _encode_sse({"type": "viewer_count", "count": cache.active_viewers(event_id)})
+                        last_pulse = now
 
     return StreamingResponse(
         event_source(),

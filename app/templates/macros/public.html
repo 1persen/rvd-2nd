@@ -103,7 +103,8 @@
         <span class="podium-medal" x-text="index + 1"></span>
       </div>
       <h3 x-text="person.name"></h3>
-      <p class="podium-origin" x-text="person.{{ 'team_name' if donors else 'school' }} || 'Peserta kompetisi'"></p>
+                  {% if donors %}<div class="podium-teams" x-show="(person.team_names && person.team_names.length) || person.team_name"><span class="podium-teams-label">Mendukung peserta</span><template x-for="t in (person.team_names && person.team_names.length ? person.team_names : (person.team_name ? [person.team_name] : []))" :key="t"><span class="podium-team" x-text="t"></span><br></template></div>
+                  {% else %}<p class="podium-origin" x-text="person.school || 'Peserta kompetisi'"></p>{% endif %}
       <div class="podium-plinth">
         <span class="plinth-label">{{ 'TOTAL DUKUNGAN' if donors else 'PEROLEHAN SUARA' }}</span>
         <strong class="podium-score {{ 'donor-score' if donors else '' }}" x-text="{{ 'formatCurrency(person.amount)' if donors else 'Number(person.votes || 0).toLocaleString(\'id-ID\')' }}"></strong>

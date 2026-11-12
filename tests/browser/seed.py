@@ -23,7 +23,8 @@ async def main():
     await seed_admin(email, password)
     async with async_session() as session:
         event = Event(name='Festival Talenta Nusantara', status=EventStatus.VOTING_OPEN,
-                      price_per_vote=1000, description='Ruang untuk setiap talenta dan dukungan.')
+                      price_per_vote=1000, description='Ruang untuk setiap talenta dan dukungan.',
+                      theme_config={'show_participants': True})
         session.add(event)
         await session.flush()
         teams = [Team(event_id=event.id, name=name, school='Komunitas Kreatif', total_votes=votes)

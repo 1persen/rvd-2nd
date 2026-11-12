@@ -73,6 +73,90 @@
   color: var(--event-primary);
 }
 
+.event-page .participant-card {
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid color-mix(in srgb, var(--event-primary) 40%, transparent);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.event-page .participant-card-link {
+  color: inherit;
+  display: block;
+}
+
+.event-page .participant-body {
+  padding: 1rem;
+}
+
+.event-page .participant-body h3 {
+  color: var(--event-text);
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.event-page .participant-school {
+  color: color-mix(in srgb, var(--event-text) 75%, transparent);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+/* --- Classic template hero: ensure text contrast on event page backgrounds --- */
+.event-page .event-home-title {
+  color: var(--event-text);
+  font-weight: 800;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.5);
+}
+
+.event-page .event-home-desc {
+  color: color-mix(in srgb, var(--event-text) 85%, transparent);
+}
+
+.event-page .event-hero-top,
+.event-page .event-home-main,
+.event-page .event-home-stats {
+  color: var(--event-text);
+}
+
+.event-page .event-date-card {
+  background: rgba(0, 0, 0, 0.7);
+  border-color: color-mix(in srgb, var(--event-primary) 50%, transparent);
+}
+
+.event-page .event-home-stats {
+  background: rgba(0, 0, 0, 0.65);
+  border-color: color-mix(in srgb, var(--event-primary) 40%, transparent);
+}
+
+.event-page .event-home-stats > div + div {
+  border-left-color: color-mix(in srgb, var(--event-primary) 30%, transparent);
+}
+
+.event-page .event-home-stats b {
+  color: var(--event-primary);
+}
+
+.event-page .event-home-stats small {
+  color: color-mix(in srgb, var(--event-text) 70%, transparent);
+}
+
+/* --- Cinematic hero: strengthen text contrast over backdrop --- */
+.event-page .cinematic-title {
+  text-shadow: 0 4px 32px rgba(0, 0, 0, 0.7), 0 0 2px rgba(0, 0, 0, 0.9);
+}
+
+.event-page .cinematic-desc {
+  color: color-mix(in srgb, var(--event-text) 90%, transparent);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.event-page .cinematic-meta {
+  color: color-mix(in srgb, var(--event-text) 85%, transparent);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+}
+
 .preview-banner {
   display: flex;
   flex-wrap: wrap;
