@@ -131,23 +131,25 @@ async def test_timeout_then_reconcile_settles_once(async_client, test_data, db_s
 
 
 @pytest.mark.asyncio
-async def test_duitku_pending_past_expiry_still_blocks(async_client, test_data, db_session, provider_ok):
+async def test_duitku_pending_past_expiry_still_blocks(async_client, test_data, db_session, provider):
+    """TG1: Invoice expired → request dengan wajah berbeda → invoice BARU (B1 full filter)."""
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
     stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
     await db_session.commit()
 
-    # Request lain (wajah berbeda) dikembalikan sebagai replay, bukan invoice baru,
-    # meski invoice sudah lewat expires_at: expiry lokal tidak menyentuh invoice Duitku.
+    # B1: filter penuh (team_id, qty, effect_code, support_message, payment_method)
+    # membedakan wajah berbeda → buat invoice baru, bukan replay.
     replay = await payment_service.create_payment(db_session, PaymentCreate(**other_request(test_data)))
-    assert replay.id == payment['id']
+    assert replay.id != payment['id']
     db_session.expire_all()
     still = await payment_repo.get_payment(db_session, payment['id'])
-    assert still.status == PaymentStatus.PENDING
+    # B4: invoice expired → status EXPIRED
+    assert still.status == PaymentStatus.EXPIRED
 
 
 @pytest.mark.asyncio
-async def test_creating_state_blocks_new_invoice(async_client, test_data, db_session, provider_ok):
+async def test_creating_state_blocks_new_invoice(async_client, test_data, db_session, provider):
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
     stored.duitku_payload = {**stored.duitku_payload, '_inquiry_state': 'creating'}
@@ -179,8 +181,8 @@ async def test_rejected_invoice_releases_key_and_allows_retry(async_client, test
 
 
 @pytest.mark.asyncio
-async def test_reconcile_does_not_revive_canceled_with_reference(async_client, test_data, db_session, provider_ok):
-    _, status = provider_ok
+async def test_reconcile_does_not_revive_canceled_with_reference(async_client, test_data, db_session, provider):
+    inquiry, status = provider
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
     stored.status = PaymentStatus.CANCELED
@@ -196,17 +198,17 @@ async def test_reconcile_does_not_revive_canceled_with_reference(async_client, t
 
 @pytest.mark.asyncio
 async def test_expired_invoice_can_still_settle(async_client, test_data, db_session, provider_ok):
-    _, status = provider_ok
+    """TG6: Invoice EXPIRED → reconcile → ABSENT_CONFIRMED, tidak settle (B5)."""
+    inquiry, status = provider_ok
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
     stored.status = PaymentStatus.EXPIRED
-    assert stored.duitku_reference == 'test-reference'
     await db_session.commit()
     status.side_effect = status_response('00')
 
     response = await async_client.post(_reconcile_url(payment))
-    assert response.json()['data']['status'] == 'SUCCESS'
-    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3
+    assert response.json()['data']['status'] == 'EXPIRED'
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 0
 
 
 @pytest.mark.asyncio
@@ -224,7 +226,7 @@ async def test_official_status_is_reconciled_on_confirmed_invoice(async_client, 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('overrides', [{'amount': '1'}, {'merchantOrderId': 'other-order'}, {'reference': ''}, {'statusCode': 'bogus'}])
 async def test_untrusted_status_cannot_credit_votes(async_client, test_data, db_session, provider_ok, overrides):
-    _, status = provider_ok
+    inquiry, status = provider_ok
     status.side_effect = status_response('00', **overrides)
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     assert payment['status'] == 'PENDING'
@@ -294,7 +296,7 @@ async def test_status_reference_mismatch_cannot_credit_votes(async_client, test_
 
 @pytest.mark.asyncio
 async def test_reconciliation_cannot_use_credentials_from_another_environment(async_client, test_data, provider_ok, monkeypatch):
-    _, status = provider_ok
+    inquiry, status = provider_ok
     status.side_effect = status_response('01')
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     status.reset_mock()
@@ -518,3 +520,53 @@ async def test_admin_cancel_unpaid_requires_no_reference_or_absent_verdict(async
         assert stored.status == PaymentStatus.CANCELED
         assert stored.idempotency_key is None
     assert stored.duitku_payload['_inquiry_state'] == 'rejected'
+
+
+# --- TG5, TG7: New tests for expired invoice & reconcile flow (Tahap 2 audit) ---
+
+
+@pytest.mark.asyncio
+async def test_expired_invoice_is_not_reused_for_duitku(async_client, test_data, db_session, provider):
+    """TG5: Invoice expires_at lewat → POST baru → invoice baru.
+    Conflict dgn test_duitku_pending_past_expiry_still_blocks (recovery:134) — tes LAMA yang di-update.
+    """
+    payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
+    stored = await payment_repo.get_payment(db_session, payment['id'], for_update=True)
+    stored.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    await db_session.commit()
+
+    # Setelah B4 (auto-expire Duitku di reconcile/worker), invoice expired tidak di-reuse.
+    # Request baru → invoice BARU
+    response2 = await async_client.post('/api/v1/payments', json=body(test_data))
+    assert response2.status_code == 200, response2.text
+    data2 = response2.json()['data']
+    assert data2['id'] != payment['id']
+    assert data2['status'] == 'PENDING'
+
+
+@pytest.mark.asyncio
+async def test_reconcile_unknown_null_payment_url_settles_via_00_then_01(async_client, test_data, db_session, provider):
+    """TG7: Variasi 01→00 berurutan: status PENDING setelah 01, SUCCESS di 00, vote tepat."""
+    inquiry, status = provider
+    # Buat invoice dengan inquiry unknown (timeout)
+    payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
+    assert payment['status'] == 'PENDING'
+    assert payment['payment_url'] is None
+    assert payment['inquiry_state'] == 'unknown'
+
+    # Pertama: reconcile → status 01 (PENDING)
+    status.side_effect = status_response('01')
+    response1 = await async_client.post(_reconcile_url(payment))
+    assert response1.status_code == 200
+    data1 = response1.json()['data']
+    assert data1['status'] == 'PENDING'
+    assert data1['reconcile_verdict'] == 'PRESENT'
+
+    # Kedua: reconcile → status 00 (SUCCESS)
+    status.side_effect = status_response('00')
+    response2 = await async_client.post(_reconcile_url(payment))
+    assert response2.status_code == 200
+    data2 = response2.json()['data']
+    assert data2['status'] == 'SUCCESS'
+    assert data2['reconcile_verdict'] == 'PRESENT'
+    assert await vote_log_repo.get_vote_count_for_team(db_session, test_data['team'].id) == 3

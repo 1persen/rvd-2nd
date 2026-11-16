@@ -221,9 +221,15 @@ async def expire_if_pending(session: AsyncSession, payment_id: str) -> None:
 
 
 async def get_pending_by_phone_and_event_for_update(
-    session: AsyncSession, event_id: str, phone: str
+    session: AsyncSession, event_id: str, phone: str,
+    team_id: str = None, qty: int = None, effect_code: str = None,
+    support_message: str = None, payment_method: str = None
 ) -> Optional[Payment]:
-    """PENDING terbaru tanpa filter expires_at, dengan pessimistic lock."""
+    """PENDING terbaru tanpa filter expires_at, dengan pessimistic lock.
+    
+    B1: Cocokkan team_id, qty, effect_code, support_message, payment_method
+    untuk memastikan invoice yang di-replay benar-benar identikal dengan request.
+    """
     stmt = (
         select(Payment)
         .where(Payment.event_id == event_id)
@@ -233,6 +239,16 @@ async def get_pending_by_phone_and_event_for_update(
         .limit(1)
         .with_for_update()
     )
+    if team_id is not None:
+        stmt = stmt.where(Payment.team_id == team_id)
+    if qty is not None:
+        stmt = stmt.where(Payment.qty == qty)
+    if effect_code is not None:
+        stmt = stmt.where(Payment.effect_code == effect_code)
+    if support_message is not None:
+        stmt = stmt.where(Payment.support_message == support_message)
+    if payment_method is not None:
+        stmt = stmt.where(Payment.duitku_payment_method == payment_method)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
@@ -247,7 +263,6 @@ async def expire_old_pendings_by_phone_and_event(
         .where(Payment.event_id == event_id)
         .where(Payment.supporter_phone == phone)
         .where(Payment.status == PaymentStatus.PENDING)
-        .where(Payment.payment_gateway == PaymentGateway.MIDTRANS)
         .where(Payment.expires_at <= datetime.now(timezone.utc))
         .values(status=PaymentStatus.EXPIRED)
     )

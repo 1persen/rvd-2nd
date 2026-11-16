@@ -142,11 +142,12 @@ def duitku_guard(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_session: AsyncSession, test_data: dict, duitku_guard):
+async def test_reuse_pending_returns_existing_order(async_client: AsyncClient, db_session: AsyncSession, test_data: dict, duitku_guard):
     """
     A second invoice with the same phone+event returns the existing order
     (is_existing_order=true) instead of a new invoice, so the customer keeps
     access to the open Duitku order instead of being blocked or double-billing.
+    Hardened: assert await_count == 1 to prevent flaky race.
     """
     event = test_data["event"]
     team = test_data["team"]
@@ -171,6 +172,9 @@ async def test_duplicate_pending_returns_400(async_client: AsyncClient, db_sessi
     assert response2.status_code == 200
     assert response2.json()["data"]["id"] == payment_data_1["id"]
     assert response2.json()["data"]["is_existing_order"] is True
+
+    # Hardening: gateway should only be called once
+    assert duitku_guard.await_count == 1
 
     # Verify only one PENDING payment exists for this phone+event
     from app.repositories import payment as payment_repo

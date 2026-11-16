@@ -56,3 +56,10 @@ Admin routes validate bearer tokens; rendered database text is escaped. Public a
 - Application/migration SHA-256 comparison: 126 files matched the running Tencent release.
 
 See [design status](DESIGN_PREVIEW.md), [handoff](HANDOFF.md), [deployment notes](deploy/README.md), and [machine-readable evidence](docs/tencent-ivory-gold-verification.json). Real payment processing, sustained/distributed load, physical devices and every CRUD/export operation were not retested for this visual release.
+
+## Database Migration (Vercel)
+
+- The database migration runs automatically **only** during Vercel production builds. The `buildCommand` in `vercel.json` gates on `VERCEL_ENV=production`; preview and development deployments skip migration and log a message instead.
+- Preview deployments share the same Supabase database as production, so schema changes follow the production migration. Do not assume preview has an isolated schema.
+- If a migration fails, the production build fails (fail-fast). Fix the migration before redeploying.
+- Migrations are idempotent: a database already at `head` will no-op on subsequent runs.

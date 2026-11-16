@@ -125,7 +125,7 @@ def _method_or_default(code: Optional[str]) -> Optional[str]:
     return code if code in PAYMENT_METHOD_CODES else code
 
 
-def _replay_or_raise(existing: Payment, payload: PaymentCreate) -> Payment:
+async def _replay_or_raise(existing: Payment, payload: PaymentCreate, session: AsyncSession) -> Payment:
     """Return the original invoice for a retried request, never someone else's."""
     # Effect and message are part of the order: a retry that changes them is a
     # different request and must not silently receive the old invoice.
@@ -147,8 +147,17 @@ def _replay_or_raise(existing: Payment, payload: PaymentCreate) -> Payment:
     )
     if not same_request or not method_matches:
         raise PaymentError("Idempotency-Key sudah dipakai untuk permintaan lain")
-    # D8: invoice Duitku yang hasilnya belum pasti memblokir retry. Mengembalikan
-    # invoice lama sebagai replay akan menyembunyikan bahwa statusnya unresolved.
+    # B4: Jangan replay invoice yang sudah expired (expires_at lewat).
+    is_expired = (
+        existing.expires_at
+        and existing.expires_at < datetime.now(timezone.utc)
+    )
+    if is_expired:
+        existing.idempotency_key = None
+        await session.flush()
+        raise PaymentError("Tagihan sebelumnya sudah kedaluwarsa. Silakan buat tagihan baru.")
+    # D8: invoice Duitku yang hasilnya belum pasti memblokir retry.
+    # Invoice lama sebagai replay akan menyembunyikan bahwa statusnya unresolved.
     # Namun replay berbasis idempotency key harus tetap mengembalikan invoice yang sama
     # agar klien bisa memeriksa statusnya.
     if (
@@ -229,7 +238,17 @@ async def create_payment(
             session, payload.idempotency_key
         )
         if existing_by_key:
-            return _replay_or_raise(existing_by_key, payload)
+            # B4: Jika invoice existing sudah expired, hapus idempotency_key-nya
+            # agar request baru bisa buat invoice baru dengan key yang sama.
+            is_expired = (
+                existing_by_key.expires_at
+                and existing_by_key.expires_at < datetime.now(timezone.utc)
+            )
+            if is_expired:
+                existing_by_key.idempotency_key = None
+                await session.flush()
+            else:
+                return await _replay_or_raise(existing_by_key, payload, session)
 
     # New invoices are only for publicly visible events; replaying an existing
     # invoice above is intentionally allowed even after the event is archived.
@@ -266,7 +285,13 @@ async def create_payment(
                 f"Paket {gift['label']} berisi {gift['votes']} vote. "
                 f"Sesuaikan jumlah vote atau hapus pilihan gift."
             )
+
     support_message = profanity_filter.censor((payload.support_message or "").strip()) or None
+
+    # Resolve payment method early for the PENDING guard (B1/B2: strict
+    # matching on all fields including method). Same normalization as
+    # _replay_or_raise so a retry with a different method is never replayed.
+    duitku_payment_method = resolve_payment_method(payload.payment_method)
 
     amount = unit_price * qty
     votes = qty + bonus_votes
@@ -286,7 +311,17 @@ async def create_payment(
     if payload.idempotency_key:
         existing_by_key = await payment_repo.get_by_idempotency_key(session, payload.idempotency_key)
         if existing_by_key:
-            return _replay_or_raise(existing_by_key, payload)
+            # B4: Jika invoice existing sudah expired, hapus idempotency_key-nya
+            # agar request baru bisa buat invoice baru dengan key yang sama.
+            is_expired = (
+                existing_by_key.expires_at
+                and existing_by_key.expires_at < datetime.now(timezone.utc)
+            )
+            if is_expired:
+                existing_by_key.idempotency_key = None
+                await session.flush()
+            else:
+                return await _replay_or_raise(existing_by_key, payload, session)
 
     # Bersihkan PENDING yang sudah kedaluwarsa untuk phone+event yang sama.
     await payment_repo.expire_old_pendings_by_phone_and_event(
@@ -296,7 +331,10 @@ async def create_payment(
     # Cek PENDING aktif dengan pessimistic lock untuk mencegah race condition
     # pada kasus user klik checkout berkali-kali.
     existing = await payment_repo.get_pending_by_phone_and_event_for_update(
-        session, event.id, payload.supporter_phone
+        session, event.id, payload.supporter_phone,
+        team_id=team.id, qty=qty, effect_code=effect_code,
+        support_message=support_message,
+        payment_method=duitku_payment_method,
     )
     if existing:
         if existing.payment_gateway == PaymentGateway.MIDTRANS:
@@ -326,7 +364,6 @@ async def create_payment(
                 # dengan flag replay; router to_payment_out akan menyertakan
                 # is_existing_order.
                 return existing
-
     payment = Payment(
         id=new_id("pay"),
         team_id=team.id,
@@ -360,7 +397,7 @@ async def create_payment(
                 session, payload.idempotency_key
             )
             if existing_by_key:
-                return _replay_or_raise(existing_by_key, payload)
+                return await _replay_or_raise(existing_by_key, payload, session)
         raise
 
     if settings.midtrans_mock_enabled:
@@ -378,6 +415,7 @@ async def create_payment(
         chosen_method = resolve_payment_method(payload.payment_method)
         payment.duitku_payment_method = chosen_method
         payment.duitku_payload = {'_environment': settings.DUITKU_ENVIRONMENT, '_inquiry_state': 'creating'}
+        payment.creating_started_at = datetime.now(timezone.utc)
         # A timeout is an unknown outcome, not proof that the provider rejected
         # the order. Make it discoverable by retries and callbacks first.
         await session.commit()
@@ -562,7 +600,7 @@ async def reconcile_duitku_payment(
         raise PaymentError("Gateway invoice tidak sesuai")
     if payment.status == PaymentStatus.SUCCESS:
         return ReconcileResult(payment, False, ReconcileVerdict.PRESENT)
-    if payment.duitku_reference and payment.status in (PaymentStatus.CANCELED, PaymentStatus.FAILED):
+    if payment.duitku_reference and payment.status in (PaymentStatus.CANCELED, PaymentStatus.FAILED, PaymentStatus.EXPIRED):
         return ReconcileResult(payment, False, ReconcileVerdict.ABSENT_CONFIRMED)
     payload = payment.duitku_payload or {}
     environment = payload.get('_environment')
@@ -617,6 +655,13 @@ async def reconcile_duitku_payment(
             or bool(payment.duitku_reference and result['reference'] != payment.duitku_reference)
         )
         if mismatch:
+            logger.error(
+                "Duitku status mismatch for %s: merchantOrderId=%s, reference=%s, amount=%s",
+                payment_id,
+                result.get('merchantOrderId') if isinstance(result, dict) else None,
+                result.get('reference') if isinstance(result, dict) else None,
+                result.get('amount') if isinstance(result, dict) else None,
+            )
             _release()
             payload['_last_verdict'] = ReconcileVerdict.INDETERMINATE.value
             payment.duitku_payload = payload
@@ -856,6 +901,7 @@ async def process_duitku_callback(
         return payment, voted_now
     # result_code == "02": canceled.
     payment.status = PaymentStatus.CANCELED
+    payment.idempotency_key = None
     await session.flush()
     return payment, voted_now
 

@@ -654,3 +654,118 @@ async def test_callback_pending_after_success_does_not_downgrade(async_client, t
     async with async_session() as fresh:
         assert (await payment_repo.get_payment(fresh, payment['id'])).status == PaymentStatus.SUCCESS
         assert await vote_log_repo.get_vote_count_for_team(fresh, test_data['team'].id) == 3
+
+
+# --- TG1-TG7: New tests for invoice reuse & idempotency (Tahap 2 audit) ---
+
+
+@pytest.mark.asyncio
+async def test_reuse_valid_pending_invoice_does_not_call_gateway_again(async_client, test_data, duitku):
+    """TG1: Payload identik → data.id sama, is_existing_order=True, await_count==1."""
+    response1 = await invoice(async_client, test_data)
+    assert response1.status_code == 200
+    data1 = response1.json()['data']
+    assert data1['status'] == 'PENDING'
+
+    # Replay dengan payload IDENTIK (sama qty, team, method, phone, event)
+    response2 = await invoice(async_client, test_data)
+    assert response2.status_code == 200
+    data2 = response2.json()['data']
+    assert data2['id'] == data1['id']
+    assert data2['is_existing_order'] is True
+    # payment_url should be same (from same invoice)
+    assert data2['payment_url'] == data1['payment_url']
+    assert duitku.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_reuse_pending_invoice_preserves_original_amount_and_team(async_client, test_data, duitku):
+    """TG2: Reuse → amount = qty_asli × harga, team_id invoice asli, response pakai data invoice ASLI."""
+    response1 = await invoice(async_client, test_data, qty=5)
+    assert response1.status_code == 200
+    data1 = response1.json()['data']
+    original_amount = data1['amount']
+    original_team = data1['team_id']
+
+    # Replay dengan payload identik
+    response2 = await invoice(async_client, test_data, qty=5)
+    assert response2.status_code == 200
+    data2 = response2.json()['data']
+    assert data2['amount'] == original_amount
+    assert data2['team_id'] == original_team
+    assert data2['votes'] == 5
+    assert data2['id'] == data1['id']
+
+
+@pytest.mark.asyncio
+async def test_changed_data_creates_new_transaction_instead_of_replay(async_client, test_data, duitku):
+    """TG3: Payload beda qty/team → id berbeda, invoice baru amount baru, invoice lama tetap PENDING.
+    Note: Conflict dengan guard phone+event saat ini — backend B1/B2 akan fix.
+    """
+    # Buat invoice pertama
+    response1 = await invoice(async_client, test_data, qty=3)
+    assert response1.status_code == 200
+    data1 = response1.json()['data']
+    id1 = data1['id']
+
+    # Buat invoice kedua dengan qty BEDA (tapi phone+event sama)
+    response2 = await invoice(async_client, test_data, qty=7)
+    assert response2.status_code == 200
+    data2 = response2.json()['data']
+
+    # Dengan backend saat ini (hanya guard phone+event), ini akan replay invoice lama.
+    # Setelah B1/B2 (pencocokan ketat team_id, qty, effect, method), ini HARUS buat invoice baru.
+    # Test ini memvalidasi perilaku SETELAH B1/B2.
+    # Jika backend belum di-update, test ini akan gagal (assert is_existing_order=False, id berbeda).
+    assert data2['id'] != id1, "Setelah B1/B2: data beda harus buat invoice baru"
+    assert data2['amount'] == 7 * test_data['event'].price_per_vote
+    assert data2['votes'] == 7
+
+    # Invoice lama tetap ada di DB (status PENDING atau EXPIRED/FAILED/CANCELED eksplisit)
+    async with async_session() as fresh:
+        old = await payment_repo.get_payment(fresh, id1)
+        assert old is not None
+        # Setelah B1/B2: invoice lama TIDAK di-reuse → tetap PENDING (atau status terminal lain)
+
+
+@pytest.mark.asyncio
+async def test_paid_invoice_is_not_reused(async_client, test_data, duitku, db_session):
+    """TG4: Invoice settle (callback 00) → POST baru phone+event sama → invoice baru, lama tidak disentuh."""
+    response1 = await invoice(async_client, test_data)
+    assert response1.status_code == 200
+    data1 = response1.json()['data']
+    id1 = data1['id']
+
+    # Simulate callback SUCCESS
+    await async_client.post('/api/v1/payments/duitku/callback', data=callback(data1))
+    async with async_session() as fresh:
+        paid = await payment_repo.get_payment(fresh, id1)
+        assert paid.status == PaymentStatus.SUCCESS
+
+    # POST baru dengan phone+event sama → harus buat invoice BARU
+    response2 = await invoice(async_client, test_data)
+    assert response2.status_code == 200
+    data2 = response2.json()['data']
+    assert data2['id'] != id1
+    assert data2['status'] == 'PENDING'
+
+    # Invoice lama tetap SUCCESS
+    async with async_session() as fresh:
+        old = await payment_repo.get_payment(fresh, id1)
+        assert old.status == PaymentStatus.SUCCESS
+
+
+@pytest.mark.asyncio
+async def test_idempotency_key_with_changed_data_is_rejected_400(async_client, test_data, duitku):
+    """TG6: Sama key, payload beda team/qty → 400 (sudah di _replay_or_raise, butuh tes API end-to-end)."""
+    import uuid
+    key = f'test-idempotency-changed-data-{uuid.uuid4().hex[:8]}'
+    # Request pertama
+    response1 = await invoice(async_client, test_data, idempotency_key=key, qty=3)
+    assert response1.status_code == 200, response1.text
+    data1 = response1.json()['data']
+
+    # Request kedua: SAME idempotency key, DIFFERENT qty → harus 400
+    response2 = await invoice(async_client, test_data, idempotency_key=key, qty=9)
+    assert response2.status_code == 400, response2.text
+    assert 'idempotency' in response2.json()['message'].lower() or 'berbeda' in response2.json()['message'].lower()
