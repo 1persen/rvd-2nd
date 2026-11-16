@@ -29,13 +29,16 @@ def upgrade() -> None:
     # Create partial unique index: one PENDING DUITKU invoice per (event, phone, team, qty, effect, message, method)
     # This prevents duplicate pending invoices for IDENTICAL data at the database level,
     # while allowing different data (different team, qty, etc.) to create new invoices.
+    # Use autocommit_block because the DUITKU enum value was added in a previous migration
+    # and must be committed before it can be referenced in a WHERE clause (PostgreSQL restriction).
     indexes = {index['name'] for index in inspector.get_indexes('payments')}
     if 'ix_payments_event_phone_pending_duitku' not in indexes:
-        op.execute(
-            "CREATE UNIQUE INDEX ix_payments_event_phone_pending_duitku "
-            "ON payments (event_id, supporter_phone, team_id, qty, effect_code, support_message, duitku_payment_method) "
-            "WHERE status = 'PENDING' AND payment_gateway = 'DUITKU'"
-        )
+        with op.get_context().autocommit_block():
+            op.execute(
+                "CREATE UNIQUE INDEX ix_payments_event_phone_pending_duitku "
+                "ON payments (event_id, supporter_phone, team_id, qty, effect_code, support_message, duitku_payment_method) "
+                "WHERE status = 'PENDING' AND payment_gateway = 'DUITKU'"
+            )
 
 
 def downgrade() -> None:
