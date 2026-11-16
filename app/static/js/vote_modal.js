@@ -83,27 +83,34 @@ function voteModal() {
         },
 
     show({ event, team }) {
-          if (!event || !team) return;
-          const changedTarget = this.event?.id !== event.id || this.team?.id !== team.id;
-          this.lastFocus = document.activeElement;
-          this.event = event;
-          this.team = team;
-          this.resetCheckoutState();
-          if (changedTarget) this.idempotencyKey = '';
-          if (!changedTarget) this.restoreOrder();
-          this.open = true;
-          document.body.style.overflow = 'hidden';
-          this.loadMethods();
-          // JANGAN panggil checkStatus() di sini — status hanya muncul setelah
-          // user klik "Periksa Status Pesanan" (reconcileOrder).
-          // Polling akan jalan tapi hasCheckedStatus tetap false hingga manual check.
-          // init support feed (ticker + SSE) untuk event ini
-          if (event?.id) {
-            this._supportFeed = supportFeed(event.id, event.vote_effects || [], event.name || '');
-            this._supportFeed.init();
-          }
-          this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
-        },
+              if (!event || !team) return;
+              const changedTarget = this.event?.id !== event.id || this.team?.id !== team.id;
+              this.lastFocus = document.activeElement;
+              this.event = event;
+              this.team = team;
+              this.resetCheckoutState();
+              if (changedTarget) this.idempotencyKey = '';
+              if (!changedTarget) this.restoreOrder();
+              this.open = true;
+              document.body.style.overflow = 'hidden';
+              this.loadMethods();
+              // Setelah restore (kalau ada), cek status backend SEBELUM mengunci form.
+              // Bila status non-PENDING → forgetOrder() + biarkan form tampil.
+              if (this.order) {
+                this.checkStatus().then(() => {
+                  if (this.order && this.order.status !== 'PENDING') {
+                    this.forgetOrder();
+                    this.order = null;
+                  }
+                });
+              }
+              // init support feed (ticker + SSE) untuk event ini
+              if (event?.id) {
+                this._supportFeed = supportFeed(event.id, event.vote_effects || [], event.name || '');
+                this._supportFeed.init();
+              }
+              this.$nextTick(() => document.getElementById('vote-modal-name')?.focus());
+            },
 
     // Reset state pesanan tanpa menyentuh penyimpanan atau order yang dipulihkan.
     resetCheckoutState() {
@@ -316,87 +323,99 @@ function voteModal() {
     storageKey() { return 'rvd.checkout.' + this.event.id + '.' + this.team.id; },
 
     rememberOrder() {
-              if (!this.order?.id || !this.order?.status_token) return;
-              try {
-                sessionStorage.setItem(this.storageKey(), JSON.stringify({
-                  paymentId: this.order.id,
-                  token: this.order.status_token,
-                  idempotencyKey: this.idempotencyKey,
-                  savedAt: Date.now(),
-                  votes: this.order.votes || 0,
-                  expires_at: this.order.expires_at || null,
-                  payment_url: this.order.payment_url || null,
-                }));
-              } catch (_) {}
-            },
+                  if (!this.order?.id || !this.order?.status_token) return;
+                  try {
+                    sessionStorage.setItem(this.storageKey(), JSON.stringify({
+                      paymentId: this.order.id,
+                      token: this.order.status_token,
+                      idempotencyKey: this.idempotencyKey,
+                      savedAt: Date.now(),
+                      votes: this.order.votes || 0,
+                      expires_at: this.order.expires_at || null,
+                      payment_url: this.order.payment_url || null,
+                      status: this.order.status,
+                      // Snapshot form (qty, effect, method) — BUKAN kontak PII.
+                      formSnapshot: {
+                        qty: this.form.qty,
+                        effect: this.form.effect,
+                        method: this.form.method,
+                      },
+                    }));
+                  } catch (_) {}
+                },
 
-    // Hanya paymentId, token, idempotencyKey, dan stempel waktu. Tidak ada kontak.
-            restoreOrder() {
-              let saved = null;
-              try {
-                saved = JSON.parse(sessionStorage.getItem(this.storageKey()) || 'null');
-              } catch (_) {
-                saved = null;
-              }
-              if (!saved || !saved.paymentId || !saved.token) return;
-              if (!saved.savedAt || Date.now() - Number(saved.savedAt) > 24 * 60 * 60 * 1000) {
-                this.forgetOrder();
-                return;
-              }
-              // Jika expires_at sudah lewat, jangan restore order (payment_url sudah tidak valid).
-              if (saved.expires_at && Date.now() > Number(saved.expires_at)) {
-                this.forgetOrder();
-                return;
-              }
-              this.order = {
-                id: saved.paymentId,
-                token: saved.token,
-                status_token: saved.token,
-                status: 'PENDING',
-                inquiry_state: null,
-                needs_manual_review: false,
-                payment_url: saved.payment_url || null,
-                votes: saved.votes || 0,
-                supporter_name: saved.supporter_name || '',
-                supporter_phone: saved.supporter_phone || '',
-                expires_at: saved.expires_at || null,
-              };
-              if (saved.idempotencyKey) this.idempotencyKey = saved.idempotencyKey;
-              this.reconcileVerdict = '';
-            },
+    // Hanya paymentId, token, idempotencyKey, status, snapshot form, dan stempel waktu. Tidak ada kontak PII.
+                restoreOrder() {
+                  let saved = null;
+                  try {
+                    saved = JSON.parse(sessionStorage.getItem(this.storageKey()) || 'null');
+                  } catch (_) {
+                    saved = null;
+                  }
+                  if (!saved || !saved.paymentId || !saved.token) return;
+                  if (!saved.savedAt || Date.now() - Number(saved.savedAt) > 24 * 60 * 60 * 1000) {
+                    this.forgetOrder();
+                    return;
+                  }
+                  // Jika expires_at sudah lewat, jangan restore order (payment_url sudah tidak valid).
+                  // Guard non-numerik: Number(null/string) → NaN, Number.isFinite(exp) menangani itu.
+                  const exp = Number(saved.expires_at);
+                  if (saved.expires_at && Number.isFinite(exp) && Date.now() > exp) {
+                    this.forgetOrder();
+                    return;
+                  }
+                  this.order = {
+                    id: saved.paymentId,
+                    token: saved.token,
+                    status_token: saved.token,
+                    status: saved.status || 'PENDING',
+                    inquiry_state: null,
+                    needs_manual_review: false,
+                    payment_url: saved.payment_url || null,
+                    votes: saved.votes || 0,
+                    supporter_name: saved.supporter_name || '',
+                    supporter_phone: saved.supporter_phone || '',
+                    expires_at: saved.expires_at || null,
+                  };
+                  if (saved.idempotencyKey) this.idempotencyKey = saved.idempotencyKey;
+                  this.reconcileVerdict = '';
+                  // Jalankan polling setelah restore (konsisten dengan adoptOrder js:313)
+                  if (this.order.status === 'PENDING') this.startPolling();
+                },
 
     forgetOrder() { try { sessionStorage.removeItem(this.storageKey()); } catch (_) {} },
 
     // Baca status lokal dari backend. Tidak pernah memanggil Duitku langsung.
-            async checkStatus() {
-              const order = this.order;
-              if (!order?.id || !(order.status_token || order.token)) return;
-              const token = order.status_token || order.token;
-              try {
-                const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
-                  + '/status?t=' + encodeURIComponent(token));
-                if (res.status === 403) {
-                  this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
-                  this.order = null;
-                  this.stopPolling();
-                  this.forgetOrder();
-                  return;
-                }
-                const body = await res.json();
-                if (!res.ok || !body.success) return;
-                this.hydrateForm(body.data);
-                this.order = this.orderFrom(body.data);
-                this.rememberOrder();
-                this.error = '';
-                if (this.order.status === 'SUCCESS') {
-                  this.stopPolling();
-                  return;
-                }
-                if (this.order.status !== 'PENDING') this.stopPolling();
-              } catch (_) {
-                // Gangguan jaringan bukan perubahan status: order dipertahankan.
-              }
-            },
+                async checkStatus() {
+                  const order = this.order;
+                  if (!order?.id || !(order.status_token || order.token)) return;
+                  const token = order.status_token || order.token;
+                  try {
+                    const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
+                      + '/status?t=' + encodeURIComponent(token));
+                    if (res.status === 403) {
+                      this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
+                      this.order = null;
+                      this.stopPolling();
+                      this.forgetOrder();
+                      return;
+                    }
+                    const body = await res.json();
+                    if (!res.ok || !body.success) return;
+                    this.hydrateForm(body.data);
+                    this.order = this.orderFrom(body.data);
+                    this.rememberOrder();
+                    this.error = '';
+                    if (this.order.status === 'SUCCESS') {
+                      this.stopPolling();
+                      this.forgetOrder(); // F4: order sukses tidak dipulihkan jadi PENDING lagi
+                      return;
+                    }
+                    if (this.order.status !== 'PENDING') this.stopPolling();
+                  } catch (_) {
+                    // Gangguan jaringan bukan perubahan status: order dipertahankan.
+                  }
+                },
 
         // Isi ulang form dari backend; telepon dikembalikan tanpa awalan +62.
         hydrateForm(data) {
@@ -436,37 +455,40 @@ function voteModal() {
                 stopPolling() { clearInterval(this.pollTimer); clearTimeout(this.pollTimer); this.pollTimer = null; },
 
         // Aksi eksplisit: satu cek ke provider lewat backend (bukan dari browser).
-                        async reconcileOrder() {
-                          if (this.isChecking || !this.order?.id) return;
-                          const order = this.order;
-                          const token = order.status_token || order.token;
-                          this.isChecking = true;
-                          try {
-                            const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
-                              + '/reconcile?t=' + encodeURIComponent(token), { method: 'POST' });
-                            if (res.status === 403) {
-                              this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
-                              return;
-                            }
-                            const body = await res.json().catch(() => ({}));
-                                                if (!res.ok || !body.success) {
-                                                  // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
-                                                  this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
-                                                  return;
-                                                }
-                                                this.hydrateForm(body.data);
-                                                this.order = this.orderFrom(body.data);
-                                                this.rememberOrder();
-                                                this.reconcileVerdict = body.data.reconcile_verdict || '';
-                                                this.hasCheckedStatus = true;
-                            this.error = '';
-                            if (this.order.status === 'SUCCESS') this.stopPolling();
-                          } catch (_) {
-                            this.error = 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
-                          } finally {
-                            this.isChecking = false;
-                          }
-                        },
+                                async reconcileOrder() {
+                                  if (this.isChecking || !this.order?.id) return;
+                                  const order = this.order;
+                                  const token = order.status_token || order.token;
+                                  this.isChecking = true;
+                                  try {
+                                    const res = await fetch('/api/v1/payments/' + encodeURIComponent(order.id)
+                                      + '/reconcile?t=' + encodeURIComponent(token), { method: 'POST' });
+                                    if (res.status === 403) {
+                                      this.error = 'Tautan status tidak valid. Buka dari perangkat asal atau hubungi bantuan.';
+                                      return;
+                                    }
+                                    const body = await res.json().catch(() => ({}));
+                                                        if (!res.ok || !body.success) {
+                                                          // Cek gagal bukan berarti pembayaran gagal: status order tidak diubah.
+                                                          this.error = body.message || 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+                                                          return;
+                                                        }
+                                                        this.hydrateForm(body.data);
+                                                        this.order = this.orderFrom(body.data);
+                                                        this.rememberOrder();
+                                                        this.reconcileVerdict = body.data.reconcile_verdict || '';
+                                                        this.hasCheckedStatus = true;
+                                    this.error = '';
+                                    if (this.order.status === 'SUCCESS') {
+                                      this.stopPolling();
+                                      this.forgetOrder(); // F4: order sukses tidak dipulihkan jadi PENDING lagi
+                                    }
+                                  } catch (_) {
+                                    this.error = 'Status pesanan belum dapat diperiksa. Coba lagi nanti.';
+                                  } finally {
+                                    this.isChecking = false;
+                                  }
+                                },
 
         startNewInvoice() {
                       this.stopPolling();

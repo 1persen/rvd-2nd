@@ -80,6 +80,7 @@ class Payment(TimestampMixin, UUIDMixin, Base):
     effect_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    creating_started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
     team: Mapped["Team"] = relationship(back_populates="payments")  # noqa: F821
     vote_logs: Mapped[list["VoteLog"]] = relationship(back_populates="payment")  # noqa: F821

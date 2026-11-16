@@ -18,12 +18,12 @@
     <div class="notice notice-error" role="alert" x-show="error" x-cloak x-text="error"></div>
 
     {# Panel status pesanan: membaca order, bukan payment. Tidak menampilkan
-           status internal mentah; tindakan mengikuti tabel tindakan plan. #}
-    <div class="vote-order" x-show="order" x-cloak role="status">
-      <div x-show="hasCheckedStatus" x-cloak>
-        <p class="vote-order-kicker">Status pembayaran</p>
-        <h3 class="vote-order-title" x-text="orderLabel"></h3>
-      </div>
+               status internal mentah; tindakan mengikuti tabel tindakan plan. #}
+        <div class="vote-order" x-show="order" x-cloak role="status">
+          <div x-cloak>
+            <p class="vote-order-kicker">Status pembayaran</p>
+            <h3 class="vote-order-title" x-text="orderLabel"></h3>
+          </div>
       <dl class="vote-order-meta">
         <div><dt>Nama</dt><dd x-text="order?.supporter_name"></dd></div>
         <div><dt>Nomor HP</dt><dd x-text="order?.supporter_phone"></dd></div>
@@ -50,7 +50,7 @@
       </div>
     </div>
 
-    <form x-show="!order" @submit.prevent="submit()" class="vote-modal-form" novalidate>
+    <form x-show="!order || order.status !== 'PENDING'" @submit.prevent="submit()" class="vote-modal-form" novalidate>
           <div class="vote-modal-scroll">
           <label class="vote-field">
             <span>Nama pendukung <em>*</em></span>
@@ -102,23 +102,21 @@
                 </template>
               </div>
 
-              <template x-if="sultanGifts.length">
-                <div class="vote-gifts-sultan" role="radiogroup" aria-label="Gift kategori Sultan">
-                  <p class="vote-gifts-title"><span>✦</span> Sultan <span>✦</span></p>
-                  <div class="vote-gifts vote-gifts--sultan">
-                    <template x-for="gift in sultanGifts" :key="gift.code">
-                      <button type="button" role="radio" :aria-checked="form.effect === gift.code"
-                        :class="{ 'is-active': form.effect === gift.code }"
-                        @click="toggleEffect(gift)" :title="'Paket ' + gift.votes + ' vote + efek ' + gift.label" :disabled="isLoading">
-                        <span class="vote-gift-icon" aria-hidden="true" x-html="giftIcon(gift.animation)"></span>
-                        <b x-text="gift.label"></b>
-                        <small x-text="gift.level"></small>
-                        <em x-text="'+' + gift.votes.toLocaleString('id-ID') + ' vote'"></em>
-                      </button>
-                    </template>
-                  </div>
-                </div>
-              </template>
+              <div class="vote-gifts-sultan" role="radiogroup" aria-label="Gift kategori Sultan" x-show="sultanGifts.length" x-cloak>
+                                <p class="vote-gifts-title"><span>✦</span> Sultan <span>✦</span></p>
+                                <div class="vote-gifts vote-gifts--sultan">
+                                  <template x-for="gift in sultanGifts" :key="gift.code">
+                                    <button type="button" role="radio" :aria-checked="form.effect === gift.code"
+                                      :class="{ 'is-active': form.effect === gift.code }"
+                                      @click="toggleEffect(gift)" :title="'Paket ' + gift.votes + ' vote + efek ' + gift.label" :disabled="isLoading">
+                                      <span class="vote-gift-icon" aria-hidden="true" x-html="giftIcon(gift.animation)"></span>
+                                      <b x-text="gift.label"></b>
+                                      <small x-text="gift.level"></small>
+                                      <em x-text="'+' + gift.votes.toLocaleString('id-ID') + ' vote'"></em>
+                                    </button>
+                                  </template>
+                                </div>
+                              </div>
               <p class="vote-hint" x-show="form.effect" x-cloak>Gift dipilih: paket <b x-text="form.qty"></b> vote, efek animasi sebagai bonus. Ubah jumlah vote manual akan melepas gift.</p>
               <p class="vote-hint" x-show="allEffects.length && !form.effect" x-cloak>Gift adalah paket beli cepat: klik gift untuk membeli paket vote sekaligus mendapat efeknya.</p>
               <p class="vote-hint" x-show="!allEffects.length" x-cloak>Gift belum tersedia untuk event ini.</p>
