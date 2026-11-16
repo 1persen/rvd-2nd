@@ -165,7 +165,7 @@ async def test_creating_state_blocks_new_invoice(async_client, test_data, db_ses
 
 
 @pytest.mark.asyncio
-async def test_rejected_invoice_releases_key_and_allows_retry(async_client, test_data, db_session, provider):
+async def test_rejected_invoice_releases_key_and_allows_retry(async_client, test_data, db_session, provider_ok):
     inquiry, _ = provider_ok
     inquiry.side_effect = [duitku_service.DuitkuRejected('Payment method is inactive', '01')]
     rejected = await async_client.post('/api/v1/payments', json=body(test_data))
@@ -212,7 +212,7 @@ async def test_expired_invoice_can_still_settle(async_client, test_data, db_sess
 
 
 @pytest.mark.asyncio
-async def test_official_status_is_reconciled_on_confirmed_invoice(async_client, test_data, db_session, provider):
+async def test_official_status_is_reconciled_on_confirmed_invoice(async_client, test_data, db_session, provider_ok):
     inquiry, status = provider_ok
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     assert payment['status'] == 'PENDING'
@@ -226,7 +226,7 @@ async def test_official_status_is_reconciled_on_confirmed_invoice(async_client, 
 @pytest.mark.asyncio
 @pytest.mark.parametrize('overrides', [{'amount': '1'}, {'merchantOrderId': 'other-order'}, {'reference': ''}, {'statusCode': 'bogus'}])
 async def test_untrusted_status_cannot_credit_votes(async_client, test_data, db_session, provider_ok, overrides):
-    inquiry, status = provider
+    inquiry, status = provider_ok
     status.side_effect = status_response('00', **overrides)
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     assert payment['status'] == 'PENDING'
@@ -255,7 +255,7 @@ async def test_callback_can_arrive_before_inquiry_returns(async_client, test_dat
 
 
 @pytest.mark.asyncio
-async def test_parallel_retries_issue_only_one_provider_order(async_client, test_data, provider):
+async def test_parallel_retries_issue_only_one_provider_order(async_client, test_data, provider_ok):
     inquiry, status = provider_ok
     status.side_effect = status_response('01')
     replies = await asyncio.gather(*(async_client.post('/api/v1/payments', json=body(test_data)) for _ in range(4)))
@@ -296,7 +296,7 @@ async def test_status_reference_mismatch_cannot_credit_votes(async_client, test_
 
 @pytest.mark.asyncio
 async def test_reconciliation_cannot_use_credentials_from_another_environment(async_client, test_data, provider_ok, monkeypatch):
-    inquiry, status = provider
+    inquiry, status = provider_ok
     status.side_effect = status_response('01')
     payment = (await async_client.post('/api/v1/payments', json=body(test_data))).json()['data']
     status.reset_mock()
