@@ -43,7 +43,7 @@
 <link rel="stylesheet" href="/static/css/tailwind.css?v={{ tailwind_css_version }}">
 {% endif %}
 
-<link rel="stylesheet" href="/static/css/custom.css?v={{ tailwind_css_version | default("preview", true) }}">
+<link rel="stylesheet" href="/static/css/custom.css?v={{ custom_css_version | default(tailwind_css_version | default('preview', true), true) }}">
 <style>
   [x-cloak] { display: none !important; }
 </style>

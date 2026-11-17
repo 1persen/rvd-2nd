@@ -46,6 +46,13 @@ templates.env.globals["public_css_version"] = (
     int(_PUBLIC_CSS.stat().st_mtime) if _PUBLIC_CSS.exists() else None
 )
 
+# custom.css is versioned independently so edits to it bust browser caches even
+# when tailwind.css is not rebuilt (e.g. on platforms that don't run build_css.sh).
+_CUSTOM_CSS = Path("app/static/css/custom.css")
+templates.env.globals["custom_css_version"] = (
+    int(_CUSTOM_CSS.stat().st_mtime) if _CUSTOM_CSS.exists() else None
+)
+
 _INVITE_CSS = Path("app/static/css/invite.css")
 templates.env.globals["invite_css_version"] = (
     int(_INVITE_CSS.stat().st_mtime) if _INVITE_CSS.exists() else None
