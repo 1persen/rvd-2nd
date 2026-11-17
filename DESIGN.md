@@ -1,194 +1,438 @@
-# Design Tokens — Nordic Yellow / RVD Gold
-
-Mapping dokumentasi untuk design system RVD setelah restrukturisasi ke gaya Scandinavian (Nordic Yellow + Gold accent).
-
+---
+version: alpha
+name: Simpaskor Layout Model
+description: Landing page layout with horizontal pill navigation, 7 vertical slides, card grids, and pricing packages. Single-page app style with slide transitions.
+colors:
+  primary: "#dc2626"
+  primary-hover: "#b91c1c"
+  surface: "#ffffff"
+  background: "#fafafa"
+  border: "#e5e7eb"
+  text-primary: "#111827"
+  text-secondary: "#6b7280"
+  text-muted: "#9ca3af"
+typography:
+  heading:
+    fontFamily: "Noto Sans, system-ui, sans-serif"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
+  body:
+    fontFamily: "Noto Sans, system-ui, sans-serif"
+    fontWeight: 400
+    lineHeight: 1.5
+    letterSpacing: "0"
+  button:
+    fontFamily: "Noto Sans, system-ui, sans-serif"
+    fontWeight: 600
+    lineHeight: 1.25
+    letterSpacing: "0.01em"
+rounded:
+  sm: "4px"
+  md: "8px"
+  lg: "12px"
+  xl: "16px"
+  full: "9999px"
+spacing:
+  base: "4px"
+  scale: [4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80]
+  section-gap: "64px"
+  card-gap: "24px"
+  container-max: "1280px"
+  container-padding: "24px"
+elevation:
+  level-0: "none"
+  level-1: "0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)"
+  level-2: "0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06)"
+  level-3: "0 10px 25px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.1)"
+components:
+  header:
+    height: "56px"
+    background: "transparent"
+    backdropFilter: "blur(8px)"
+    borderBottom: "1px solid {colors.border}"
+    display: "flex"
+    alignItems: "center"
+    justifyContent: "space-between"
+    padding: "0 {spacing.container-padding}"
+    position: "fixed"
+    top: 0
+    left: 0
+    right: 0
+    zIndex: 40
+  logo:
+    size: "36px"
+    borderRadius: "{rounded.full}"
+    background: "#000000"
+    border: "1px solid rgba(255,255,255,0.1)"
+    display: "flex"
+    alignItems: "center"
+    justifyContent: "center"
+  nav-pills:
+    display: "flex"
+    gap: "4px"
+    background: "rgba(255,255,255,0.8)"
+    borderRadius: "{rounded.full}"
+    padding: "4px"
+    backdropFilter: "blur(8px)"
+    border: "1px solid {colors.border}"
+  nav-pill:
+    display: "flex"
+    alignItems: "center"
+    gap: "6px"
+    padding: "8px 16px"
+    borderRadius: "{rounded.full}"
+    fontSize: "13px"
+    fontWeight: 500
+    color: "{colors.text-secondary}"
+    background: "transparent"
+    border: "none"
+    cursor: "pointer"
+    transition: "all 0.2s ease"
+  nav-pill-active:
+    background: "{colors.primary}"
+    color: "#ffffff"
+    boxShadow: "{elevation.level-1}"
+  nav-pill-hover:
+    color: "{colors.text-primary}"
+    background: "rgba(0,0,0,0.04)"
+  cta-button:
+    height: "40px"
+    padding: "0 20px"
+    borderRadius: "{rounded.full}"
+    fontSize: "13px"
+    fontWeight: 600
+    background: "{colors.primary}"
+    color: "#ffffff"
+    border: "none"
+    cursor: "pointer"
+    transition: "background 0.2s ease"
+  cta-button-hover:
+    background: "{colors.primary-hover}"
+  slide-container:
+    display: "flex"
+    flexDirection: "column"
+    minHeight: "100vh"
+  slide:
+    display: "none"
+    flexDirection: "column"
+    minHeight: "calc(100vh - 56px)"
+    paddingTop: "56px"
+  slide-active:
+    display: "flex"
+  slide-inner:
+    flex: 1
+    display: "flex"
+    flexDirection: "column"
+    maxWidth: "{spacing.container-max}"
+    margin: "0 auto"
+    padding: "0 {spacing.container-padding}"
+    width: "100%"
+  slide-header:
+    marginBottom: "32px"
+  slide-title:
+    fontSize: "32px"
+    fontWeight: 700
+    lineHeight: 1.2
+    color: "{colors.text-primary}"
+    marginBottom: "8px"
+  slide-subtitle:
+    fontSize: "16px"
+    color: "{colors.text-secondary}"
+  section-title:
+    fontSize: "20px"
+    fontWeight: 700
+    color: "{colors.text-primary}"
+    marginBottom: "16px"
+    display: "flex"
+    alignItems: "center"
+    justifyContent: "space-between"
+  view-all-link:
+    fontSize: "14px"
+    fontWeight: 500
+    color: "{colors.primary}"
+    textDecoration: "none"
+  view-all-link-hover:
+    textDecoration: "underline"
+  card-grid:
+    display: "grid"
+    gridTemplateColumns: "repeat(4, 1fr)"
+    gap: "{spacing.card-gap}"
+  card-grid-3:
+    gridTemplateColumns: "repeat(3, 1fr)"
+  card-grid-2:
+    gridTemplateColumns: "repeat(2, 1fr)"
+  card-grid-1:
+    gridTemplateColumns: "1fr"
+  card:
+    background: "{colors.surface}"
+    borderRadius: "{rounded.lg}"
+    border: "1px solid {colors.border}"
+    overflow: "hidden"
+    transition: "transform 0.2s ease, box-shadow 0.2s ease"
+    display: "flex"
+    flexDirection: "column"
+  card-hover:
+    transform: "translateY(-4px)"
+    boxShadow: "{elevation.level-2}"
+  card-image:
+    aspectRatio: "16/10"
+    width: "100%"
+    objectFit: "cover"
+    background: "{colors.background}"
+  card-content:
+    padding: "16px"
+    display: "flex"
+    flexDirection: "column"
+    gap: "8px"
+    flex: 1
+  card-badge:
+    display: "inline-flex"
+    alignItems: "center"
+    fontSize: "11px"
+    fontWeight: 600
+    padding: "2px 8px"
+    borderRadius: "{rounded.full}"
+    background: "{colors.primary}"
+    color: "#ffffff"
+    width: "fit-content"
+  card-title:
+    fontSize: "16px"
+    fontWeight: 600
+    color: "{colors.text-primary}"
+    lineHeight: 1.3
+    display: "-webkit-box"
+    webkitLineClamp: 2
+    webkitBoxOrient: "vertical"
+    overflow: "hidden"
+  card-meta:
+    fontSize: "13px"
+    color: "{colors.text-muted}"
+    display: "flex"
+    alignItems: "center"
+    gap: "8px"
+  card-price:
+    fontSize: "18px"
+    fontWeight: 700
+    color: "{colors.text-primary}"
+  card-price-from:
+    fontSize: "13px"
+    fontWeight: 400
+    color: "{colors.text-muted}"
+  card-button:
+    marginTop: "auto"
+    width: "100%"
+    padding: "10px 16px"
+    borderRadius: "{rounded.md}"
+    fontSize: "13px"
+    fontWeight: 600
+    background: "{colors.primary}"
+    color: "#ffffff"
+    border: "none"
+    cursor: "pointer"
+    transition: "background 0.2s ease"
+  card-button-hover:
+    background: "{colors.primary-hover}"
+  pricing-grid:
+    display: "grid"
+    gridTemplateColumns: "repeat(4, 1fr)"
+    gap: "24px"
+  pricing-card:
+    background: "{colors.surface}"
+    borderRadius: "{rounded.xl}"
+    border: "1px solid {colors.border}"
+    padding: "24px"
+    display: "flex"
+    flexDirection: "column"
+    position: "relative"
+  pricing-card-popular:
+    borderColor: "{colors.primary}"
+    boxShadow: "{elevation.level-2}"
+  pricing-badge:
+    position: "absolute"
+    top: "-12px"
+    left: "50%"
+    transform: "translateX(-50%)"
+    background: "{colors.primary}"
+    color: "#ffffff"
+    fontSize: "11px"
+    fontWeight: 600
+    padding: "4px 12px"
+    borderRadius: "{rounded.full}"
+  pricing-name:
+    fontSize: "18px"
+    fontWeight: 700
+    color: "{colors.text-primary}"
+    marginBottom: "4px"
+  pricing-desc:
+    fontSize: "13px"
+    color: "{colors.text-secondary}"
+    marginBottom: "16px"
+  pricing-price:
+    fontSize: "28px"
+    fontWeight: 700
+    color: "{colors.text-primary}"
+    marginBottom: "4px"
+  pricing-price-note:
+    fontSize: "12px"
+    color: "{colors.text-muted}"
+    marginBottom: "20px"
+  pricing-features:
+    listStyle: "none"
+    padding: 0
+    margin: 0
+    flex: 1
+    display: "flex"
+    flexDirection: "column"
+    gap: "10px"
+  pricing-feature:
+    display: "flex"
+    alignItems: "flex-start"
+    gap: "10px"
+    fontSize: "13px"
+    color: "{colors.text-secondary}"
+  pricing-feature-check:
+    flexShrink: 0
+    width: "18px"
+    height: "18px"
+    borderRadius: "{rounded.full}"
+    background: "{colors.primary}"
+    color: "#ffffff"
+    display: "flex"
+    alignItems: "center"
+    justifyContent: "center"
+    fontSize: "10px"
+  pricing-button:
+    marginTop: "20px"
+    width: "100%"
+    padding: "12px 20px"
+    borderRadius: "{rounded.md}"
+    fontSize: "14px"
+    fontWeight: 600
+    background: "transparent"
+    color: "{colors.primary}"
+    border: "2px solid {colors.primary}"
+    cursor: "pointer"
+    transition: "all 0.2s ease"
+  pricing-button-primary:
+    background: "{colors.primary}"
+    color: "#ffffff"
+  pricing-button-hover:
+    background: "{colors.primary}"
+    color: "#ffffff"
+  pricing-button-primary-hover:
+    background: "{colors.primary-hover}"
+    borderColor: "{colors.primary-hover}"
+  footer:
+    padding: "40px {spacing.container-padding}"
+    background: "{colors.background}"
+    borderTop: "1px solid {colors.border}"
+  footer-links:
+    display: "flex"
+    flexWrap: "wrap"
+    gap: "24px"
+    maxWidth: "{spacing.container-max}"
+    margin: "0 auto"
+    justifyContent: "center"
+  footer-link:
+    fontSize: "14px"
+    color: "{colors.text-secondary}"
+    textDecoration: "none"
+  footer-link-hover:
+    color: "{colors.primary}"
+    textDecoration: "underline"
+responsive:
+  mobile-breakpoint: "640px"
+  tablet-breakpoint: "1024px"
+  desktop-breakpoint: "1280px"
+  mobile:
+    nav-pills:
+      gap: "2px"
+      padding: "2px"
+    nav-pill:
+      padding: "6px 12px"
+      fontSize: "12px"
+    slide-title:
+      fontSize: "24px"
+    card-grid:
+      gridTemplateColumns: "repeat(2, 1fr)"
+      gap: "16px"
+    pricing-grid:
+      gridTemplateColumns: "1fr"
+    container-padding: "16px"
+  tablet:
+    card-grid:
+      gridTemplateColumns: "repeat(3, 1fr)"
+    pricing-grid:
+      gridTemplateColumns: "repeat(2, 1fr)"
 ---
 
-## Warna (Color)
+## Overview
 
-| Token | Nilai | Digunakan untuk |
-|-------|-------|-----------------|
-| `--gold` | `#a58852` | Brand accent utama (menggantikan IKEA Yellow `#FFDA1A`) |
-| `--canvas` | `#f7f8fa` | Page background (light) |
-| `--paper` | `#f8f7f3` | Card / surface background (light) |
-| `--surface` | `#fff` | Elevated surface, modal bg |
-| `--ink` | `#202124` | Primary text |
-| `--muted` | `#626670` | Secondary text, metadata |
-| `--line` | `#e3e5e9` | Borders, dividers |
-| `--brand` | `#24262b` | Primary actions, navigation |
-| `--accent` | `#3155d9` | Links, focus rings, interactive |
-| `--brand-soft` | `#f0f1f4` | Hover/active bg untuk primary |
-| `--control-border` | `#8b8e96` | Input/select border |
+Simpaskor landing page uses a **single-page vertical slide model** with 7 content sections navigated via a fixed horizontal pill navigation. Each "slide" is a full-viewport section that shows/hides via display toggling (not scroll-snap). This creates an app-like experience where users click tabs to reveal content panels.
 
-**Dark mode** (`html.dark`):
+## Layout Architecture
 
-| Token | Nilai |
-|-------|-------|
-| `--canvas` | `#0B1D3A` |
-| `--surface` | `#122A52` |
-| `--paper` | `#0f1e2a` |
-| `--ink` | `#e4e6eb` |
-| `--muted` | `#9ca3af` |
-| `--line` | `#2a3548` |
-| `--brand` | `#3B82F6` |
-| `--accent` | `#60a5fa` |
-| `--brand-soft` | `#1e2a4a` |
-| `--gold` | `#d8b36a` |
+### Slide Model
+- **7 slides**: `hero` | `events` | `ticketing` | `voting` | `berita` | `marketplace` | `paket`
+- Each slide has `data-slide` attribute matching nav pill
+- Only one slide active at a time (`.is-active` class = `display: flex`)
+- Slides maintain `min-height: 100vh` for visual consistency
+- Header is fixed (`position: fixed`, `z-index: 40`) with transparent bg + backdrop blur
 
----
+### Grid System
+- **Container**: max-width 1280px, centered, 24px side padding
+- **Card grids**: CSS Grid with 4/3/2/1 column responsive breakpoints
+- **Pricing grid**: 4-col desktop, 2-col tablet, 1-col mobile
+- **Gap**: 24px desktop, 16px mobile
 
-## Tipografi (Typography)
+## Components
 
-Satu font family untuk **semua** teks:
+### Navigation Pills
+Horizontal pill bar beneath logo in header. Each pill is a `<button>` with `data-slide` target. Active state uses primary red background (`#dc2626`) with white text. Hover uses subtle gray. Full border-radius (9999px). 4px gap between pills, 4px container padding.
 
-| Role | Font | Weights |
-|------|------|---------|
-| Display / Heading / Body / UI | **Noto Sans** (Google Fonts) | 400, 500, 600, 700, 800, 900 |
+### Cards
+Unified card component used across events, ticketing, voting, berita, marketplace:
+- Image top (16:10 aspect ratio), content below
+- Content: optional badge → title (2-line clamp) → meta (date/location) → price → full-width CTA button
+- Hover: translateY(-4px) + elevation level-2
+- Border: 1px solid #e5e7eb, radius 12px
 
-Line height:
-- Body: 1.5
-- Headings: 1.3
+### Pricing Cards
+Feature-list cards for package selection:
+- Name, description, price, feature list with checkmarks, CTA button
+- "Popular" variant: primary border + badge + elevation
+- Primary CTA: filled primary; Secondary CTA: outline primary
+- Feature checkmarks: 18px circles with primary bg + check icon
 
-Type scale (CSS variables available in `custom.css`):
+### Hero Slide
+Split layout (text left, image right on desktop; stacked on mobile):
+- Left: eyebrow → h1 → h2 tagline → 2 CTAs (primary + ghost)
+- Right: decorative glow elements + main hero image
+- Decorative: "hero-foto-cahaya" glow span + "hero-foto-glitch" image overlay
 
-| Token | Size / Weight | Usage |
-|-------|---------------|-------|
-| `--text-display` | 40px / 700 | Hero, large marketing |
-| `--text-h1` | 32px / 700 | Page titles |
-| `--text-h2` | 24px / 700 | Section headings |
-| `--text-h3` | 18px / 700 | Sub-sections |
-| `--text-body` | 16px / 400 | Paragraphs |
-| `--text-body-sm` | 14px / 400 | Captions, meta |
-| `--text-caption` | 12px / 400 | Fine print |
-| `--text-product` | 16px / 700 | Product names |
-| `--text-price` | 24px / 700 | Prices |
-| `--text-price-sm` | 16px / 700 | Small prices |
-| `--text-dimension` | 14px / 400 (JetBrains Mono) | Technical dimensions |
+## Responsive Behavior
 
----
+| Breakpoint | Nav Pills | Card Grid | Pricing Grid | Container Padding |
+|------------|-----------|-----------|--------------|-------------------|
+| Mobile (<640) | 12px padding, 12px font | 2-col | 1-col | 16px |
+| Tablet (640-1024) | default | 3-col | 2-col | 24px |
+| Desktop (>1024) | default | 4-col | 4-col | 24px |
 
-## Border Radius (Radius Tokens)
+## Interaction Model
 
-Semua `border-radius` hardcoded telah diganti ke token berikut:
+- **Slide switching**: Click nav pill → toggle `.is-active` on target slide, remove from others
+- **No scroll-snap**: Standard document flow; each slide is a section
+- **Header fixed**: Content starts below header (56px padding-top on slide)
+- **Theme toggle**: Button in header switches light/dark via `html.dark` class
+- **CTA buttons**: Navigate to detail pages (`/events`, `/e-ticketing`, etc.)
 
-| Token | Nilai | Digunakan untuk |
-|-------|-------|---------------|
-| `--radius-sm` | `2px` | Checkbox, status pill kecil, badge kecil |
-| `--radius-md` | `4px` | **DEFAULT**: button, card, input, select, chip, table cell |
-| `--radius-lg` | `8px` | Dropdown, tooltip, toast, sheet, panel, banner promo |
-| `--radius-xl` | `12px` | Modal, dialog, hero section, overlay |
-| `--radius-full` | `9999px` | FAB, avatar, tag/pill, icon-only button, circular elements |
+## CSS Architecture Notes
 
-### Mapping nilai lama → token
-
-| Nilai lama | Token baru | Catatan |
-|------------|------------|---------|
-| `0`, `1px`, `2px` | `var(--radius-sm)` | |
-| `3px`, `4px`, `5px`, `6px`, `7px` | `var(--radius-md)` | |
-| `8px`, `9px`, `10px`, `11px` | `var(--radius-lg)` | |
-| `12px`–`50px` | `var(--radius-xl)` | Semua panel/card besar |
-| `999px`, `9999px`, `50%` | `var(--radius-full)` | Circular (avatar, pill, FAB) |
-
-> **Aturan**: PR baru **tidak boleh** memperkenalkan `border-radius` dengan nilai px/% hardcoded. Gunakan `var(--radius-*)`. Dikenakan via stylelint custom rule (`local/radius-token`).
-
----
-
-## Elevation (Shadow)
-
-| Level | Shadow | Penggunaan |
-|-------|--------|------------|
-| 0 | `none` | Flat content, separation via background |
-| 1 | `0 1px 3px rgba(17,17,17,0.06)` | Product cards at rest |
-| 2 | `0 4px 12px rgba(17,17,17,0.08)` | Dropdowns, room planner, hover states |
-| 3 | `0 8px 24px rgba(17,17,17,0.12)` | Modals, quick-view, overlays |
-
-CSS variables: `--shadow-1`, `--shadow-2`, `--shadow-3` (di `custom.css`).
-
----
-
-## Spacing
-
-Base unit: **4px**
-
-Scale: `4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80`
-
-| Context | Nilai |
-|---------|-------|
-| Section gap (antar "room") | `64px` |
-| Row gap (antar product) | `24px` |
-| Container max-width | `1400px` |
-| Side padding | `20px` (mobile), `28px` (desktop) |
-| Card grid gap | `20px` (desktop 4-col), `8px` (mobile 2-col) |
-
----
-
-## Komponen Utama (Component Specs)
-
-### Button
-- Height: `44px` (min)
-- Padding: `11px 19px` (`.btn`), `8px 15px` (`.header-cta`)
-- Radius: `var(--radius-md)` default, `var(--radius-full)` untuk icon-only
-- Font: Noto Sans 700, 15px
-- Primary: `--brand` bg, white text
-- Secondary: `--surface` bg, `--brand` text, `2px` `--brand` border
-- Gold CTA: gradient `#f2dfb2` → `#dbb977` (`.button-gold`), `--ink` text
-
-### Card
-- Background: `var(--surface)` / `var(--paper)`
-- Border: `1px solid var(--line)`
-- Radius: `var(--radius-md)` (default), `var(--radius-xl)` untuk hero/featured
-- Image: aspect-ratio 1:1, flush (no padding)
-- Content padding: `16px`
-
-### Input / Select
-- Height: `44px`
-- Padding: `11px 13px`
-- Radius: `var(--radius-md)`
-- Border: `1px solid var(--control-border)`
-- Focus: `2px solid var(--accent)`, outline-offset `4px`
-- Error: `1px solid #CC0008` + error text below
-
-### Chip / Tag
-- Height: `28px`
-- Padding: `0 12px`
-- Radius: `var(--radius-md)` default, `var(--radius-full)` untuk pill
-- Category: `--canvas` bg, `--ink` text
-- Active: `--brand` bg, white text
-- Gold/New: `--gold` bg, `--ink` text
-
-### Status Pill
-- Radius: `var(--radius-sm)`
-- Padding: `4px 9px`
-- Font: Noto Sans 700, 12px
-
----
-
-## Enforcement (Lint)
-
-File konfigurasi:
-- `.stylelintrc.json` — extends `stylelint-config-standard`, loads custom plugin
-- `stylelint-radius-token.js` — custom rule `local/radius-token`
-
-Rule `local/radius-token`:
-- Rejects any `border-radius` declaration that is not a `var(--radius-*)` token (or `inherit`/`initial`/`unset`/`revert`).
-- Allows raw px values **only** inside `:root` token definitions (custom properties starting with `--`).
-
-Jalankan:
-```bash
-npx stylelint "app/static/css/**/*.css"
-```
-
----
-
-## Catatan Migrasi
-
-- `standing` / leaderboard / peringkat page: **nama tidak diubah** (per instruksi user).
-- Font legacy yang dihapus: DM Sans, Poppins, Manrope, Rajdhani, Cormorant Garamond, Oswald, Bebas Neue, Plus Jakarta Sans, Inter, Source Sans 3, Outfit.
-- Semua font-family di CSS dan template HTML sekarang `Noto Sans`.
-- Semua `border-radius` hardcoded di `public.css`, `landing.css`, `vote_modal.css`, `checkout.css`, `admin.css`, `invite.css`, `custom.css` telah di-tokenisasi.
-- Gold accent: `--gold: #a58852` (light) / `#d8b36a` (dark).
-- Canvas/Paper: `--canvas: #f7f8fa`, `--paper: #f8f7f3` (light).
-
----
-
-*Generated as part of RVD frontend restructuring to Nordic Yellow / Scandinavian design system.*
+- Design tokens defined in `:root` as CSS custom properties
+- Component styles use token references (`var(--color-primary)`)
+- Border radius centralized: `--radius-sm/md/lg/xl/full`
+- Shadow elevation: 3 levels via `--shadow-1/2/3`
+- Spacing scale: 4px base unit
+- Single font family: Noto Sans (weights 400-700)
+- No utility frameworks — custom CSS with token system
