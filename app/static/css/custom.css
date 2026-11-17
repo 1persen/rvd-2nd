@@ -469,3 +469,236 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   transform: translateY(-4px) !important;
   box-shadow: var(--shadow-2) !important;
 }
+
+/* ======================================== SIMPASKOR 3-ZONE HERO MODEL ========================================
+   Restructures the landing hero into 3 zones: (1) big brand wordmark + supporting copy,
+   (2) circular visual with radial halo, (3) event poster card (replaces hero-event-chip).
+   All selectors prefixed with .public-site to beat public.css specificity.
+   Appended AFTER existing Simpaskor block — never modify existing rules.
+   ==================================================================================================== */
+
+/* 1. Hero 3-zone grid layout: copy / circle / card */
+.public-site .home-hero-inner {
+  display: grid !important;
+  grid-template-columns: 1.1fr 1fr 0.9fr !important;
+  align-items: center !important;
+  gap: calc(var(--sp-card-gap) * 2) !important;
+  min-height: 560px !important;
+  padding-block: var(--sp-section-gap) !important;
+  margin-top: 0 !important;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1024px) {
+  .public-site .home-hero-inner {
+    grid-template-columns: 1fr 1fr !important;
+    grid-template-rows: auto auto !important;
+    grid-template-areas:
+      "copy circle"
+      "card card" !important;
+    min-height: auto !important;
+    gap: var(--sp-card-gap) !important;
+  }
+  .public-site .home-hero-copy { grid-area: copy !important; }
+  .public-site .home-hero-visual { grid-area: circle !important; }
+  .public-site .home-hero-card { grid-area: card !important; }
+}
+
+@media (max-width: 720px) {
+  .public-site .home-hero-inner {
+    grid-template-columns: 1fr !important;
+    grid-template-areas:
+      "copy"
+      "circle"
+      "card" !important;
+  }
+}
+
+/* 2. Brand wordmark (large uppercase heavy) — beats public.css .home-hero-kicker + .home-hero-copy h1 */
+.public-site .home-hero-copy .hero-brand {
+  font-size: clamp(2.75rem, 6vw, 5rem) !important;
+  font-weight: 900 !important;
+  line-height: 0.95 !important;
+  letter-spacing: -0.03em !important;
+  text-transform: uppercase !important;
+  color: var(--ink) !important;
+  margin: 0 0 12px !important;
+  font-family: "Noto Sans", sans-serif !important;
+}
+html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
+
+/* The gold dot decoration in hero-brand <span> */
+.public-site .home-hero-copy .hero-brand > span {
+  display: inline-block !important;
+  width: 12px !important;
+  height: 12px !important;
+  margin-right: 10px !important;
+  border-radius: var(--r-full) !important;
+  background: var(--gold) !important;
+  box-shadow: 0 0 0 4px rgba(165,136,82,.15) !important;
+  vertical-align: middle !important;
+}
+
+/* 3. Supporting headline — smaller than brand, gold em accent */
+.public-site .home-hero-copy h1.hero-title {
+  font-size: clamp(1.5rem, 3vw, 2.25rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.02em !important;
+  color: var(--ink) !important;
+  margin: 0 0 8px !important;
+}
+html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
+.public-site .home-hero-copy h1.hero-title em {
+  color: var(--gold) !important;
+  font-style: italic !important;
+  font-weight: 700 !important;
+}
+
+/* 4. Subtitle (lead) */
+.public-site .home-hero-copy .hero-subtitle {
+  color: var(--muted) !important;
+  font-size: 1.0625rem !important;
+  line-height: 1.6 !important;
+  max-width: 62ch !important;
+  margin: 0 !important;
+}
+
+/* 5. Circular visual wrapper with radial halo */
+.public-site .home-hero-visual.hero-circle-wrap {
+  display: grid !important;
+  place-items: center !important;
+  min-height: 420px !important;
+  min-width: 0 !important;
+}
+.public-site .hero-circle {
+  width: min(340px, 80vw) !important;
+  aspect-ratio: 1 !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 30%, rgba(165,136,82,.22), rgba(165,136,82,.06) 60%, transparent 75%) !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 24px !important;
+}
+.public-site .hero-circle .award-art {
+  width: 100% !important;
+  height: 100% !important;
+  display: grid !important;
+  place-items: center !important;
+}
+.public-site .hero-circle .hero-trophy {
+  width: 85% !important;
+  max-width: 280px !important;
+  transform: rotate(-5deg) !important;
+}
+.public-site .hero-circle .award-orbit { max-width: 100% !important; }
+
+/* 6. Event poster card — replaces hero-event-chip */
+.public-site .home-hero-card {
+  display: grid !important;
+  place-items: start !important;
+}
+.public-site .hero-event-card {
+  display: block !important;
+  width: 100% !important;
+  max-width: 380px !important;
+  border-radius: var(--r-xl) !important;
+  overflow: hidden !important;
+  background: var(--surface) !important;
+  border: 1px solid rgba(23,43,50,.08) !important;
+  box-shadow: var(--shadow-2) !important;
+  text-decoration: none !important;
+  color: inherit !important;
+  transition: transform 160ms ease, box-shadow 160ms ease !important;
+}
+.public-site .hero-event-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-3) !important;
+}
+html.dark .public-site .hero-event-card {
+  border-color: rgba(255,255,255,.12) !important;
+}
+
+/* Card image: 16/9 aspect, object-fit cover */
+.public-site .hero-event-card > img {
+  display: block !important;
+  width: 100% !important;
+  aspect-ratio: 16 / 9 !important;
+  object-fit: cover !important;
+}
+
+/* Card top row: status pill + RVD mark */
+.public-site .hero-event-card__top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 16px 8px !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+.public-site .hero-event-card__top .status-pill {
+  font-size: 10px !important;
+  padding: 5px 10px !important;
+  border-radius: var(--r-full) !important;
+  font-weight: 600 !important;
+}
+.public-site .hero-event-card__mark {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  color: var(--gold) !important;
+  background: rgba(165,136,82,.1) !important;
+  padding: 4px 8px !important;
+  border-radius: var(--r-sm) !important;
+}
+
+/* Card body */
+.public-site .hero-event-card__body {
+  display: grid !important;
+  gap: 8px !important;
+  padding: 16px 20px 20px !important;
+}
+.public-site .hero-event-card__title {
+  font-size: clamp(1.125rem, 1.5vw, 1.375rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.25 !important;
+  color: var(--ink) !important;
+  letter-spacing: -0.01em !important;
+}
+html.dark .public-site .hero-event-card__title { color: #fff !important; }
+
+.public-site .hero-event-card__desc {
+  color: var(--muted) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin: 0 !important;
+}
+
+.public-site .hero-event-card__price {
+  color: var(--gold) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  margin: 4px 0 0 !important;
+}
+.public-site .hero-event-card__price span {
+  color: var(--muted) !important;
+  font-weight: 400 !important;
+}
+
+/* Card CTA row */
+.public-site .hero-event-card__cta {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  margin-top: 8px !important;
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  color: var(--gold) !important;
+}
+.public-site .hero-event-card__cta .icon {
+  width: 14px !important;
+  height: 14px !important;
+  flex-shrink: 0 !important;
+}
+
+/* ======================================== END SIMPASKOR 3-ZONE HERO MODEL ======================================== */

@@ -10,16 +10,27 @@
       <div class="landing-section-inner section-visible">
         <div class="shell home-hero-inner">
           <div class="home-hero-copy hero-copy">
-            <p class="home-hero-kicker"><span></span> RAJA VOTING DIGITAL</p>
-            <h1 class="hero-title">Panggung untuk<br><em>setiap dukungan.</em></h1>
-            <p class="home-hero-lead hero-subtitle">Pilih kompetisi, temukan peserta favorit, lalu dukung mereka lewat voting online yang mudah dan transparan.</p>
-          <div class="hero-actions"><a href="/events" class="button button-gold">Temukan event {{ icon('arrow') }}</a><a href="#event-unggulan" class="home-secondary-link">Lihat event unggulan</a></div>
-          <div class="home-proof-line"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Hasil voting terbuka</span></div>
-        </div>
-        <div class="home-hero-visual">
-          {% include "partials/trophy_art.html" %}
-          {% if event %}<a class="hero-event-chip" href="{{ event.invite_path }}"><span class="hero-event-chip__status"><i></i>{{ 'Voting berlangsung' if event.is_voting_open else event.status }}</span><strong>{{ event.name }}</strong><span>Buka event {{ icon('arrow') }}</span></a>{% endif %}
-        </div>
+                      <p class="home-hero-kicker hero-brand"><span></span> RAJA VOTING DIGITAL</p>
+                      <h1 class="hero-title">Panggung untuk<br><em>setiap dukungan.</em></h1>
+                      <p class="home-hero-lead hero-subtitle">Pilih kompetisi, temukan peserta favorit, lalu dukung mereka lewat voting online yang mudah dan transparan.</p>
+                      <div class="hero-actions"><a href="/events" class="button button-gold">Temukan event {{ icon('arrow') }}</a><a href="#event-unggulan" class="home-secondary-link">Lihat event unggulan</a></div>
+                      <div class="home-proof-line"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Hasil voting terbuka</span></div>
+                    </div>
+                    <div class="home-hero-visual hero-circle-wrap">
+                      <div class="hero-circle">{% include "partials/trophy_art.html" %}</div>
+                    </div>
+                    <div class="home-hero-card">
+                      {% if event %}<a class="hero-event-card" href="{{ event.invite_path }}">
+                        <div class="hero-event-card__top"><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span><span class="hero-event-card__mark">RVD</span></div>
+                        {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">{% endif %}
+                        <div class="hero-event-card__body">
+                          <strong class="hero-event-card__title">{{ event.name }}</strong>
+                          <p class="hero-event-card__desc">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</p>
+                          {% if event.price_per_vote %}<p class="hero-event-card__price">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} <span>per vote</span></p>{% endif %}
+                          <span class="hero-event-card__cta">Buka event {{ icon('arrow') }}</span>
+                        </div>
+                      </a>{% endif %}
+                    </div>
       </div>
     </div>
   </section>
