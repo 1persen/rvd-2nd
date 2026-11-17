@@ -5,324 +5,81 @@
 <meta name="description" content="Temukan event, dukung peserta favoritmu, dan pantau hasil voting secara transparan di Raja Voting Digital.">
 {% endblock %}
 {% block content %}
-<div class="slide-container" x-data="landingSlides()">
-
-  <!-- ============ HERO SLIDE ============ -->
-  <section class="landing-slide is-active" data-slide="hero" aria-labelledby="hero-title">
-    <div class="landing-slide-inner">
-      <div class="hero-content">
-        <div class="hero-copy">
-          <p class="eyebrow hero-eyebrow">RAJA VOTING DIGITAL</p>
-          <h1 id="hero-title" class="hero-title">Panggung untuk<br><em>Setiap Dukungan</em></h1>
-          <p class="hero-subtitle">Kelola penilaian, ticketing, rekap nilai, dan voting secara real-time dalam satu platform. Solusi all-in-one untuk transformasi digital kompetisi paskibra.</p>
-          <div class="hero-actions">
-            <a href="/events" class="btn btn-primary">Temukan Event {{ icon('arrow') }}</a>
-            <a href="/register" class="btn btn-secondary">Selenggarakan Event Anda</a>
-          </div>
+<div class="home-page">
+  <section class="landing-slide home-hero hero-content" data-slide="hero">
+      <div class="landing-section-inner section-visible">
+        <div class="shell home-hero-inner">
+          <div class="home-hero-copy hero-copy">
+            <p class="home-hero-kicker"><span></span> RAJA VOTING DIGITAL</p>
+            <h1 class="hero-title">Panggung untuk<br><em>setiap dukungan.</em></h1>
+            <p class="home-hero-lead hero-subtitle">Pilih kompetisi, temukan peserta favorit, lalu dukung mereka lewat voting online yang mudah dan transparan.</p>
+          <div class="hero-actions"><a href="/events" class="button button-gold">Temukan event {{ icon('arrow') }}</a><a href="#event-unggulan" class="home-secondary-link">Lihat event unggulan</a></div>
+          <div class="home-proof-line"><span>{{ icon('shield') }} Pembayaran terverifikasi</span><span>{{ icon('trophy') }} Hasil voting terbuka</span></div>
         </div>
-        <div class="hero-visual">
+        <div class="home-hero-visual">
           {% include "partials/trophy_art.html" %}
+          {% if event %}<a class="hero-event-chip" href="{{ event.invite_path }}"><span class="hero-event-chip__status"><i></i>{{ 'Voting berlangsung' if event.is_voting_open else event.status }}</span><strong>{{ event.name }}</strong><span>Buka event {{ icon('arrow') }}</span></a>{% endif %}
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ EVENTS SLIDE ============ -->
-  <section class="landing-slide" data-slide="events" aria-labelledby="events-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">KELOLA &amp; IKUTI EVENT</p>
-        <h2 id="events-title" class="slide-title">EVENT</h2>
-        <p class="slide-subtitle">Kompetisi Paskibra Se-Indonesia</p>
+  <nav class="home-product-nav shell" aria-label="Fitur Raja Voting Digital">
+    <div class="home-product-track" role="group" aria-label="Layanan RVD">
+      <span class="home-product-indicator is-voting" aria-hidden="true"></span>
+      <a href="/events" class="home-product-item is-active" aria-current="page">{{ icon('trophy') }}<span>Voting</span></a>
+      <a href="/leaderboard" class="home-product-item">{{ icon('star') }}<span>Peringkat</span></a>
+      <a href="/events" class="home-product-item">{{ icon('users') }}<span>Peserta</span></a>
+      <a href="/support" class="home-product-item">{{ icon('shield') }}<span>Bantuan</span></a>
+    </div>
+  </nav>
+
+  <section id="event-unggulan" class="shell home-featured-section">
+    <div class="home-section-heading"><div><p class="eyebrow">PILIH PANGGUNG BERIKUTNYA</p><h2>Event yang sedang berjalan</h2></div><a class="home-section-link" href="/events">Semua event {{ icon('arrow') }}</a></div>
+    {% if event %}
+    <article class="home-featured-event">
+      <a href="{{ event.invite_path }}" class="home-event-poster" aria-label="Buka event {{ event.name }}">
+        {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">{% endif %}
+        <span class="home-poster-top"><span class="home-poster-mark">RVD</span><span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}"><i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}</span></span>
+        <span class="home-poster-title">{{ event.name }}</span><span class="home-poster-bottom">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</span>
+      </a>
+      <div class="home-event-details">
+        <p class="eyebrow">DUKUNG PESERTA FAVORITMU</p>
+        <h3>{{ event.name }}</h3>
+        <p>{{ event.description or 'Temukan peserta, berikan dukungan, dan ikuti perolehan suara di halaman event.' }}</p>
+        {% if event.price_per_vote %}<p class="home-event-price">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} <span>per vote</span></p>{% endif %}
+        {% if event.is_voting_open and event.closes_at %}<div class="countdown" x-data='eventCountdown({{ event | tojson }})'><span>{{ icon('clock') }} Voting berakhir dalam</span><div><b x-text="countdown.days">00</b><small>hari</small><b x-text="countdown.hours">00</b><small>jam</small><b x-text="countdown.minutes">00</b><small>menit</small></div></div>{% endif %}
+        <a href="{{ event.invite_path }}" class="button button-dark">Jelajahi peserta {{ icon('arrow') }}</a>
       </div>
-      <div class="section-title">
-        <span>Event Terbaru</span>
-        <a href="/events" class="view-all-link">Jelajahi Event →</a>
-      </div>
-      <div class="card-grid" x-data='{ events: {{ all_events | tojson }} }'>
-        {% for ev in all_events[:4] %}
-        <article class="card" data-event-card>
-          <img class="card-image" src="{{ ev.banner_url or '/static/img/placeholder.webp' }}" alt="{{ ev.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">
-          <div class="card-content">
-            <span class="card-badge">{{ 'Unggulan' if ev.is_featured else ev.status }}</span>
-            <h3 class="card-title">{{ ev.name }}</h3>
-            <p class="card-meta">
-              <span>{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span>
-            </p>
-            {% if ev.price_per_vote %}
-            <p class="card-price"><span class="card-price-from">mulai</span> Rp{{ '{:,.0f}'.format(ev.price_per_vote).replace(',', '.') }}</p>
-            {% endif %}
-            <a href="{{ ev.invite_path }}" class="card-button">Lihat Detail</a>
-          </div>
-        </article>
+    </article>
+    {% else %}
+    <div class="home-no-event"><div><p class="eyebrow">BELUM ADA EVENT AKTIF</p><h3>Panggung berikutnya sedang disiapkan.</h3><p>Event akan tampil di sini setelah dipublikasikan.</p></div><a href="/events" class="button button-dark">Lihat semua event {{ icon('arrow') }}</a></div>
+    {% endif %}
+  </section>
+
+  {% if all_events|length > 1 and event %}
+  <section class="home-more-events">
+    <div class="shell">
+      <div class="home-section-heading"><div><p class="eyebrow">KOMPETISI LAINNYA</p><h2>Temukan event pilihanmu</h2></div><a class="home-section-link" href="/events">Jelajahi semua {{ icon('arrow') }}</a></div>
+      {% set other_events = all_events|rejectattr('id', 'equalto', event.id)|list %}
+      <div class="home-event-list" x-data='landingPage({{ other_events | tojson }})'>
+        {% for ev in other_events[:4] %}
+        <a class="home-event-row" href="{{ ev.invite_path }}"><span class="home-event-row__date" x-text="(() => { const d = new Date('{{ ev.opens_at }}'); return isNaN(d) ? 'SEGERA' : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) })()"></span><span class="home-event-row__name">{{ ev.name }}</span><span class="home-event-row__status">{{ 'Voting dibuka' if ev.is_voting_open else ev.status }}</span>{{ icon('arrow') }}</a>
         {% endfor %}
       </div>
+      {% if other_events|length > 4 %}<a class="home-event-list-more" href="/events">Lihat {{ other_events|length - 4 }} event lainnya {{ icon('arrow') }}</a>{% endif %}
     </div>
   </section>
+  {% endif %}
 
-  <!-- ============ TICKETING SLIDE ============ -->
-  <section class="landing-slide" data-slide="ticketing" aria-labelledby="ticketing-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">BELI TIKET ONLINE</p>
-        <h2 id="ticketing-title" class="slide-title">E-TICKETING</h2>
-        <p class="slide-subtitle">Tiket digital untuk event favoritmu</p>
-      </div>
-      <div class="section-title">
-        <span>Tiket Tersedia</span>
-        <a href="/e-ticketing" class="view-all-link">Lihat Semua Tiket →</a>
-      </div>
-      <div class="card-grid card-grid-3">
-        {% for ev in all_events[:3] %}
-        <article class="card" data-ticket-card>
-          <img class="card-image" src="{{ ev.banner_url or '/static/img/placeholder.webp' }}" alt="{{ ev.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">
-          <div class="card-content">
-            <span class="card-badge">{{ 'Tersedia' if ev.is_voting_open else 'Habis' }}</span>
-            <h3 class="card-title">{{ ev.name }}</h3>
-            <p class="card-meta"><span>{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span></p>
-            {% if ev.price_per_vote %}
-            <p class="card-price"><span class="card-price-from">mulai</span> Rp{{ '{:,.0f}'.format(ev.price_per_vote).replace(',', '.') }}</p>
-            {% endif %}
-            <a href="/e-ticketing?event={{ ev.slug }}" class="card-button">Beli Tiket</a>
-          </div>
-        </article>
-        {% endfor %}
-      </div>
+  <section id="layanan-mendatang" class="shell home-how-section">
+    <div class="home-section-heading"><div><p class="eyebrow">MULAI DENGAN MUDAH</p><h2>Bagaimana voting bekerja</h2></div><p>Ikuti empat langkah dari memilih event hingga dukungan tercatat.</p></div>
+    <div class="steps-grid">
+      {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
+      <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
+      {% endfor %}
     </div>
   </section>
-
-  <!-- ============ VOTING SLIDE ============ -->
-  <section class="landing-slide" data-slide="voting" aria-labelledby="voting-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">DUKUNG FAVORITMU</p>
-        <h2 id="voting-title" class="slide-title">E-VOTING</h2>
-        <p class="slide-subtitle">Vote untuk Tim &amp; Peserta Favoritmu</p>
-      </div>
-      <div class="section-title">
-        <span>Voting Aktif</span>
-        <a href="/e-voting" class="view-all-link">Lihat Semua Voting →</a>
-      </div>
-      <div class="card-grid card-grid-3">
-        {% for ev in all_events[:3] %}
-        <article class="card" data-vote-card>
-          <img class="card-image" src="{{ ev.banner_url or '/static/img/placeholder.webp' }}" alt="{{ ev.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">
-          <div class="card-content">
-            <span class="card-badge">{{ 'Buka' if ev.is_voting_open else 'Selesai' }}</span>
-            <h3 class="card-title">{{ ev.name }}</h3>
-            <p class="card-meta"><span>{{ ev.opens_at[:10] if ev.opens_at else 'SEGERA' }}</span></p>
-            {% if ev.price_per_vote %}
-            <p class="card-price">Rp{{ '{:,.0f}'.format(ev.price_per_vote).replace(',', '.') }}<span class="card-price-from">/vote</span></p>
-            {% endif %}
-            <a href="/e-voting?event={{ ev.slug }}" class="card-button">Voting Sekarang</a>
-          </div>
-        </article>
-        {% endfor %}
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ BERITA SLIDE ============ -->
-  <section class="landing-slide" data-slide="berita" aria-labelledby="berita-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">BERITA TERBARU</p>
-        <h2 id="berita-title" class="slide-title">BERITA</h2>
-        <p class="slide-subtitle">Kabar seputar dunia paskibra &amp; kompetisi</p>
-      </div>
-      <div class="section-title">
-        <span>Berita Terkini</span>
-        <a href="/berita" class="view-all-link">Lihat Semua Berita →</a>
-      </div>
-      <div class="card-grid card-grid-3">
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Berita</span>
-            <h3 class="card-title">Rangkaian festival lima vol.3 2026 sukses digelar</h3>
-            <p class="card-meta"><span>28 Nov 2026</span></p>
-            <a href="/berita" class="card-button">Baca Selengkapnya</a>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Berita</span>
-            <h3 class="card-title">LKBB Kawula Muda 2026 edisi ke-15 sukses digelar</h3>
-            <p class="card-meta"><span>15 Nov 2026</span></p>
-            <a href="/berita" class="card-button">Baca Selengkapnya</a>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Berita</span>
-            <h3 class="card-title">Dari sudut lapangan ke panggung inspirasi</h3>
-            <p class="card-meta"><span>10 Nov 2026</span></p>
-            <a href="/berita" class="card-button">Baca Selengkapnya</a>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ MARKETPLACE SLIDE ============ -->
-  <section class="landing-slide" data-slide="marketplace" aria-labelledby="marketplace-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">TOKO &amp; KEBUTUHAN</p>
-        <h2 id="marketplace-title" class="slide-title">MARKETPLACE</h2>
-        <p class="slide-subtitle">Alat, merchandise, dan kebutuhan tim paskibra</p>
-      </div>
-      <div class="section-title">
-        <span>Produk Unggulan</span>
-        <a href="/marketplace" class="view-all-link">Lihat Marketplace →</a>
-      </div>
-      <div class="card-grid card-grid-3">
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Merchandise</span>
-            <h3 class="card-title">Set Pakaian Paskibra Resmi</h3>
-            <p class="card-meta"><span>Toko RVD</span></p>
-            <p class="card-price">Rp 350.000</p>
-            <a href="/marketplace" class="card-button">Lihat Produk</a>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Alat</span>
-            <h3 class="card-title">Tongkat Paskibra Premium</h3>
-            <p class="card-meta"><span>Toko RVD</span></p>
-            <p class="card-price">Rp 150.000</p>
-            <a href="/marketplace" class="card-button">Lihat Produk</a>
-          </div>
-        </article>
-        <article class="card">
-          <div class="card-content" style="padding: 24px;">
-            <span class="card-badge">Aksesori</span>
-            <h3 class="card-title">Topi Paskibra Standar Nasional</h3>
-            <p class="card-meta"><span>Toko RVD</span></p>
-            <p class="card-price">Rp 100.000</p>
-            <a href="/marketplace" class="card-button">Lihat Produk</a>
-          </div>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============ PAKET SLIDE ============ -->
-  <section class="landing-slide" data-slide="paket" aria-labelledby="paket-title">
-    <div class="landing-slide-inner">
-      <div class="slide-header">
-        <p class="eyebrow">PILIH PAKET ANDA</p>
-        <h2 id="paket-title" class="slide-title">PAKET LAYANAN</h2>
-        <p class="slide-subtitle">Solusi lengkap untuk event paskibra Anda</p>
-      </div>
-      <div class="pricing-grid">
-        <article class="pricing-card">
-          <h3 class="pricing-name">Bundle</h3>
-          <p class="pricing-desc">Paket lengkap untuk event skala kabupaten</p>
-          <p class="pricing-price">Rp 3.000.000</p>
-          <p class="pricing-price-note">per event</p>
-          <ul class="pricing-features">
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Ticketing + Voting</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Dashboard panitia</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Rekap otomatis</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Sertifikat digital</span></li>
-          </ul>
-          <a href="/register" class="pricing-button">Pilih Paket</a>
-        </article>
-        <article class="pricing-card popular">
-          <span class="pricing-badge">Populer</span>
-          <h3 class="pricing-name">Bronze</h3>
-          <p class="pricing-desc">Untuk event lokal &amp; latihan</p>
-          <p class="pricing-price">Rp 500.000</p>
-          <p class="pricing-price-note">per event</p>
-          <ul class="pricing-features">
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Voting online</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>50 peserta</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Leaderboard</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Support email</span></li>
-          </ul>
-          <a href="/register" class="pricing-button primary">Pilih Paket</a>
-        </article>
-        <article class="pricing-card">
-          <h3 class="pricing-name">Gold</h3>
-          <p class="pricing-desc">Untuk event berskala provinsi/nasional</p>
-          <p class="pricing-price">Rp 1.500.000</p>
-          <p class="pricing-price-note">per event</p>
-          <ul class="pricing-features">
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Semua fitur Bronze</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>500 peserta</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Ticketing + Voting</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Priority support</span></li>
-          </ul>
-          <a href="/register" class="pricing-button">Pilih Paket</a>
-        </article>
-        <article class="pricing-card">
-          <h3 class="pricing-name">Custom</h3>
-          <p class="pricing-desc">Butuh lebih? Hubungi kami untuk solusi khusus</p>
-          <p class="pricing-price">Hubungi Kami</p>
-          <p class="pricing-price-note">konsultasi gratis</p>
-          <ul class="pricing-features">
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Fitur custom</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Partisipasi tidak terbatas</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>Integrasi API</span></li>
-            <li class="pricing-feature"><span class="pricing-feature-check">✓</span><span>SLA dedicated</span></li>
-          </ul>
-          <a href="/support" class="pricing-button">Konsultasi</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <footer class="site-footer">
-    <div class="footer-links">
-      <a href="/" class="footer-link">Home</a>
-      <a href="/events" class="footer-link">Event</a>
-      <a href="/e-ticketing" class="footer-link">E-Ticketing</a>
-      <a href="/e-voting" class="footer-link">E-Voting</a>
-      <a href="/berita" class="footer-link">Berita</a>
-      <a href="/leaderboard" class="footer-link">Peringkat</a>
-      <a href="/support" class="footer-link">Bantuan</a>
-    </div>
-  </footer>
-
 </div>
 {% endblock %}
-
-{% block scripts %}
-<script src="/static/js/landing.js?v={{ tailwind_css_version | default('preview', true) }}"></script>
-<script>
-function landingSlides() {
-  return {
-    init() {
-      const pills = document.querySelectorAll('.nav-pill[data-slide]');
-      const slides = document.querySelectorAll('.landing-slide[data-slide]');
-
-      pills.forEach(pill => {
-        pill.addEventListener('click', () => {
-          const target = pill.dataset.slide;
-          // Switch active slide
-          slides.forEach(s => s.classList.remove('is-active'));
-          const active = document.querySelector(`.landing-slide[data-slide="${target}"]`);
-          if (active) active.classList.add('is-active');
-          // Switch active pill
-          pills.forEach(p => {
-            p.classList.remove('is-active');
-            p.removeAttribute('aria-current');
-          });
-          pill.classList.add('is-active');
-          pill.setAttribute('aria-current', 'true');
-        });
-      });
-
-      // Scroll to top on slide change
-      window.addEventListener('scroll', () => {
-        const header = document.querySelector('.site-header');
-        if (header) {
-          header.classList.toggle('scrolled', window.scrollY > 20);
-        }
-      });
-    }
-  };
-}
-</script>
-{% endblock %}
+{% block scripts %}<script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
