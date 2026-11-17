@@ -197,7 +197,8 @@ html.dark .mobile-nav a[aria-current="page"] {
   --r-lg: 12px;
   --r-xl: 16px;
   --r-full: 9999px;
-  --shadow-1: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --radius-full: 9999px;
+    --shadow-1: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
   --shadow-2: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
   --shadow-3: 0 10px 25px rgba(0,0,0,0.15), 0 4px 6px rgba(0,0,0,0.1);
 }
@@ -367,4 +368,104 @@ html.dark .nav-pill[aria-current="page"] {
 /* Section spacing per model */
 .home-page section {
   padding-block: var(--sp-section-gap);
+}
+
+/* ======================================== SIMPASKOR MODEL — PUBLIC-SITE SPECIFICITY FIXES ========================================
+   These rules beat public.css by matching the exact element structure with a .public-site
+   prefix (equal or higher specificity than the competing public.css selectors).
+   ==================================================================================================== */
+
+/* 1. Nav pills: rounded 9999px + brand active state (beats public.css .public-site .public-header .desktop-nav a[aria-current]) */
+.public-site .public-header .desktop-nav a.nav-pill {
+  border-radius: var(--r-full) !important;
+}
+.public-site .public-header .desktop-nav a.nav-pill[aria-current="page"],
+.public-site .public-header .desktop-nav a.nav-pill.is-active {
+  background: var(--brand) !important;
+  color: #fff !important;
+  box-shadow: var(--shadow-1) !important;
+}
+html.dark .public-site .public-header .desktop-nav a.nav-pill[aria-current="page"],
+html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
+  color: #0B1D3A !important;
+}
+
+/* 2. Hero title typography (beats public.css .public-site .home-hero-copy h1) */
+.public-site .home-hero-copy h1.hero-title {
+  font-size: clamp(2rem, 5vw, 3.25rem) !important;
+  line-height: 1.2 !important;
+  letter-spacing: -0.02em !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+}
+.public-site .home-hero-copy h1.hero-title em {
+  color: var(--gold) !important;
+}
+
+/* 3. Footer links: centered flex row with 24px gap (beats public.css .public-site .footer-grid>div>a:not(.wordmark)) */
+.public-site .footer-grid > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+  align-items: center;
+}
+.public-site .footer-grid > div > a.footer-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0 !important;
+}
+.public-site .footer-grid > div > a.footer-link:hover {
+  color: var(--ink);
+}
+
+/* 4. Landing section padding: 64px (beats public.css home-hero / home-featured-section / home-how-section paddings) */
+.public-site .home-page section {
+  padding-block: var(--sp-section-gap) !important;
+}
+.public-site .home-hero {
+  padding-block: var(--sp-section-gap) !important;
+  margin-top: 0 !important;
+}
+.public-site .home-featured-section,
+.public-site .home-more-events,
+.public-site .home-how-section {
+  padding-block: var(--sp-section-gap) !important;
+}
+
+/* 5. Event cards: radius 12px + hover lift + shadow-2 (beats public.css .public-site .event-card) */
+.public-site .event-card {
+  border-radius: var(--r-lg) !important;
+}
+.public-site .event-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-2) !important;
+}
+
+/* 5b. Featured event card (.home-featured-event): radius 12px + hover lift + shadow-2 (beats public.css .home-featured-event) */
+.public-site .home-featured-event {
+  border-radius: var(--r-lg) !important;
+  transition: transform .2s ease, box-shadow .2s ease !important;
+}
+.public-site .home-featured-event:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-2) !important;
+}
+
+/* 5c. No-event card (.home-no-event): radius 12px (beats public.css .home-no-event) */
+.public-site .home-no-event {
+  border-radius: var(--r-lg) !important;
+}
+
+/* 5d. Event list rows (.home-event-row): radius 12px + hover lift (beats public.css .home-event-row) */
+.public-site .home-event-row {
+  border-radius: var(--r-lg) !important;
+  transition: transform .2s ease, box-shadow .2s ease !important;
+}
+.public-site .home-event-row:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: var(--shadow-2) !important;
 }
