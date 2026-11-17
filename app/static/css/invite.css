@@ -68,6 +68,43 @@
   color: var(--event-primary);
 }
 
+/* Section headings on event page — use gold token */
+.event-page .section-heading .eyebrow {
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.6;
+  text-transform: uppercase;
+}
+
+.event-page .section-heading h2 {
+  font-size: clamp(27px, 3.3vw, 40px);
+  line-height: 1.2;
+  margin-top: 8px;
+}
+
+.event-page .section-heading h2 em {
+  color: var(--gold);
+}
+
+.event-page .section-heading > p,
+.event-page .section-heading .subtle {
+  color: color-mix(in srgb, var(--event-text) 70%, transparent);
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+/* Leaderboard ranking heading on event page */
+.event-page .ranking-heading h2 em {
+  color: var(--gold);
+}
+
+.event-page .ranking-heading .subtle {
+  color: color-mix(in srgb, var(--event-text) 70%, transparent);
+  font-size: 13px;
+}
+
 .event-page .participant-votes,
 .event-page .row-votes strong {
   color: var(--event-primary);
