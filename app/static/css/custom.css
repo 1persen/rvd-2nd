@@ -579,6 +579,7 @@ html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
   display: grid !important;
   place-items: center !important;
   padding: 24px !important;
+  align-self: center !important;
 }
 .public-site .hero-circle .award-art {
   width: 100% !important;
