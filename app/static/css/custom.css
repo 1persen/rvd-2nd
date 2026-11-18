@@ -769,7 +769,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 .public-site .hero-actions--stack {
   display: flex !important;
   flex-direction: column !important;
-  gap: 8px !important;
+  gap: 10px !important;
   align-items: flex-start !important;
 }
 .public-site .hero-actions--stack .button {
@@ -783,7 +783,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 .public-site .home-proof-line {
   display: flex !important;
   flex-wrap: nowrap !important;
-  gap: 18px !important;
+  gap: 8px !important;
   align-items: center !important;
 }
 .public-site .home-proof-line span {
@@ -794,7 +794,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   color: var(--ink, #202124) !important;
 }
 .public-site .home-proof-line .icon {
-  width: 14px !important;
-  height: 14px !important;
+  width: 12px !important;
+  height: 12px !important;
   stroke-width: 2 !important;
 }
