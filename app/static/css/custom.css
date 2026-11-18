@@ -516,7 +516,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   letter-spacing: -0.01em !important;
   text-transform: uppercase !important;
   color: var(--ink) !important;
-  margin: 0 0 24px !important;
+  margin: 0 0 10px !important;
   font-family: "Noto Sans", sans-serif !important;
   white-space: nowrap !important;
 }
@@ -541,7 +541,7 @@ html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
   color: var(--ink) !important;
-  margin: 0 0 16px !important;
+  margin: 0 0 8px !important;
   white-space: nowrap !important;
 }
 html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
@@ -766,7 +766,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   line-height: 1.6 !important;
   color: var(--muted, #626670) !important;
   max-width: 55ch !important;
-  margin: 0 0 24px !important;
+  margin: 0 0 18px !important;
 }
 .public-site .home-hero-copy .hero-subtitle strong {
   font-size: 14px !important;
