@@ -328,8 +328,8 @@ html.dark .nav-pill[aria-current="page"] {
   max-width: 62ch;
 }
 .hero-title {
-  font-size: clamp(2rem, 5vw, 3.25rem);
-  font-weight: 700;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem);
+  font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
   margin: 0;
