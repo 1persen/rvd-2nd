@@ -541,12 +541,13 @@ html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
 
 /* 3. Supporting headline — smaller than brand, gold em accent */
 .public-site .home-hero-copy h1.hero-title {
-  font-size: clamp(1.35rem, 3vw, 2rem) !important;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem) !important;
   font-weight: 800 !important;
-  line-height: 1.15 !important;
+  line-height: 1.2 !important;
   letter-spacing: -0.02em !important;
   color: var(--ink) !important;
   margin: 0 0 8px !important;
+  white-space: nowrap !important;
 }
 html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
 .public-site .home-hero-copy h1.hero-title em {
@@ -764,12 +765,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
    - two buttons stacked vertically
    - 3 keunggulan icons in a horizontal row, same icon style
    ============================================================================ */
-.public-site .home-hero-copy .hero-title {
-  font-size: clamp(1.1rem, 1.7vw, 1.35rem) !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  white-space: nowrap !important;
-}
+
 .public-site .home-hero-copy .hero-subtitle {
   font-size: 12px !important;
   line-height: 1.4 !important;
