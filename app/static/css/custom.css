@@ -762,10 +762,18 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
    ============================================================================ */
 
 .public-site .home-hero-copy .hero-subtitle {
-  font-size: 12px !important;
-  line-height: 1.55 !important;
+  font-size: 11px !important;
+  line-height: 1.6 !important;
   color: var(--muted, #626670) !important;
+  max-width: 55ch !important;
   margin: 0 0 24px !important;
+}
+.public-site .home-hero-copy .hero-subtitle strong {
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  display: block !important;
+  margin-bottom: 4px !important;
 }
 .public-site .hero-actions--stack {
   display: flex !important;
