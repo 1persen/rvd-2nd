@@ -755,3 +755,50 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   font-size: 0.85rem;
   color: var(--muted, #626670);
 }
+
+
+/* ============================================================================
+   Hero layout corrections (user request):
+   - brand + tagline single line (no <br>)
+   - subtitle small (12px)
+   - two buttons stacked vertically
+   - 3 keunggulan icons in a horizontal row, same icon style
+   ============================================================================ */
+.public-site .home-hero-copy .hero-title {
+  font-size: clamp(1.6rem, 3.4vw, 2.4rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+.public-site .home-hero-copy .hero-subtitle {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+  color: var(--muted, #626670) !important;
+}
+.public-site .hero-actions--stack {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  align-items: flex-start !important;
+}
+.public-site .hero-actions--stack .button {
+  width: auto !important;
+}
+.public-site .home-proof-line {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 18px !important;
+  align-items: center !important;
+}
+.public-site .home-proof-line span {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.85rem !important;
+  color: var(--ink, #202124) !important;
+}
+.public-site .home-proof-line .icon {
+  width: 18px !important;
+  height: 18px !important;
+  stroke-width: 2 !important;
+}
