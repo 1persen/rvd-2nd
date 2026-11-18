@@ -568,11 +568,13 @@ html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
 .public-site .home-hero-visual.hero-circle-wrap {
   display: grid !important;
   place-items: center !important;
-  min-height: 420px !important;
+  min-height: 0 !important;
   min-width: 0 !important;
+  align-content: center !important;
 }
 .public-site .hero-circle {
   width: min(32vw, 420px) !important;
+  height: min(32vw, 420px) !important;
   aspect-ratio: 1 !important;
   border-radius: 50% !important;
   background: radial-gradient(circle at 35% 30%, rgba(165,136,82,.22), rgba(165,136,82,.06) 60%, transparent 75%) !important;
