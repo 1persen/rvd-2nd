@@ -480,7 +480,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 /* 1. Hero 3-zone grid layout: copy / circle / card */
 .public-site .home-hero-inner {
   display: grid !important;
-  grid-template-columns: 1.1fr 1fr 0.9fr !important;
+  grid-template-columns: 1.15fr 1.7fr 0.72fr !important;
   align-items: center !important;
   gap: 64px !important;
   min-height: 480px !important;
@@ -571,10 +571,11 @@ html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
   min-height: 0 !important;
   min-width: 0 !important;
   align-content: center !important;
+  width: 100% !important;
 }
 .public-site .hero-circle {
-  width: min(32vw, 420px) !important;
-  height: min(32vw, 420px) !important;
+  width: 100% !important;
+  height: 100% !important;
   aspect-ratio: 1 !important;
   border-radius: 50% !important;
   background: radial-gradient(circle at 35% 30%, rgba(165,136,82,.22), rgba(165,136,82,.06) 60%, transparent 75%) !important;
