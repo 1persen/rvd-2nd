@@ -332,6 +332,11 @@ async def support(request: Request, session: AsyncSession = Depends(get_db)):
     )
 
 
+@router.get("/mitra")
+async def mitra(request: Request):
+    return templates.TemplateResponse(request, "pages/mitra.html", {})
+
+
 @router.get("/admin/login")
 async def admin_login(request: Request, session: AsyncSession = Depends(get_db)):
     return templates.TemplateResponse(request, "pages/admin_login.html", {})

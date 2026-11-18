@@ -707,3 +707,51 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 }
 
 /* ======================================== END SIMPASKOR 3-ZONE HERO MODEL ======================================== */
+
+
+/* ============================================================================
+   Mitra page — form styling (no existing .support-field in public.css)
+   ============================================================================ */
+.public-site .mitra-form {
+  display: grid;
+  gap: 16px;
+  max-width: 720px;
+}
+.public-site .mitra-form__row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 720px) {
+  .public-site .mitra-form__row { grid-template-columns: 1fr; }
+}
+.public-site .support-field {
+  display: grid;
+  gap: 6px;
+  font-size: 0.9rem;
+  color: var(--ink, #202124);
+}
+.public-site .support-field span {
+  font-weight: 600;
+}
+.public-site .support-field input,
+.public-site .support-field textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--line, #e3e5e9);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.public-site .support-field input:focus,
+.public-site .support-field textarea:focus {
+  outline: none;
+  border-color: var(--accent, #a58852);
+  box-shadow: 0 0 0 3px rgba(165,136,82,0.18);
+}
+.public-site .mitra-form__note {
+  font-size: 0.85rem;
+  color: var(--muted, #626670);
+}

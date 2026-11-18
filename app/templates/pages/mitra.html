@@ -1,0 +1,109 @@
+{% extends "public_base.html" %}
+{% from "macros/public.html" import icon %}
+{% block title %}Daftar Mitra — Raja Voting Digital{% endblock %}
+{% block head %}{{ super() }}
+<meta name="description" content="Bergabung sebagai mitra kolaborasi Raja Voting Digital. Hadirkan voting berbayar dan rekapitulasi digital untuk menambah pemasukan eventmu.">
+{% endblock %}
+{% block content %}
+<div class="support-page">
+  <header class="support-hero shell">
+    <p class="support-breadcrumb"><a href="/">Beranda</a><span aria-hidden="true">/</span><span aria-current="page">Daftar Mitra</span></p>
+    <p class="eyebrow"><span translate="no">Raja Voting Digital</span></p>
+    <h1 class="page-heading">Daftar Mitra</h1>
+    <p class="lead">Tingkatkan potensi eventmu bersama RVD. Bergabung sebagai mitra kolaborasi dan hadirkan voting berbayar serta rekapitulasi digital untuk menambah pemasukan eventmu.</p>
+    <p class="support-intro-note">Lengkapi data di bawah, dan tim RVD akan menghubungi eventmu untuk membahas bentuk kolaborasi.</p>
+  </header>
+
+  <nav class="support-section-nav shell" aria-label="Navigasi bagian mitra">
+    <a href="#keunggulan">Keunggulan</a>
+    <a href="#manfaat">Manfaat</a>
+    <a href="#cara">Cara Bergabung</a>
+    <a href="#form">Formulir</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+
+  <section id="keunggulan" class="support-section shell" aria-labelledby="mitra-keunggulan-heading">
+    <div class="section-heading"><h2 id="mitra-keunggulan-heading"><span>Keunggulan Singkat</span></h2></div>
+    <div class="support-card-grid">
+      <article class="support-info-card">
+        <span class="support-info-card__icon" aria-hidden="true">{{ icon('qr') }}</span>
+        <h4 class="support-info-card__title">Pembayaran Digital Qris</h4>
+        <p class="support-info-card__text">Peserta membayar vote lewat QRIS dan kanal digital lain yang terverifikasi, tanpa gesekan.</p>
+      </article>
+      <article class="support-info-card">
+        <span class="support-info-card__icon" aria-hidden="true">{{ icon('shield-check') }}</span>
+        <h4 class="support-info-card__title">Terverifikasi</h4>
+        <p class="support-info-card__text">Setiap transaksi dan voice tercatat, divalidasi sistem, dan dapat diaudit.</p>
+      </article>
+      <article class="support-info-card">
+        <span class="support-info-card__icon" aria-hidden="true">{{ icon('trophy') }}</span>
+        <h4 class="support-info-card__title">Transparan</h4>
+        <p class="support-info-card__text">Leaderboard real-time menampilkan perolehan suara secara terbuka bagi semua pihak.</p>
+      </article>
+    </div>
+  </section>
+
+  <section id="manfaat" class="support-section shell" aria-labelledby="mitra-manfaat-heading">
+    <div class="section-heading"><h2 id="mitra-manfaat-heading"><span>Yang Kamu Dapatkan</span></h2></div>
+    <div class="support-about-content">
+      <p><strong>Revenue baru untuk eventmu.</strong> Voting berbayar membuka sumber pendapatan tambahan dari peserta dan pendukung di luar tiket utama.</p>
+      <p><strong>Rekapitulasi digital.</strong> Hasil rekap nilai dan voting dikumpulkan otomatis, tanpa perhitungan manual yang rawan salah.</p>
+      <p><strong>Operasi lebih rapi.</strong> Pengelolaan peserta, pesanan, dan pembayaran dalam satu dashboard, siap dilaporkan kepada sponsor dan peserta.</p>
+    </div>
+  </section>
+
+  <section id="cara" class="support-section shell" aria-labelledby="mitra-cara-heading">
+    <div class="section-heading"><h2 id="mitra-cara-heading"><span>Cara Bergabung</span></h2></div>
+    <div class="support-terms">
+      <ul class="support-terms-list support-terms-list--steps">
+        <li>Lengkapi formulir di bawah dengan nama event, kontak, dan lokasi.</li>
+        <li>Tim RVD menghubungi eventmu untuk membahas skema kolaborasi.</li>
+        <li>Eventmu dikonfigurasi dan uji coba sebelum periode voting dibuka.</li>
+        <li>Voting berjalan, pembayaran diverifikasi, dan leaderboard tampil real-time.</li>
+      </ul>
+      <p class="support-terms-note">Rincian pembagian hasil dan ketentuan kolaborasi disepakati bersama sebelum event aktif.</p>
+    </div>
+  </section>
+
+  <section id="form" class="support-section shell" aria-labelledby="mitra-form-heading">
+    <div class="section-heading"><h2 id="mitra-form-heading"><span>Formulir Pendaftaran</span></h2></div>
+    <form class="mitra-form" action="mailto:rajadigital.group@gmail.com" method="post" enctype="text/plain" aria-label="Formulir daftar mitra">
+      <div class="mitra-form__row">
+        <label class="support-field"><span>Nama Event</span><input type="text" name="event_name" placeholder="Nama event" required></label>
+        <label class="support-field"><span>Nama Penanggung Jawab</span><input type="text" name="contact_name" placeholder="Nama" required></label>
+      </div>
+      <div class="mitra-form__row">
+        <label class="support-field"><span>No. WhatsApp</span><input type="tel" name="whatsapp" placeholder="+62 8xx xxxx xxxx" required></label>
+        <label class="support-field"><span>Email</span><input type="email" name="email" placeholder="nama@email.com" required></label>
+      </div>
+      <label class="support-field"><span>Lokasi Event</span><input type="text" name="location" placeholder="Kota / Kabupaten"></label>
+      <label class="support-field"><span>Deskripsi Kolaborasi</span><textarea name="message" rows="4" placeholder="Ceritakan kebutuhan eventmu (opsional)"></textarea></label>
+      <button type="submit" class="button button-gold">Kirim Pengajuan {{ icon('arrow') }}</button>
+      <p class="mitra-form__note">Form ini membuka draft email ke tim RVD. Untuk respons lebih cepat, WhatsApp juga tersedia di bagian kontak.</p>
+    </form>
+  </section>
+
+  <section id="faq" class="support-section shell" aria-labelledby="mitra-faq-heading">
+    <div class="section-heading"><h2 id="mitra-faq-heading"><span>Pertanyaan Mitra</span></h2></div>
+    <div class="support-accordion">
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="mitra-faq-1" id="mitra-faq-1-trigger"><span>Siapa yang bisa menjadi mitra RVD?</span><span class="support-chevron" aria-hidden="true"></span></button>
+        <div id="mitra-faq-1" role="region" aria-labelledby="mitra-faq-1-trigger" x-show="open" x-cloak class="support-accordion__panel"><p>Penyelenggara event, panitia, komunitas, dan penyelenggara lomba yang membutuhkan voting berbayar atau rekapitulasi digital dapat mengajukan kolaborasi.</p></div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="mitra-faq-2" id="mitra-faq-2-trigger"><span>Bagaimana model pembagiannya?</span><span class="support-chevron" aria-hidden="true"></span></button>
+        <div id="mitra-faq-2" role="region" aria-labelledby="mitra-faq-2-trigger" x-show="open" x-cloak class="support-accordion__panel"><p>Skema kolaborasi disepakati bersama sebelum event aktif, disesuaikan dengan skala event dan bentuk layanannya. Tim RVD akan membantu menyusun rinciannya.</p></div>
+      </div>
+      <div class="support-accordion__item" x-data="{ open: false }">
+        <button type="button" class="support-accordion__trigger" @click="open = !open" :aria-expanded="open" aria-controls="mitra-faq-3" id="mitra-faq-3-trigger"><span>Berapa lama proses pengaktifan event?</span><span class="support-chevron" aria-hidden="true"></span></button>
+        <div id="mitra-faq-3" role="region" aria-labelledby="mitra-faq-3-trigger" x-show="open" x-cloak class="support-accordion__panel"><p>Setelah data event lengkap dan skema disepakati, event dikonfigurasi dan diuji coba. Durasi tergantung kelengkapan data peserta dan kesepakatan dengan event.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="support-closing shell" aria-label="Kontak mitra">
+    <p>Tim RVD meninjau setiap pengajuan dan akan menghubungi eventmu melalui kontak yang tercantum.</p>
+    <a href="https://wa.me/6285602623817" class="text-link">Kontak langsung {{ icon('arrow') }}</a>
+  </section>
+</div>
+{% endblock %}

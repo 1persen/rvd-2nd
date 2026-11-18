@@ -1,0 +1,9 @@
+{
+  "accent_color": "#DC2626",
+  "brand_wordmark": "font-size: 36px; font-weight: 900; letter-spacing: 0.54px; line-height: 40px; text-transform: none; color: rgb(0, 0, 0) (renders white via gradient background)",
+  "circular_portrait": "width: 127.406px; height: 191.109px; border-radius: 0px; object-fit: contain; max-width: 501.76px; max-height: 191.14px",
+  "event_poster_card": "width: 280px; height: 370px; border-radius: 16px; box-shadow: rgba(0, 0, 0, 0.3) 0px 25px 50px -12px; background: linear-gradient(to right bottom, rgb(58, 10, 10), rgb(30, 6, 6), rgb(0, 0, 0)); image: 100% width/height, object-fit: cover",
+  "hero_section": "display: flex; flex-direction: column; gap: 20px; width: 784px; height: 447px; container: max-width 1152px, padding 0px 48px",
+  "notes": "Viewport: 784px. Brand text color computed as black but renders as white on dark gradient. Event card container: 280x370px with 16px border-radius. Card image 224x265.438px with object-fit: cover. Status pill: bg-red-600 (#DC2626), 8px 12px padding, 8px border-radius, 12px font, 600 weight. Primary button: white bg (#FFFFFF), red text rgb(185,28,28). #E31D2B mentioned in task not found - actual accent red is #DC2626.",
+  "screenshot_path": "C:\\Users\\Indra\\.config\\browser-harness\\tmp\\shot.png"
+}
