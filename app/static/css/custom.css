@@ -392,11 +392,12 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 
 /* 2. Hero title typography (beats public.css .public-site .home-hero-copy h1) */
 .public-site .home-hero-copy h1.hero-title {
-  font-size: clamp(2rem, 5vw, 3.25rem) !important;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem) !important;
   line-height: 1.2 !important;
   letter-spacing: -0.02em !important;
-  font-weight: 700 !important;
+  font-weight: 800 !important;
   margin: 0 !important;
+  white-space: nowrap !important;
 }
 .public-site .home-hero-copy h1.hero-title em {
   color: var(--gold) !important;
@@ -548,6 +549,7 @@ html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
   color: var(--ink) !important;
   margin: 0 0 8px !important;
   white-space: nowrap !important;
+  font-size: clamp(1.1rem, 1.7vw, 1.35rem) !important;
 }
 html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
 .public-site .home-hero-copy h1.hero-title em {
