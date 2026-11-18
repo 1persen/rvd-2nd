@@ -768,9 +768,10 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 }
 .public-site .hero-actions--stack {
   display: flex !important;
-  flex-direction: column !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
   gap: 10px !important;
-  align-items: flex-start !important;
+  align-items: center !important;
 }
 .public-site .hero-actions--stack .button {
   width: auto !important;
@@ -779,6 +780,19 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 }
 .public-site .hero-actions--stack .home-secondary-link {
   font-size: 0.85rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--ink) !important;
+  background: transparent !important;
+  color: var(--ink) !important;
+  text-decoration: none !important;
+  transition: background-color 120ms ease, border-color 120ms ease !important;
+}
+.public-site .hero-actions--stack .home-secondary-link:hover {
+  background: var(--surface) !important;
 }
 .public-site .home-proof-line {
   display: flex !important;
