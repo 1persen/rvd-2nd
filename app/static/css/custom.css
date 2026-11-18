@@ -536,9 +536,9 @@ html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
 
 /* 3. Supporting headline — smaller than brand, gold em accent */
 .public-site .home-hero-copy h1.hero-title {
-  font-size: clamp(0.75rem, 1vw, 0.85rem) !important;
+  font-size: clamp(0.55rem, 0.85vw, 0.7rem) !important;
   font-weight: 800 !important;
-  line-height: 1.3 !important;
+  line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
   color: var(--ink) !important;
   margin: 0 0 16px !important;
@@ -762,11 +762,9 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
    ============================================================================ */
 
 .public-site .home-hero-copy .hero-subtitle {
-  font-size: 10px !important;
-  line-height: 1.4 !important;
+  font-size: 12px !important;
+  line-height: 1.55 !important;
   color: var(--muted, #626670) !important;
-  letter-spacing: 0.04em !important;
-  text-transform: uppercase !important;
   margin: 0 0 24px !important;
 }
 .public-site .hero-actions--stack {
