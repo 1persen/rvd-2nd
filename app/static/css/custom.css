@@ -4,6 +4,7 @@
   --surface:#fff;
   --ink:#202124;
   --muted:#626670;
+  --gold:#d4af37;
   --line:#e3e5e9;
   --control-border:#8b8e96;
   --brand:#24262b;
@@ -536,7 +537,7 @@ html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
 
 /* 3. Supporting headline — smaller than brand, gold em accent */
 .public-site .home-hero-copy h1.hero-title {
-  font-size: clamp(0.55rem, 0.85vw, 0.7rem) !important;
+  font-size: 11px !important;
   font-weight: 800 !important;
   line-height: 1.4 !important;
   letter-spacing: -0.02em !important;
