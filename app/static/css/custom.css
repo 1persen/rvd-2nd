@@ -421,9 +421,11 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 .public-site .home-page section {
   padding-block: var(--sp-section-gap) !important;
 }
+/* Desktop hero padding — reference design has generous top padding */
 .public-site .home-hero {
-  padding-block: var(--sp-section-gap) !important;
+  padding: 120px 8.2% 80px !important;
   margin-top: 0 !important;
+  background: var(--surface, #fff) !important;
 }
 .public-site .home-featured-section,
 .public-site .home-more-events,
@@ -473,14 +475,34 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
    ==================================================================================================== */
 
 /* 1. Hero 3-zone grid layout: copy / circle / card */
+/* Single-column hero layout (user reference: left-aligned, no right-side visual) */
 .public-site .home-hero-inner {
-  display: grid !important;
-  grid-template-columns: 1.15fr 1.7fr 0.72fr !important;
-  align-items: center !important;
-  gap: 64px !important;
-  min-height: 480px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  max-width: 720px !important;
+  margin: 0 auto !important;
   padding-block: var(--sp-section-gap) !important;
   margin-top: 0 !important;
+}
+/* Tablet: single column, tighter spacing */
+@media (max-width: 900px) and (min-width: 601px) {
+  .public-site .home-hero-inner {
+    max-width: 100% !important;
+    padding: 110px 6% 70px !important;
+  }
+  .public-site .home-hero-copy .hero-subtitle {
+    margin-bottom: 20px !important;
+  }
+  .public-site .hero-actions--stack {
+    gap: 12px !important;
+  }
+}
+/* Hide the trophy circle + event card in hero (reference design is text-only) */
+.public-site .home-hero-visual,
+.public-site .home-hero-card {
+  display: none !important;
 }
 
 /* Responsive breakpoints */
@@ -750,19 +772,45 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
    - 3 keunggulan icons in a horizontal row, same icon style
    ============================================================================ */
 
+/* Hero copy spacing — tighter vertical rhythm matching reference design */
+.public-site .home-hero-copy {
+  position: relative;
+  z-index: 2;
+}
+.public-site .home-hero-copy .hero-brand {
+  margin: 0 0 10px !important;
+}
+.public-site .home-hero-copy h1.hero-title {
+  margin: 0 0 8px !important;
+  font-size: clamp(15px, 1.8vw, 29px) !important;
+  font-weight: 700 !important;
+  font-style: italic !important;
+  line-height: 1.3 !important;
+  letter-spacing: -0.02em !important;
+  white-space: nowrap !important;
+}
 .public-site .home-hero-copy .hero-subtitle {
-  font-size: 11px !important;
-  line-height: 1.6 !important;
+  margin: 0 0 24px !important;
+  font-size: clamp(17px, 2vw, 32px) !important;
+  font-weight: 400 !important;
+  line-height: 1.55 !important;
+  letter-spacing: -0.3px !important;
   color: var(--muted, #626670) !important;
-  max-width: 55ch !important;
-  margin: 0 0 18px !important;
+  max-width: 68ch !important;
 }
 .public-site .home-hero-copy .hero-subtitle strong {
-  font-size: 14px !important;
-  font-weight: 700 !important;
+  font-size: clamp(27px, 3.4vw, 52px) !important;
+  font-weight: 800 !important;
   color: var(--ink) !important;
+  line-height: 1.25 !important;
+  letter-spacing: -1.3px !important;
   display: block !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 12px !important;
+}
+.public-site .home-hero-copy .hero-subtitle strong span {
+  color: var(--gold) !important;
+  position: relative;
+  white-space: nowrap;
 }
 .public-site .hero-actions--stack {
   display: flex !important;
@@ -773,49 +821,76 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 }
 .public-site .hero-actions--stack .button {
   width: auto !important;
-  font-size: 0.85rem !important;
-  padding: 8px 18px !important;
+  font-size: clamp(16px, 2vw, 25px) !important;
+  padding: 14px 32px !important;
+  border-radius: 60px !important;
+  min-height: 58px !important;
+  gap: 14px !important;
 }
 .public-site .hero-actions--stack .home-secondary-link {
-  font-size: 0.85rem !important;
+  font-size: clamp(16px, 2vw, 25px) !important;
   display: inline-flex !important;
   align-items: center !important;
-  gap: 6px !important;
-  padding: 8px 16px !important;
-  border-radius: 8px !important;
-  border: 1px solid var(--ink) !important;
+  justify-content: center !important;
+  gap: 14px !important;
+  padding: 14px 32px !important;
+  border-radius: 60px !important;
+  border: 2px solid var(--navy, #102d52) !important;
   background: transparent !important;
-  color: var(--ink) !important;
+  color: var(--navy, #102d52) !important;
   text-decoration: none !important;
   transition: background-color 120ms ease, border-color 120ms ease !important;
+  min-height: 58px !important;
 }
 .public-site .hero-actions--stack .home-secondary-link:hover {
-  background: var(--surface) !important;
+  background: rgba(16,45,82,0.08) !important;
 }
+.public-site .hero-actions--stack .btn-arrow {
+  font-size: 1.2em !important;
+  line-height: 1 !important;
+}
+/* Proof line: vertical separators between 3 feature items (reference design) */
 .public-site .home-proof-line {
   display: flex !important;
   flex-wrap: nowrap !important;
-  gap: 8px !important;
+  gap: 0 !important;
   align-items: center !important;
+  justify-content: flex-start !important;
 }
 .public-site .home-proof-line span {
   display: inline-flex !important;
   align-items: center !important;
-  gap: 5px !important;
-  font-size: 0.72rem !important;
-  color: var(--ink, #202124) !important;
+  gap: 8px !important;
+  font-size: clamp(17px, 2vw, 32px) !important;
+  font-weight: 500 !important;
+  line-height: 1.4 !important;
+  color: var(--navy, #102d52) !important;
+  padding: 0 22px !important;
+  border-right: 2px solid #c9cbd0 !important;
 }
-.public-site .home-proof-line .icon {
-  width: 12px !important;
-  height: 12px !important;
-  stroke-width: 2 !important;
+.public-site .home-proof-line span:last-child {
+  border-right: 0 !important;
+  padding-right: 0 !important;
+}
+.public-site .home-proof-line .benefit-icon {
+  width: 24px !important;
+  height: 24px !important;
+  flex: 0 0 24px !important;
+  color: var(--navy, #102d52) !important;
+}
+.public-site .home-proof-line .benefit-icon svg {
+  width: 24px !important;
+  height: 24px !important;
 }
 
 /* Crown + inline SVG benefit icons (2026-11-19) — scaled to compact hero */
 .brand-crown {
-  width: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
   height: 42px;
-  margin: 0 auto 4px;
+  margin: 0 0 6px;
 }
 
 .brand-crown svg {
@@ -823,6 +898,49 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   width: 56px;
   height: 42px;
   overflow: visible;
+}
+
+.benefit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  color: var(--navy, #102d52);
+  vertical-align: middle;
+}
+
+.benefit-icon svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+/* Gold underline accent under "RVD!" in headline */
+.public-site .hero-copy h2 span::after,
+.public-site .hero-subtitle strong span::after {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: -2px;
+  border-radius: 3px;
+  background: var(--gold);
+  transform: rotate(-1.5deg);
+}
+
+/* Light-blue background decorative shapes (reference design) */
+.public-site .home-hero::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(220,231,246,0.6) 0%, transparent 50%),
+    radial-gradient(circle at 85% 80%, rgba(220,231,246,0.5) 0%, transparent 55%),
+    radial-gradient(circle at 50% 50%, rgba(233,238,245,0.4) 0%, transparent 60%);
 }
 
 .benefit-icon {
@@ -840,6 +958,67 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 }
 
 @media (max-width: 600px) {
+  .public-site .home-hero-inner {
+    max-width: 100% !important;
+    padding: 85px 24px 55px !important;
+  }
+
+  .public-site .home-hero-copy .hero-brand {
+    font-size: clamp(29px, 8vw, 42px) !important;
+    letter-spacing: -1.5px !important;
+  }
+
+  .public-site .home-hero-copy h1.hero-title {
+    font-size: 13px !important;
+    line-height: 1.5 !important;
+  }
+
+  .public-site .home-hero-copy .hero-subtitle strong {
+    font-size: 27px !important;
+    line-height: 1.3 !important;
+    letter-spacing: -1px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .public-site .home-hero-copy .hero-subtitle {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+    margin-bottom: 20px !important;
+  }
+
+  .public-site .hero-actions--stack {
+    flex-direction: column !important;
+    gap: 12px !important;
+    align-items: stretch !important;
+  }
+
+  .public-site .hero-actions--stack .button,
+  .public-site .hero-actions--stack .home-secondary-link {
+    width: 100% !important;
+    min-height: 58px !important;
+    font-size: 16px !important;
+    padding: 14px 20px !important;
+  }
+
+  .public-site .home-proof-line {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .public-site .home-proof-line span {
+    border-right: 0 !important;
+    border-bottom: 2px solid #c9cbd0 !important;
+    padding: 0 0 10px 0 !important;
+    width: 100% !important;
+    justify-content: flex-start !important;
+  }
+
+  .public-site .home-proof-line span:last-child {
+    border-bottom: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
   .brand-crown {
     width: 40px;
     height: 30px;
@@ -852,8 +1031,13 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   }
 
   .benefit-icon {
-    flex-basis: 14px;
-    width: 14px;
-    height: 14px;
+    flex-basis: 18px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .benefit-icon svg {
+    width: 18px;
+    height: 18px;
   }
 }
