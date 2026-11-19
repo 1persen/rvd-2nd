@@ -5,7 +5,7 @@ description: Hero section layout tokens for the RVD landing page.
 colors:
   primary: "#202124"      # --ink
   secondary: "#626670"    # --muted
-  tertiary: "#d4af37"     # --gold
+  tertiary: "#a58852"     # --gold (existing source token, public.css)
   surface: "#fff"
 typography:
   h1:
@@ -68,7 +68,7 @@ components:
 
 Hero section follows a strict top-down hierarchy:
 
-**Brand → Tagline → Headline → Description → Buttons → Features**
+**Crown → Brand → Tagline → Headline → Description → Buttons → Features**
 
 ---
 

@@ -4,7 +4,7 @@
   --surface:#fff;
   --ink:#202124;
   --muted:#626670;
-  --gold:#d4af37;
+  --gold:#a58852;
   --line:#e3e5e9;
   --control-border:#8b8e96;
   --brand:#24262b;
@@ -523,18 +523,6 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 }
 html.dark .public-site .home-hero-copy .hero-brand { color: #fff !important; }
 
-/* The gold dot decoration in hero-brand <span> */
-.public-site .home-hero-copy .hero-brand > span {
-  display: inline-block !important;
-  width: 12px !important;
-  height: 12px !important;
-  margin-right: 10px !important;
-  border-radius: var(--r-full) !important;
-  background: var(--gold) !important;
-  box-shadow: 0 0 0 4px rgba(165,136,82,.15) !important;
-  vertical-align: middle !important;
-}
-
 /* 3. Supporting headline — smaller than brand, gold em accent */
 .public-site .home-hero-copy h1.hero-title {
   font-size: 11px !important;
@@ -821,4 +809,51 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   width: 12px !important;
   height: 12px !important;
   stroke-width: 2 !important;
+}
+
+/* Crown + inline SVG benefit icons (2026-11-19) — scaled to compact hero */
+.brand-crown {
+  width: 56px;
+  height: 42px;
+  margin: 0 auto 4px;
+}
+
+.brand-crown svg {
+  display: block;
+  width: 56px;
+  height: 42px;
+  overflow: visible;
+}
+
+.benefit-icon {
+  display: inline-block;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--ink);
+  vertical-align: middle;
+}
+
+.benefit-icon svg,
+.benefit-icon {
+  display: inline-block;
+}
+
+@media (max-width: 600px) {
+  .brand-crown {
+    width: 40px;
+    height: 30px;
+    margin-bottom: 2px;
+  }
+
+  .brand-crown svg {
+    width: 40px;
+    height: 30px;
+  }
+
+  .benefit-icon {
+    flex-basis: 14px;
+    width: 14px;
+    height: 14px;
+  }
 }
