@@ -132,6 +132,19 @@ Horizontal gaps:
 
 ## Non-Existent (from reference image)
 
-- **Crown logo** above brand – not part of current HTML/CSS
+- **Crown logo** above brand — **implemented 2026-11-19** as inline SVG crown (`.brand-crown`), gold `#a58852`
 - **Background shapes** – white background only
 - **Underline decoration** under "RVD!" – not implemented
+
+## Inline SVG Icons (added 2026-11-19)
+
+All icons use `currentColor` so they inherit the surrounding text color. Crown uses `#a58852` (the existing `--gold` source token).
+
+| Icon | Class | ViewBox | Colors | Notes |
+|------|-------|---------|--------|-------|
+| Crown | `.brand-crown` | 0 0 100 75 | `fill="#a58852"` | Above brand, centered, 56×42px |
+| QRIS payment | `.benefit-icon` | 0 0 64 64 | `currentColor` | QR grid + zigzag line |
+| Verified transaction | `.benefit-icon` | 0 0 64 64 | `currentColor` | Shield + checkmark |
+| Transparent recap | `.benefit-icon` | 0 0 64 64 | `currentColor` | Bar chart + line chart |
+
+Mobile breakpoint: `@media (max-width: 600px)` — crown 40×30px, benefit icons 14×14px.
