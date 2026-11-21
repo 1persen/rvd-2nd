@@ -7,61 +7,57 @@ colors:
   secondary: "#626670"    # --muted
   tertiary: "#a58852"     # --gold (existing source token, public.css)
   surface: "#fff"
+  accent: "#3155d9"      # --accent (blue used for bg decoration)
 typography:
   h1:
     fontFamily: "Noto Sans"
-    fontSize: 11px
-    fontWeight: 800
-    lineHeight: 1.4
-    letterSpacing: "-0.02em"
+    fontSize: clamp(17px, 2vw, 32px)
+    fontWeight: 400
+    lineHeight: 1.55
   brand:
     fontFamily: "Noto Sans"
-    fontSize: 28px
-    fontWeight: 900
-    lineHeight: 1.1
-    letterSpacing: "-0.01em"
-  subtitle:
+    fontSize: clamp(29px, 4vw, 42px)
+    fontWeight: 800
+    fontStyle: italic
+    lineHeight: 1.3
+  tagline:
     fontFamily: "Noto Sans"
-    fontSize: 11px
-    fontWeight: 400
-    lineHeight: 1.6
-  subtitleStrong:
-    fontFamily: "Noto Sans"
-    fontSize: 14px
+    fontSize: clamp(15px, 1.8vw, 29px)
     fontWeight: 700
-    lineHeight: 1.4
+    lineHeight: 1.3
+  description:
+    fontFamily: "Noto Sans"
+    fontSize: clamp(17px, 2vw, 32px)
+    fontWeight: 400
+    lineHeight: 1.55
   proof:
     fontFamily: "Noto Sans"
-    fontSize: 0.72rem
-    fontWeight: 400
+    fontSize: clamp(17px, 2vw, 32px)
+    fontWeight: 500
 rounded:
   sm: "4px"
   md: "8px"
-  xl: "16px"
+  xl: "60px"
   full: "9999px"
 spacing:
   base: "4px"
-  section-gap: "18px"
-  buttons-gap: "10px"
+  section-gap: "120px 8.2% 80px"
+  buttons-gap: "14px"
   proof-gap: "8px"
-  container-padding: "24px"
 components:
-  button-gold:
-    backgroundColor: "{colors.tertiary}"
-    textColor: "#111827"
-    padding: 8px 18px
-    rounded: "{rounded.full}"
-    typography: "{typography.h1}"
-  button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.primary}"
-    padding: 8px 16px
-    rounded: "{rounded.md}"
-    borderWidth: 1px
-  proof-line:
-    display: flex
-    gap: 8px
-    alignItems: center
+  button-pill:
+    backgroundColor: "var(--ink)"
+    textColor: "var(--ink)"
+    padding: 14px 32px
+    borderRadius: 60px
+    fontSize: clamp(16px, 2vw, 25px)
+  button-outlined:
+    backgroundColor: "transparent"
+    textColor: "var(--ink)"
+    padding: 14px 32px
+    borderRadius: 60px
+    borderWidth: 2px
+    borderColor: "var(--ink)"
 ---
 
 ## Overview
@@ -76,77 +72,77 @@ Layout is **single-column, left-aligned** (no right-side trophy circle or event 
 
 ## Layout & Spacing
 
-Vertical rhythm (all values in px at 1280px viewport):
-
-| Element Pair | Spacing |
-|-------------|---------|
-| Brand to Tagline | 10px |
-| Tagline to Headline | 8px |
-| Headline to Description (strong to p) | 4px |
-| Description to Buttons | 18px |
+Vertical rhythm:
+- Brand to Tagline: 10px
+- Tagline to Headline: 8px
 
 Horizontal gaps:
-
-| Component | Gap |
-|-------------|-----|
-| Two buttons stacked in row | 10px |
-| Three feature items | 8px |
+- Two buttons side-by-side: 14px
+- Three feature items: 8px
 
 ---
 
 ## Typography Hierarchy
 
 1. **Brand ("RAJA VOTING DIGITAL")**
-   - 28px, ExtraBold weight + uppercase
-   - 1 line only (`white-space: nowrap`)
+   - clamp(29px, 4vw, 42px), ExtraBold, italic
+   - Gold color on strong span for "RVD!"
 
 2. **Tagline ("Your Partner in Digital Event Solutions.")**
-   - 11px, Bold weight
-   - Narrow letter spacing
-   - Right after brand, no break
+   - clamp(15px, 1.8vw, 29px), Bold, italic, narrow letter spacing
 
 3. **Description**
-   - Strong (headline): 14px, bold
-   - Normal (sub): 11px, regular
-   - `max-width: 55ch` for readability
+   - clamp(17px, 2vw, 32px), regular
+   - `max-width: 68ch` for readability
 
 4. **Proof-line (Pembayaran Digital Qris, Terverifikasi, Transparan)**
-   - 0.72rem ≈ 11px
-   - Inline-flex, icons 12×12px
+   - clamp(17px, 2vw, 32px)
+   - Icons 24×24px
    - `gap: 8px` between items
+   - **Desktop**: vertical separators (border-right: 2px solid var(--line))
+   - **Mobile**: horizontal stack with border-bottom separators
 
 ---
 
 ## Components
 
-### Button Primary (Daftar Mitra)
-- Gold-filled rectangle (darker gold for contrast)
-- Pill shape (border-radius: 9999px)
-- Padding: 8px 18px
+### Crown Logo
+- Positioned left of brand (flex row)
+- Gold horizontal line (28px × 4px, #a58852 = var(--gold)) to the left
+- Crown SVG: 56×42px at desktop, 40×30px on mobile
 
-### Button Secondary (Tentang Kami)
-- Outline style
-- Same font size, half padding
-- Border: 1px solid primary
-- Hover: subtle surface background
+### Buttons (side-by-side on desktop, stacked on mobile)
+- **Primary (Daftar Mitra)**: Navy-filled (`var(--ink)`) with arrow icon, pill shape
+- **Secondary (Tentang Kami)**: Outlined with navy border (`var(--ink)`), arrow icon
+- Gap: 14px between buttons
+- Hover: primary fills with navy-ink, secondary fills with surface
+
+### Gold Underline Decoration
+- Under "RVD!" span in headline
+- CSS: `width: 100%; height: 6px; background: var(--gold); transform: rotate(-1.5deg);`
+
+### Background Decorative Shapes
+- Light-blue radial gradients at corners
+- Uses `color-mix(in srgb, var(--accent) X%, transparent)` for subtle tint
 
 ---
 
-## Non-Existent (from reference image)
+## Mobile Breakpoint: `@media (max-width: 600px)`
 
-- **Crown logo** above brand — **implemented 2026-11-19** as inline SVG crown (`.brand-crown`), gold `#a58852`
-- **Background shapes** – white background only
-- **Underline decoration** under "RVD!" – not implemented
+- Crown: 40×30px
+- Benefit icons: 18×18px
+- Buttons: stacked vertically, full-width
+- Features: horizontal stack with border-bottom separators
+
+---
 
 ## Inline SVG Icons (added 2026-11-19)
 
-All icons use `currentColor` so they inherit the surrounding text color. Crown uses `#a58852` (the existing `--gold` source token).
+All icons use `currentColor` so they inherit the surrounding text color. Crown line uses `#a58852` (the existing `--gold` source token).
 
 | Icon | Class | ViewBox | Colors | Notes |
 |------|-------|---------|--------|-------|
-| Crown | `.brand-crown` | 0 0 100 75 | `fill="#a58852"` | Above brand, centered, 56×42px |
+| Crown + line | `.brand-crown` | 0 0 100 75 | `fill="#a58852"` | Flex row with 28×4px gold line |
 | QRIS payment | `.benefit-icon` | 0 0 64 64 | `currentColor` | QR grid + zigzag line |
 | Verified transaction | `.benefit-icon` | 0 0 64 64 | `currentColor` | Shield + checkmark |
 | Transparent recap | `.benefit-icon` | 0 0 64 64 | `currentColor` | Bar chart + line chart |
-
-Mobile breakpoint: `@media (max-width: 600px)` — crown 40×30px, benefit icons 14×14px.
