@@ -70,6 +70,8 @@ Hero section follows a strict top-down hierarchy:
 
 **Crown → Brand → Tagline → Headline → Description → Buttons → Features**
 
+Layout is **single-column, left-aligned** (no right-side trophy circle or event card). Max content width 720px (desktop), 100% on tablet/mobile. Background is white with subtle light-blue radial gradients (reference design decorative shapes).
+
 ---
 
 ## Layout & Spacing

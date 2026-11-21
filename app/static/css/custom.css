@@ -835,15 +835,15 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   gap: 14px !important;
   padding: 14px 32px !important;
   border-radius: 60px !important;
-  border: 2px solid var(--navy, #102d52) !important;
+  border: 2px solid var(--ink) !important;
   background: transparent !important;
-  color: var(--navy, #102d52) !important;
+  color: var(--ink) !important;
   text-decoration: none !important;
   transition: background-color 120ms ease, border-color 120ms ease !important;
   min-height: 58px !important;
 }
 .public-site .hero-actions--stack .home-secondary-link:hover {
-  background: rgba(16,45,82,0.08) !important;
+  background: var(--surface) !important;
 }
 .public-site .hero-actions--stack .btn-arrow {
   font-size: 1.2em !important;
@@ -864,9 +864,9 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   font-size: clamp(17px, 2vw, 32px) !important;
   font-weight: 500 !important;
   line-height: 1.4 !important;
-  color: var(--navy, #102d52) !important;
+  color: var(--ink) !important;
   padding: 0 22px !important;
-  border-right: 2px solid #c9cbd0 !important;
+  border-right: 2px solid var(--line) !important;
 }
 .public-site .home-proof-line span:last-child {
   border-right: 0 !important;
@@ -876,7 +876,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   width: 24px !important;
   height: 24px !important;
   flex: 0 0 24px !important;
-  color: var(--navy, #102d52) !important;
+  color: var(--ink) !important;
 }
 .public-site .home-proof-line .benefit-icon svg {
   width: 24px !important;
@@ -900,6 +900,14 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   overflow: visible;
 }
 
+.brand-crown__line {
+  width: 28px;
+  height: 4px;
+  border-radius: 2px;
+  background: #a58852;
+  flex-shrink: 0;
+}
+
 .benefit-icon {
   display: inline-flex;
   align-items: center;
@@ -907,7 +915,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   flex: 0 0 24px;
   width: 24px;
   height: 24px;
-  color: var(--navy, #102d52);
+  color: var(--ink);
   vertical-align: middle;
 }
 
@@ -930,7 +938,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   transform: rotate(-1.5deg);
 }
 
-/* Light-blue background decorative shapes (reference design) */
+/* Light-blue background decorative shapes (reference design) — uses source accent */
 .public-site .home-hero::before {
   content: "";
   position: absolute;
@@ -938,9 +946,9 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   inset: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 15% 20%, rgba(220,231,246,0.6) 0%, transparent 50%),
-    radial-gradient(circle at 85% 80%, rgba(220,231,246,0.5) 0%, transparent 55%),
-    radial-gradient(circle at 50% 50%, rgba(233,238,245,0.4) 0%, transparent 60%);
+    radial-gradient(circle at 12% 18%, color-mix(in srgb, var(--accent) 8%, transparent) 0%, transparent 42%),
+    radial-gradient(circle at 88% 78%, color-mix(in srgb, var(--accent) 6%, transparent) 0%, transparent 46%),
+    radial-gradient(circle at 55% 45%, color-mix(in srgb, var(--accent) 4%, transparent) 0%, transparent 55%);
 }
 
 .benefit-icon {
@@ -1008,7 +1016,7 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 
   .public-site .home-proof-line span {
     border-right: 0 !important;
-    border-bottom: 2px solid #c9cbd0 !important;
+    border-bottom: 2px solid var(--line) !important;
     padding: 0 0 10px 0 !important;
     width: 100% !important;
     justify-content: flex-start !important;
