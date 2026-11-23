@@ -476,19 +476,21 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 
 /* 1. Hero 3-zone grid layout: brand / copy / card (desktop), circle drops in on smaller screens */
 .public-site .home-hero-inner {
-  display: grid !important;
-  grid-template-columns: 140px 1fr 320px !important;
-  grid-template-areas: "brand copy card" !important;
-  align-items: center !important;
-  gap: 48px !important;
-  min-height: 480px !important;
-  padding-block: var(--sp-section-gap) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 0 !important;
+  max-width: 720px !important;
+  margin: 0 auto !important;
+  padding-block: calc(var(--sp-section-gap) + 24px) !important;
   margin-top: 0 !important;
 }
-.public-site .home-hero-inner .brand-crown-wrapper { grid-area: brand !important; }
-.public-site .home-hero-copy { grid-area: copy !important; }
-.public-site .home-hero-card { grid-area: card !important; }
-.public-site .home-hero-visual { grid-area: circle !important; }
+
+/* Hide trophy circle + event card (reference design is text-only) */
+.public-site .home-hero-visual,
+.public-site .home-hero-card {
+  display: none !important;
+}
 
 /* Branding column: crown + line on top, wordmark below */
 .public-site .brand-crown-wrapper {
@@ -510,24 +512,13 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 }
 html.dark .public-site .brand-crown-wrapper .hero-brand { color: #fff !important; }
 
-/* Trophy circle stays in the DOM; on desktop-only widths it rests (shows again ≤1024px) */
-@media (min-width: 1025px) {
-  .public-site .home-hero-inner .home-hero-visual.hero-circle-wrap { display: none !important; }
-}
-
 /* Responsive breakpoints */
 @media (max-width: 1024px) {
   .public-site .home-hero-inner {
-    grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: auto auto auto !important;
-    grid-template-areas:
-      "brand brand"
-      "copy circle"
-      "card card" !important;
-    min-height: auto !important;
-    gap: var(--sp-card-gap) !important;
+    max-width: 100% !important;
+    padding: 110px 6% 70px !important;
   }
-  .public-site .home-hero-inner .brand-crown-wrapper {
+  .public-site .brand-crown-wrapper {
     flex-direction: row !important;
     align-items: center !important;
     gap: 10px !important;
@@ -540,12 +531,7 @@ html.dark .public-site .brand-crown-wrapper .hero-brand { color: #fff !important
 
 @media (max-width: 720px) {
   .public-site .home-hero-inner {
-    grid-template-columns: 1fr !important;
-    grid-template-areas:
-      "brand"
-      "copy"
-      "circle"
-      "card" !important;
+    padding: 85px 24px 55px !important;
   }
 }
 
@@ -1106,4 +1092,115 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   text-decoration-color: var(--gold) !important;
   text-decoration-thickness: 4px !important;
   text-underline-offset: 7px !important;
+}
+/* === Hero background: radial gradient + dot grid (simpaskor.id reference) === */
+:root {
+  --bg-gradient: radial-gradient(ellipse at 30% 20%, #fff5f5 0%, #fff 45%, #f7f8fa 100%);
+  --dot-color: rgba(0, 0, 0, 0.04);
+}
+.public-site .home-hero {
+  background: var(--bg-gradient) !important;
+  background-image: var(--bg-gradient), repeating-radial-gradient(
+    circle at 1px 1px,
+    var(--dot-color) 0,
+    var(--dot-color) 1px,
+    transparent 0,
+    transparent 16px
+  ) !important;
+}
+/* === Hero layout: split two-column (text left, visual right) === */
+.public-site .home-hero-inner {
+  display: grid !important;
+  grid-template-columns: 1fr 420px !important;
+  gap: 48px !important;
+  max-width: 1152px !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  align-items: center !important;
+}
+/* === Phone mockup visual container === */
+.public-site .home-hero-visual {
+  display: block !important;
+  width: 100%;
+  aspect-ratio: 9 / 19;
+  max-width: 320px;
+  border-radius: 40px;
+  border: 8px solid #1a1a1e;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+  background: #000;
+  margin-left: auto;
+}
+/* Keep the floating card hidden in the new layout */
+.public-site .home-hero-card {
+  display: none !important;
+}
+/* === Responsive: stack on smaller screens === */
+@media (max-width: 1024px) {
+  .public-site .home-hero-inner {
+    grid-template-columns: 1fr !important;
+    max-width: 720px !important;
+  }
+  .public-site .home-hero-visual {
+    max-width: 280px !important;
+  }
+}
+
+/* === simpaskor.id reference overrides: red hero CTAs + status pill === */
+.public-site .hero-actions--stack .button-navy {
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
+  color: #fff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 14px rgba(220,38,38,0.35) !important;
+}
+.public-site .hero-actions--stack .button-navy:hover {
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
+  box-shadow: 0 6px 20px rgba(220,38,38,0.4) !important;
+}
+.public-site .hero-actions--stack .button-outlined {
+  background: #fff !important;
+  border: 2px solid #DC2626 !important;
+  color: #DC2626 !important;
+  border-radius: 9999px !important;
+}
+.public-site .hero-actions--stack .button-outlined:hover {
+  background: rgba(220,38,38,0.06) !important;
+}
+.public-site .hero-actions--stack .home-secondary-link {
+  background: #fff !important;
+  border: 2px solid #DC2626 !important;
+  color: #DC2626 !important;
+  border-radius: 9999px !important;
+}
+.public-site .hero-actions--stack .home-secondary-link:hover {
+  background: rgba(220,38,38,0.06) !important;
+}
+.public-site .hero-actions--stack .btn-arrow {
+  font-size: 1.2em !important;
+  line-height: 1 !important;
+}
+.public-site .status-pill,
+.public-site .hero-event-card__top .status-pill,
+.public-site .home-poster-top .status-pill {
+  background: #DC2626 !important;
+  color: #fff !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+}
+.public-site .status-pill.status-open,
+.public-site .hero-event-card__top .status-pill.status-open,
+.public-site .home-poster-top .status-pill.status-open {
+  background: #DC2626 !important;
+}
+.public-site .status-pill i,
+.public-site .hero-event-card__top .status-pill i,
+.public-site .home-poster-top .status-pill i {
+  width: 6px !important;
+  height: 6px !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  margin-right: 6px !important;
 }
