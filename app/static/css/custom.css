@@ -1208,3 +1208,29 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 .public-site .landing-section-inner.section-visible {
   overflow: visible !important;
 }
+/* === Hide trophy circle art — reference design uses phone mockup instead === */
+.public-site .hero-circle,
+.public-site .hero-circle-wrap .hero-circle {
+  display: none !important;
+}
+/* === Phone mockup: black screen placeholder inside the visual container === */
+.public-site .home-hero-visual {
+  display: block !important;
+  width: 100%;
+  aspect-ratio: 9 / 19;
+  max-width: 320px;
+  border-radius: 40px;
+  border: 8px solid #1a1a1e;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
+  background: #000;
+  margin-left: auto;
+  overflow: hidden;
+  position: relative;
+}
+.public-site .home-hero-visual::before {
+  content: '';
+  position: absolute;
+  inset: 12px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #1a1a1e 0%, #0a0a0c 50%, #1a1a1e 100%);
+}
