@@ -486,10 +486,13 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   margin-top: 0 !important;
 }
 
-/* Hide trophy circle + event card (reference design is text-only) */
-.public-site .home-hero-visual,
+/* Simpaskor.id style: hero-circle visible, floating event card */
 .public-site .home-hero-card {
-  display: none !important;
+  position: absolute !important;
+  bottom: 24px !important;
+  right: 24px !important;
+  display: grid !important;
+  place-items: start !important;
 }
 
 /* Branding column: crown + line on top, wordmark below */
@@ -1093,14 +1096,14 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   text-decoration-thickness: 4px !important;
   text-underline-offset: 7px !important;
 }
-/* === Hero background: radial gradient + dot grid (simpaskor.id reference) === */
+/* === Hero background: radial-gradient pink overlay === */
 :root {
-  --bg-gradient: radial-gradient(ellipse at 30% 20%, #fff5f5 0%, #fff 45%, #f7f8fa 100%);
+  --bg-gradient: radial-gradient(circle at 30% 20%, rgba(252, 228, 236, 0.5), transparent 60%), var(--bg-gradient-base, radial-gradient(ellipse at 30% 20%, #fff5f5 0%, #fff 45%, #f7f8fa 100%));
   --dot-color: rgba(0, 0, 0, 0.04);
 }
 .public-site .home-hero {
   background: var(--bg-gradient) !important;
-  background-image: var(--bg-gradient), repeating-radial-gradient(
+  background-image: var(--bg-gradient-base, radial-gradient(ellipse at 30% 20%, #fff5f5 0%, #fff 45%, #f7f8fa 100%)), repeating-radial-gradient(
     circle at 1px 1px,
     var(--dot-color) 0,
     var(--dot-color) 1px,
@@ -1118,21 +1121,11 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   padding: 0 !important;
   align-items: center !important;
 }
-/* === Phone mockup visual container === */
-.public-site .home-hero-visual {
-  display: block !important;
-  width: 100%;
-  aspect-ratio: 9 / 19;
-  max-width: 320px;
-  border-radius: 40px;
-  border: 8px solid #1a1a1e;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-  background: #000;
-  margin-left: auto;
-}
-/* Keep the floating card hidden in the new layout */
+/* Keep the floating card visible for simpaskor.id style */
 .public-site .home-hero-card {
-  display: none !important;
+  position: absolute !important;
+  bottom: 24px !important;
+  right: 24px !important;
 }
 /* === Responsive: stack on smaller screens === */
 @media (max-width: 1024px) {
@@ -1208,29 +1201,94 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 .public-site .landing-section-inner.section-visible {
   overflow: visible !important;
 }
-/* === Hide trophy circle art — reference design uses phone mockup instead === */
+/* === Hide trophy circle art — reference design uses trophy with orbiting elements === */
 .public-site .hero-circle,
 .public-site .hero-circle-wrap .hero-circle {
-  display: none !important;
-}
-/* === Phone mockup: black screen placeholder inside the visual container === */
-.public-site .home-hero-visual {
   display: block !important;
-  width: 100%;
-  aspect-ratio: 9 / 19;
-  max-width: 320px;
-  border-radius: 40px;
-  border: 8px solid #1a1a1e;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.25);
-  background: #000;
-  margin-left: auto;
-  overflow: hidden;
-  position: relative;
+  width: 120px !important;
+  height: 120px !important;
+  background: radial-gradient(ellipse, var(--gold), var(--ink)) !important;
+  mask-size: 100% 100% !important;
+  -webkit-mask-size: 100% 100% !important;
 }
-.public-site .home-hero-visual::before {
-  content: '';
-  position: absolute;
-  inset: 12px;
-  border-radius: 28px;
-  background: linear-gradient(135deg, #1a1a1e 0%, #0a0a0c 50%, #1a1a1e 100%);
+.public-site .hero-circle-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+/* Orbiting elements around trophy (reference: crown elements circling) */
+.public-site .hero-element-orbit-1,
+.public-site .hero-element-orbit-2 {
+  position: absolute !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 50% !important;
+  background: var(--gold) !important;
+  animation: orbitLinear 8s infinite linear !important;
+}
+.public-site .hero-element-orbit-1 {
+  top: -10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  animation-delay: 0s !important;
+}
+.public-site .hero-element-orbit-2 {
+  top: 50% !important;
+  right: -12px !important;
+  animation-delay: 2s !important;
+}
+@keyframes orbitLinear {
+  0% { transform: translateX(0) rotate(0deg); }
+  100% { transform: translateX(0) rotate(360deg); }
+}
+/* Hero event card - simpaskor.id style: red gradient floating card */
+.public-site .hero-event-card {
+  position: absolute !important;
+  top: -60px !important;
+  right: -20px !important;
+  width: 260px !important;
+  background: linear-gradient(90deg, #DC2626 0%, #DC2626 100%) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
+  color: #fff !important;
+}
+.public-site .hero-event-card__top .status-pill {
+  background: #DC2626 !important;
+  color: #fff !important;
+}
+.public-site .hero-event-card__title,
+.public-site .hero-event-card__desc {
+  color: #fff !important;
+}
+.public-site .hero-event-card__cta {
+  color: var(--brand) !important;
+}
+/* Floating badges around hero visual (reference: badges melayang) - using var(--brand) for color */
+.public-site .floating-badge {
+  position: absolute !important;
+  background: var(--brand) !important;
+  color: #fff !important;
+  font-size: 0.7rem !important;
+  font-weight: 700 !important;
+  padding: 4px 10px !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  z-index: 20 !important;
+  white-space: nowrap !important;
+  animation: floatUp 2s ease-in-out infinite alternate !important;
+}
+.public-site .floating-badge--top-left {
+  top: -20px !important;
+  left: -40px !important;
+}
+.public-site .floating-badge--top-right {
+  top: -20px !important;
+  right: -40px !important;
+}
+@keyframes floatUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-8px); }
 }
