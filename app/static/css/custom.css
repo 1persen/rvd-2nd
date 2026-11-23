@@ -617,26 +617,6 @@ html.dark .public-site .home-hero-copy h1.hero-title { color: #fff !important; }
   place-items: start !important;
   margin-left: 64px !important;
 }
-.public-site .hero-event-card {
-  display: block !important;
-  width: 280px !important;
-  max-width: 280px !important;
-  border-radius: 16px !important;
-  overflow: hidden !important;
-  background: var(--surface) !important;
-  border: 1px solid rgba(23,43,50,.08) !important;
-  box-shadow: 0 25px 50px -12px rgba(0,0,0,.3) !important;
-  text-decoration: none !important;
-  color: inherit !important;
-  transition: transform 160ms ease, box-shadow 160ms ease !important;
-}
-.public-site .hero-event-card:hover {
-  transform: translateY(-4px) !important;
-  box-shadow: var(--shadow-3) !important;
-}
-html.dark .public-site .hero-event-card {
-  border-color: rgba(255,255,255,.12) !important;
-}
 
 /* Card image: 16/9 aspect, object-fit cover */
 .public-site .hero-event-card > img {

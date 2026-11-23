@@ -23,7 +23,10 @@
       <a href="/events" class="nav-pill" {% if request.url.path.startswith('/events') %}aria-current="page"{% endif %}>Daftar Event</a>
       <a href="/leaderboard" class="nav-pill" {% if request.url.path.startswith('/leaderboard') %}aria-current="page"{% endif %}>Peringkat</a>
       <a href="/support" class="nav-pill" {% if request.url.path == '/support' %}aria-current="page"{% endif %}>Bantuan</a>
-    </nav>
+            <a href="/about" class="nav-pill">Tentang</a>
+            <a href="/pricing" class="nav-pill">Paket</a>
+            <a href="/contact" class="nav-pill">Hubungi</a>
+          </nav>
     <div class="header-actions">
       <a href="/events" class="button button-dark header-cta">Mulai Voting {{ icon('arrow') }}</a>
       <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Aktifkan tema gelap">
