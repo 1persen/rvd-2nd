@@ -720,7 +720,63 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
   flex-shrink: 0 !important;
 }
 
-/* ======================================== END SIMPASKOR 3-ZONE HERO MODEL ======================================== */
+/* Simpaskor.id style: hero-circle visible, scout image visual */
+.public-site .hero-circle {
+  display: block !important;
+  width: 120px !important;
+  height: 120px !important;
+  background: radial-gradient(ellipse, var(--gold), var(--ink)) !important;
+  mask-size: 100% 100% !important;
+  -webkit-mask-size: 100% 100% !important;
+}
+.public-site .hero-circle-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* === simpaskor.id reference: scout image visual + floating event card === */
+
+/* Hero event card - simpaskor.id style: gradient red floating card with badge, poster, title, date, CTA */
+.public-site .hero-event-card {
+  position: absolute !important;
+  top: -60px !important;
+  right: -20px !important;
+  width: 260px !important;
+  max-width: 260px !important;
+  background: linear-gradient(90deg, #DC2626 0%, #DC2626 100%) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
+  color: #fff !important;
+  padding: 16px !important;
+}
+.public-site .hero-event-card__top .status-pill {
+  background: #DC2626 !important;
+  color: #fff !important;
+  padding: 8px 12px !important;
+  border-radius: 8px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+}
+.public-site .hero-event-card__title,
+.public-site .hero-event-card__desc {
+  color: #fff !important;
+}
+.public-site .hero-event-card__cta {
+  color: var(--brand) !important;
+  font-weight: 600 !important;
+}
+
+/* Scout image inside hero-circle - simpaskor.id reference visual */
+.public-site .hero-circle img {
+  width: 100% !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+}
 
 
 /* ============================================================================
@@ -1126,6 +1182,50 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   position: absolute !important;
   bottom: 24px !important;
   right: 24px !important;
+}
+/* === Orbiting elements around trophy (reference: crown elements circling) === */
+.public-site .hero-circle-wrap {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+.public-site .hero-circle-wrap::before,
+.public-site .hero-circle-wrap::after {
+  content: '' !important;
+  position: absolute !important;
+  width: 18px !important;
+  height: 18px !important;
+  border-radius: 50% !important;
+  background: var(--gold) !important;
+  animation: orbitLinear 8s infinite linear !important;
+}
+.public-site .hero-circle-wrap::before {
+  top: -10px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  animation-delay: 0s !important;
+}
+.public-site .hero-circle-wrap::after {
+  top: 50% !important;
+  right: -12px !important;
+  animation-delay: 2s !important;
+}
+@keyframes orbitLinear {
+  0% { transform: translateX(0) rotate(0deg); }
+  100% { transform: translateX(0) rotate(360deg); }
+}
+/* === Floating event card (reference: floating card with gradient) === */
+.public-site .home-hero-card {
+  position: absolute !important;
+  top: -60px !important;
+  right: -20px !important;
+  width: 260px !important;
+  background: var(--surface) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
 }
 /* === Responsive: stack on smaller screens === */
 @media (max-width: 1024px) {
