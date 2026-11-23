@@ -376,13 +376,13 @@ html.dark .nav-pill[aria-current="page"] {
    prefix (equal or higher specificity than the competing public.css selectors).
    ==================================================================================================== */
 
-/* 1. Nav pills: rounded 9999px + red active state (simpaskor.id reference #E31E24) */
+/* 1. Nav pills: rounded 9999px + brand active state (beats public.css .public-site .public-header .desktop-nav a[aria-current]) */
 .public-site .public-header .desktop-nav a.nav-pill {
   border-radius: var(--r-full) !important;
 }
 .public-site .public-header .desktop-nav a.nav-pill[aria-current="page"],
 .public-site .public-header .desktop-nav a.nav-pill.is-active {
-  background: #E31E24 !important;
+  background: var(--brand) !important;
   color: #fff !important;
   box-shadow: var(--shadow-1) !important;
 }
@@ -391,9 +391,10 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   color: #0B1D3A !important;
 }
 
-/* 2. Hero title typography: red accent (simpaskor.id reference #E31E24) */
+/* 2. Hero title typography (beats public.css .public-site .home-hero-copy h1) */
+
 .public-site .home-hero-copy h1.hero-title em {
-  color: #E31E24 !important;
+  color: var(--gold) !important;
 }
 
 /* 3. Footer links: centered flex row with 24px gap (beats public.css .public-site .footer-grid>div>a:not(.wordmark)) */
@@ -498,24 +499,18 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   align-items: flex-start !important;
   gap: 12px !important;
 }
-/* Override crown SVG colors to red (simpaskor.id reference #E31E24) */
-.public-site .brand-crown svg path,
-.public-site .brand-crown svg circle {
-  fill: #E31E24 !important;
-  stroke: #E31E24 !important;
-}
 .public-site .brand-crown-wrapper .hero-brand {
   font-size: 0.8125rem !important;
   font-weight: 800 !important;
   line-height: 1.45 !important;
   letter-spacing: 0.14em !important;
   text-transform: uppercase !important;
-  color: #E31E24 !important;
+  color: var(--ink) !important;
   margin: 0 !important;
   white-space: normal !important;
   max-width: 140px !important;
 }
-html.dark .public-site .brand-crown-wrapper .hero-brand { color: #E31E24 !important; }
+html.dark .public-site .brand-crown-wrapper .hero-brand { color: #fff !important; }
 
 /* Responsive breakpoints */
 @media (max-width: 1024px) {
@@ -547,7 +542,7 @@ html.dark .public-site .brand-crown-wrapper .hero-brand { color: #E31E24 !import
   line-height: 1.1 !important;
   letter-spacing: -0.01em !important;
   text-transform: uppercase !important;
-  color: #E31E24 !important;
+  color: var(--ink) !important;
   margin: 0 0 10px !important;
   font-family: "Noto Sans", sans-serif !important;
   white-space: nowrap !important;
@@ -1091,10 +1086,10 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   color: #e4e6eb !important;
 }
 .public-site .home-hero-copy h1.hero-title span {
-  color: #E31E24 !important;
+  color: var(--gold) !important;
   font-style: italic !important;
   text-decoration: underline !important;
-  text-decoration-color: #E31E24 !important;
+  text-decoration-color: var(--gold) !important;
   text-decoration-thickness: 4px !important;
   text-underline-offset: 7px !important;
 }
@@ -1152,25 +1147,25 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 
 /* === simpaskor.id reference overrides: red hero CTAs + status pill === */
 .public-site .hero-actions--stack .button-navy {
-  background: #E31E24 !important;
-  border-color: #E31E24 !important;
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
   color: #fff !important;
   border-radius: 9999px !important;
-  box-shadow: 0 4px 14px rgba(227, 38, 36, 0.35) !important;
+  box-shadow: 0 4px 14px rgba(220,38,38,0.35) !important;
 }
 .public-site .hero-actions--stack .button-navy:hover {
-  background: #E31E24 !important;
-  border-color: #E31E24 !important;
-  box-shadow: 0 6px 20px rgba(227, 38, 36, 0.4) !important;
+  background: #DC2626 !important;
+  border-color: #DC2626 !important;
+  box-shadow: 0 6px 20px rgba(220,38,38,0.4) !important;
 }
 .public-site .hero-actions--stack .button-outlined {
   background: #fff !important;
-  border: 2px solid #E31E24 !important;
-  color: #E31E24 !important;
+  border: 2px solid #DC2626 !important;
+  color: #DC2626 !important;
   border-radius: 9999px !important;
 }
 .public-site .hero-actions--stack .button-outlined:hover {
-  background: rgba(227, 38, 36, 0.06) !important;
+  background: rgba(220,38,38,0.06) !important;
 }
 .public-site .hero-actions--stack .home-secondary-link {
   background: #fff !important;
@@ -1188,7 +1183,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 .public-site .status-pill,
 .public-site .hero-event-card__top .status-pill,
 .public-site .home-poster-top .status-pill {
-  background: #E31E24 !important;
+  background: #DC2626 !important;
   color: #fff !important;
   padding: 8px 12px !important;
   border-radius: 8px !important;
@@ -1198,7 +1193,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 .public-site .status-pill.status-open,
 .public-site .hero-event-card__top .status-pill.status-open,
 .public-site .home-poster-top .status-pill.status-open {
-  background: #E31E24 !important;
+  background: #DC2626 !important;
 }
 .public-site .status-pill i,
 .public-site .hero-event-card__top .status-pill i,
