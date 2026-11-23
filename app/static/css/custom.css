@@ -719,44 +719,6 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
 /* === simpaskor.id reference: scout image visual + floating event card === */
 
 /* Hero event card - simpaskor.id style: gradient red floating card with badge, poster, title, date, CTA */
-.public-site .hero-event-card {
-  position: absolute !important;
-  top: -60px !important;
-  right: -20px !important;
-  width: 260px !important;
-  max-width: 260px !important;
-  background: linear-gradient(90deg, #DC2626 0%, #DC2626 100%) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
-  overflow: hidden !important;
-  z-index: 10 !important;
-  color: #fff !important;
-  padding: 16px !important;
-}
-.public-site .hero-event-card__top .status-pill {
-  background: #DC2626 !important;
-  color: #fff !important;
-  padding: 8px 12px !important;
-  border-radius: 8px !important;
-  font-size: 0.75rem !important;
-  font-weight: 700 !important;
-}
-.public-site .hero-event-card__title,
-.public-site .hero-event-card__desc {
-  color: #fff !important;
-}
-.public-site .hero-event-card__cta {
-  color: var(--brand) !important;
-  font-weight: 600 !important;
-}
-
-/* Scout image inside hero-circle - simpaskor.id reference visual */
-.public-site .hero-circle img {
-  width: 100% !important;
-  height: auto !important;
-  display: block !important;
-  object-fit: contain !important;
-}
 
 
 /* ============================================================================
