@@ -474,57 +474,75 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
    Appended AFTER existing Simpaskor block — never modify existing rules.
    ==================================================================================================== */
 
-/* 1. Hero 3-zone grid layout: copy / circle / card */
-/* Single-column hero layout (user reference: left-aligned, no right-side visual) */
+/* 1. Hero 3-zone grid layout: brand / copy / card (desktop), circle drops in on smaller screens */
 .public-site .home-hero-inner {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-start !important;
-  gap: 0 !important;
-  max-width: 720px !important;
-  margin: 0 auto !important;
+  display: grid !important;
+  grid-template-columns: 140px 1fr 320px !important;
+  grid-template-areas: "brand copy card" !important;
+  align-items: center !important;
+  gap: 48px !important;
+  min-height: 480px !important;
   padding-block: var(--sp-section-gap) !important;
   margin-top: 0 !important;
 }
-/* Tablet: single column, tighter spacing */
-@media (max-width: 900px) and (min-width: 601px) {
-  .public-site .home-hero-inner {
-    max-width: 100% !important;
-    padding: 110px 6% 70px !important;
-  }
-  .public-site .home-hero-copy .hero-subtitle {
-    margin-bottom: 20px !important;
-  }
-  .public-site .hero-actions--stack {
-    gap: 12px !important;
-  }
+.public-site .home-hero-inner .brand-crown-wrapper { grid-area: brand !important; }
+.public-site .home-hero-copy { grid-area: copy !important; }
+.public-site .home-hero-card { grid-area: card !important; }
+.public-site .home-hero-visual { grid-area: circle !important; }
+
+/* Branding column: crown + line on top, wordmark below */
+.public-site .brand-crown-wrapper {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
 }
-/* Hide the trophy circle + event card in hero (reference design is text-only) */
-.public-site .home-hero-visual,
-.public-site .home-hero-card {
-  display: none !important;
+.public-site .brand-crown-wrapper .hero-brand {
+  font-size: 0.8125rem !important;
+  font-weight: 800 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  color: var(--ink) !important;
+  margin: 0 !important;
+  white-space: normal !important;
+  max-width: 140px !important;
+}
+html.dark .public-site .brand-crown-wrapper .hero-brand { color: #fff !important; }
+
+/* Trophy circle stays in the DOM; on desktop-only widths it rests (shows again ≤1024px) */
+@media (min-width: 1025px) {
+  .public-site .home-hero-inner .home-hero-visual.hero-circle-wrap { display: none !important; }
 }
 
 /* Responsive breakpoints */
 @media (max-width: 1024px) {
   .public-site .home-hero-inner {
     grid-template-columns: 1fr 1fr !important;
-    grid-template-rows: auto auto !important;
+    grid-template-rows: auto auto auto !important;
     grid-template-areas:
+      "brand brand"
       "copy circle"
       "card card" !important;
     min-height: auto !important;
     gap: var(--sp-card-gap) !important;
   }
-  .public-site .home-hero-copy { grid-area: copy !important; }
-  .public-site .home-hero-visual { grid-area: circle !important; }
-  .public-site .home-hero-card { grid-area: card !important; }
+  .public-site .home-hero-inner .brand-crown-wrapper {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .public-site .brand-crown-wrapper .hero-brand {
+    max-width: none !important;
+    white-space: nowrap !important;
+  }
 }
 
 @media (max-width: 720px) {
   .public-site .home-hero-inner {
     grid-template-columns: 1fr !important;
     grid-template-areas:
+      "brand"
       "copy"
       "circle"
       "card" !important;
@@ -1048,4 +1066,44 @@ html.dark .public-site .hero-event-card__title { color: #fff !important; }
     width: 18px;
     height: 18px;
   }
+}
+
+/* ============================================================================ 3-BOX HERO (branding | hero | card) — CTA + accent ============
+   Buttons: "Daftar Mitra" navy filled, "Tentang Kami" navy outlined (reference design).
+   Headline accent: gold "RVD" with gold underline (reference design).
+   ============================================================================ */
+.public-site .hero-actions--stack .button-navy {
+  background: #24262b !important;
+  border-color: #24262b !important;
+  color: #fff !important;
+}
+.public-site .hero-actions--stack .button-navy:hover {
+  background: #3a3d44 !important;
+  border-color: #3a3d44 !important;
+}
+.public-site .hero-actions--stack .button-outlined {
+  background: transparent !important;
+  border-color: #24262b !important;
+  color: #24262b !important;
+}
+.public-site .hero-actions--stack .button-outlined:hover {
+  background: rgba(36, 38, 43, 0.06) !important;
+  box-shadow: none !important;
+}
+html.dark .public-site .hero-actions--stack .button-navy {
+  background: #24262b !important;
+  border-color: #24262b !important;
+  color: #fff !important;
+}
+html.dark .public-site .hero-actions--stack .button-outlined {
+  border-color: #e4e6eb !important;
+  color: #e4e6eb !important;
+}
+.public-site .home-hero-copy h1.hero-title span {
+  color: var(--gold) !important;
+  font-style: italic !important;
+  text-decoration: underline !important;
+  text-decoration-color: var(--gold) !important;
+  text-decoration-thickness: 4px !important;
+  text-underline-offset: 7px !important;
 }
