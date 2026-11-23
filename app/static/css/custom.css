@@ -1204,3 +1204,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   background: #fff !important;
   margin-right: 6px !important;
 }
+/* === Override public.css overflow:hidden on landing-section-inner (cuts off phone mockup) === */
+.public-site .landing-section-inner.section-visible {
+  overflow: visible !important;
+}
