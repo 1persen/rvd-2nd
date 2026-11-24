@@ -1278,7 +1278,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   position: fixed;
   bottom: 28px;
   right: 28px;
-  z-index: 50;
+  z-index: 9999;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1287,7 +1287,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   font-size: 14px;
   font-weight: 600;
   padding: 10px 16px 10px 14px;
-  border-radius: var(--radius-full);
+  border-radius: 9999px;
   background: #25D366;
   box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
   transition: transform .2s, box-shadow .2s;
