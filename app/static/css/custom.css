@@ -1183,3 +1183,35 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   from { transform: translateY(0); }
   to { transform: translateY(-8px); }
 }
+
+/* === Packages section layout (added 2026-11-24) === */
+.public-site .home-packages-section {
+  padding-block: var(--sp-section-gap) !important;
+}
+.public-site .packages-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-card-gap);
+}
+@media (min-width: 760px) {
+  .public-site .packages-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .public-site .packages-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.public-site .card-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--brand-soft);
+  color: var(--brand);
+  margin-bottom: 12px;
+}
+.public-site .card-desc {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 8px 0 16px;
+}
