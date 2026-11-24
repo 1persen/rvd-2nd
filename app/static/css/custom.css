@@ -517,6 +517,49 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   box-shadow: 0 20px 48px rgba(0,0,0,0.2) !important;
 }
 
+/* === Brand column content sizing (fit 25% column) === */
+.public-site .home-page .branding-column,
+.public-site .home-page .home-hero-copy {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+.public-site .home-page .brand-crown {
+  width: 100% !important;
+  max-width: 160px !important;
+  margin: 0 auto 16px !important;
+}
+.public-site .home-page .brand-crown svg {
+  width: 100% !important;
+  height: auto !important;
+}
+.public-site .home-page .hero-title {
+  font-size: clamp(28px, 4.5vw, 44px) !important;
+  line-height: 1.1 !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+}
+.public-site .home-page .home-hero-lead {
+  font-size: clamp(13px, 2vw, 16px) !important;
+  line-height: 1.5 !important;
+  max-width: 100% !important;
+}
+.public-site .home-page .hero-actions {
+  max-width: 100% !important;
+}
+.public-site .home-page .hero-actions .button {
+  font-size: 13px !important;
+  padding: 10px 16px !important;
+}
+.public-site .home-page .home-proof-line {
+  font-size: 11px !important;
+  gap: 8px !important;
+}
+.public-site .home-page .benefit-icon {
+  width: 16px !important;
+  height: 16px !important;
+}
+
 /* === Hero responsive: 3-col -> 2-col -> stacked === */
 @media (max-width: 1024px) {
   .public-site .home-page .home-hero-inner {
