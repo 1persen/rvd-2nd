@@ -623,13 +623,14 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   color: var(--navy, #0B1D3A) !important;
 }
 
-/* Gold curve under "bersama RVD!" */
+/* Gold curve under "bersama RVD!" - curved line */
 .public-site .home-page .gold-curve {
   display: block !important;
   width: 120px !important;
-  height: 4px !important;
+  height: 6px !important;
   background: #F2B51F !important;
-  border-radius: 2px !important;
+  transform: rotate(-5deg) !important;
+  transform-origin: center !important;
   margin: 14px 0 16px 0 !important;
   position: relative !important;
   z-index: 1 !important;
@@ -644,10 +645,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   color: #53647E !important;
   margin: 14px 0 16px 0 !important;
   max-width: 220px !important;
-  display: -webkit-box !important;
-  -webkit-line-clamp: 2 !important;
-  -webkit-box-orient: vertical !important;
-  overflow: hidden !important;
+  white-space: normal !important;
   position: relative !important;
   z-index: 1 !important;
 }
@@ -706,6 +704,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   gap: 8px !important;
   padding: 0 16px !important;
   white-space: nowrap !important;
+  color: var(--navy, #0B1D3A) !important;
 }
 .public-site .home-page .benefit-item:first-child {
   padding-left: 0 !important;
@@ -720,7 +719,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   width: clamp(28px, 4vw, 32px) !important;
   height: clamp(28px, 4vw, 32px) !important;
   flex-shrink: 0 !important;
-  color: #53647E !important;
+  color: var(--navy, #0B1D3A) !important;
 }
 
 /* Responsive: Mobile - stack everything */
