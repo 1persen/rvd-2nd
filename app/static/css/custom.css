@@ -561,7 +561,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 .public-site .home-page .brand-name {
   font-family: var(--font-display, 'Oswald', sans-serif) !important;
   font-weight: 800 !important;
-  font-size: clamp(28px, 5vw, 32px) !important;
+  font-size: clamp(12px, 5vw, 22px) !important;
   line-height: 1.1 !important;
   color: var(--navy, #0B1D3A) !important;
   letter-spacing: -0.02em !important;
@@ -600,12 +600,12 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   font-family: var(--font-body, 'Inter', sans-serif) !important;
   font-weight: 600 !important;
   font-style: italic !important;
-  font-size: clamp(11px, 2vw, 13px) !important;
+  font-size: clamp(6px, 2vw, 8px) !important;
   line-height: 1.3 !important;
   color: var(--navy, #0B1D3A) !important;
-  margin: 10px 0 10px 0 !important;
+  margin: 7px 0 !important;
   opacity: 1 !important;
-  max-width: 220px !important;
+  max-width: 120px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -613,15 +613,15 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   z-index: 1 !important;
 }
 
-/* Headline - 20-24px per spec, exactly 1 line, 10px below tagline */
+/* Headline - 14px clamp, exactly 1 line, max-width 120px */
 .public-site .home-page .hero-title {
   font-family: var(--font-display, 'Oswald', sans-serif) !important;
   font-weight: 800 !important;
-  font-size: clamp(20px, 3.5vw, 24px) !important;
+  font-size: clamp(10px, 3.5vw, 14px) !important;
   line-height: 1.1 !important;
   color: var(--navy, #0B1D3A) !important;
   margin: 10px 0 10px 0 !important;
-  max-width: 220px !important;
+  max-width: 120px !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -640,20 +640,20 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   background: #F2B51F !important;
   transform: rotate(-5deg) !important;
   transform-origin: center !important;
-  margin: 14px 0 16px 0 !important;
+  margin: 8px 0 8px 0 !important;
   position: relative !important;
   z-index: 1 !important;
 }
 
-/* Description - 2 lines, 13-14px, line-height 1.5 */
+/* Description - 2 lines, 7px clamp, max-width 120px */
 .public-site .home-page .hero-description {
   font-family: var(--font-body, 'Inter', sans-serif) !important;
   font-weight: 400 !important;
-  font-size: clamp(13px, 2vw, 14px) !important;
+  font-size: clamp(6px, 2vw, 7px) !important;
   line-height: 1.5 !important;
   color: #53647E !important;
   margin: 14px 0 16px 0 !important;
-  max-width: 220px !important;
+  max-width: 120px !important;
   white-space: normal !important;
   position: relative !important;
   z-index: 1 !important;
