@@ -98,37 +98,36 @@
   {% endif %}
 
   <section id="layanan-mendatang" class="shell home-how-section">
-    <div class="home-section-heading"><div><p class="eyebrow">MULAI DENGAN MUDAH</p><h2>Bagaimana voting bekerja</h2></div><p>Ikuti empat langkah dari memilih event hingga dukungan tercatat.</p></div>
-    <div class="steps-grid">
-      {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
-      <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
-      {% endfor %}
-    </div>
-      </section>
+      <div class="home-section-heading"><div><p class="eyebrow">MULAI DENGAN MUDAH</p><h2>Bagaimana voting bekerja</h2></div><p>Ikuti empat langkah dari memilih event hingga dukungan tercatat.</p></div>
+      <div class="steps-grid">
+        {% for symbol, title, description in [('users','Pilih Event','Buka event yang ingin kamu ikuti.'),('star','Pilih Tim Favoritmu','Lihat daftar peserta dan tentukan tim yang ingin di Vote.'),('qr','Tentukan Jumlah Vote','Pilih jumlah vote dan periksa total pembayaran.'),('trophy','Pembayaran','Ikuti dan selesaikan pembayaran. <b>Vote akan diproses setelah transaksi berhasil diverifikasi.</b>')] %}
+        <article class="step"><div class="step-top"><span>{{ icon(symbol) }}</span><small>0{{ loop.index }}</small></div><h3>{{ title }}</h3><p>{{ description | safe }}</p></article>
+        {% endfor %}
+      </div>
+    </section>
 
-      <section class="shell home-packages-section">
-        <div class="home-section-heading"><div><p class="eyebrow">PAKET RVD</p><h2>Pilih paket yang tepat untukmu</h2></div></div>
-        <div class="packages-grid">
-          <article class="card">
-            <div class="card-badge">Paket Dasar</div>
-            <h3 class="card-title">Fitur Dasar</h3>
-            <p class="card-desc">Untuk event kecil dengan kebutuhan voting standar.</p>
-            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-          </article>
-          <article class="card">
-            <div class="card-badge">Paket Pro</div>
-            <h3 class="card-title">Fitur Pro</h3>
-            <p class="card-desc">Untuk event menengah dengan fitur lanjutan.</p>
-            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-          </article>
-          <article class="card">
-            <div class="card-badge">Paket Premium</div>
-            <h3 class="card-title">Fitur Premium</h3>
-            <p class="card-desc">Untuk event besar dengan semua fitur unggulan.</p>
-            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-          </article>
-        </div>
-      </section>
-    </div>
-{% endblock %}
+    <section class="shell home-packages-section">
+      <div class="home-section-heading"><div><p class="eyebrow">PAKET RVD</p><h2>Pilih paket yang tepat untukmu</h2></div></div>
+      <div class="packages-grid">
+        <article class="card">
+          <div class="card-badge">Paket Dasar</div>
+          <h3 class="card-title">Fitur Dasar</h3>
+          <p class="card-desc">Untuk event kecil dengan kebutuhan voting standar.</p>
+          <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+        </article>
+        <article class="card">
+          <div class="card-badge">Paket Pro</div>
+          <h3 class="card-title">Fitur Pro</h3>
+          <p class="card-desc">Untuk event menengah dengan fitur lanjutan.</p>
+          <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+        </article>
+        <article class="card">
+          <div class="card-badge">Paket Premium</div>
+          <h3 class="card-title">Fitur Premium</h3>
+          <p class="card-desc">Untuk event besar dengan semua fitur unggulan.</p>
+          <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+        </article>
+      </div>
+    </section>
+  {% endblock %}
 {% block scripts %}<script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
