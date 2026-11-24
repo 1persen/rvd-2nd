@@ -1114,7 +1114,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 /* === Hero 3-zone layout (branding | circle hero | event card floating) === */
 .public-site .home-hero-inner {
   display: grid !important;
-  grid-template-columns: 1fr 320px 320px !important;
+  grid-template-columns: 1fr 2fr 1fr !important;
   gap: 32px !important;
   max-width: 1200px !important;
   margin: 0 auto !important;
