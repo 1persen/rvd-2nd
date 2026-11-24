@@ -470,7 +470,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 /* ======================================== simpan package card styling - gunakan button-primary di custom.css === */
 
 /* === Hero 3-zone layout (branding | circle hero | event card floating) === */
-.public-site .home-hero-inner {
+.public-site .home-page .home-hero-inner {
   display: grid !important;
   grid-template-columns: 1fr 2fr 1fr !important;
   gap: 32px !important;
@@ -519,7 +519,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 
 /* === Hero responsive: 3-col -> 2-col -> stacked === */
 @media (max-width: 1024px) {
-  .public-site .home-hero-inner {
+  .public-site .home-page .home-hero-inner {
     grid-template-columns: 1fr 320px !important;
   }
   .public-site .home-hero-card {
@@ -527,7 +527,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   }
 }
 @media (max-width: 760px) {
-  .public-site .home-hero-inner {
+  .public-site .home-page .home-hero-inner {
     grid-template-columns: 1fr !important;
   }
   .public-site .home-hero-card {
