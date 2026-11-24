@@ -1220,7 +1220,7 @@ html.dark .public-site .hero-actions--stack .button-outlined {
 .public-site .card {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: var(--radius-xl);
+  border-radius: var(--r-xl, 16px);
   padding: 24px;
   display: flex;
   flex-direction: column;
