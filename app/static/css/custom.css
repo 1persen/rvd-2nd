@@ -1109,82 +1109,53 @@ html.dark .public-site .hero-actions--stack .button-outlined {
     transparent 16px
   ) !important;
 }
-/* === Hero layout: split two-column (text left, visual right) === */
+/* === simpan package card styling - gunakan button-primary di custom.css === */
+
+/* === Hero 3-zone layout (branding | circle hero | event card floating) === */
 .public-site .home-hero-inner {
   display: grid !important;
-  grid-template-columns: 1fr 420px !important;
-  gap: 48px !important;
-  max-width: 1152px !important;
+  grid-template-columns: 1fr 320px 320px !important;
+  gap: 32px !important;
+  max-width: 1200px !important;
   margin: 0 auto !important;
-  padding: 0 !important;
+  padding-inline: 24px !important;
   align-items: center !important;
-}
-/* Keep the floating card visible for simpaskor.id style */
-.public-site .home-hero-card {
-  position: absolute !important;
-  bottom: 24px !important;
-  right: 24px !important;
-}
-/* === Orbiting elements around trophy (reference: crown elements circling) === */
-.public-site .hero-circle-wrap {
   position: relative !important;
+}
+.public-site .home-hero-copy {
+  grid-column: 1 !important;
+}
+.public-site .home-hero-visual {
+  grid-column: 2 !important;
   display: flex !important;
-  align-items: center !important;
   justify-content: center !important;
+  align-items: center !important;
 }
-.public-site .hero-circle-wrap::before,
-.public-site .hero-circle-wrap::after {
-  content: '' !important;
-  position: absolute !important;
-  width: 18px !important;
-  height: 18px !important;
-  border-radius: 50% !important;
-  background: var(--gold) !important;
-  animation: orbitLinear 8s infinite linear !important;
+.public-site .hero-circle-wrap {
+  grid-column: 2 / 3 !important;
+  position: relative !important;
+  z-index: 2 !important;
 }
-.public-site .hero-circle-wrap::before {
-  top: -10px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  animation-delay: 0s !important;
-}
-.public-site .hero-circle-wrap::after {
-  top: 50% !important;
-  right: -12px !important;
-  animation-delay: 2s !important;
-}
-@keyframes orbitLinear {
-  0% { transform: translateX(0) rotate(0deg); }
-  100% { transform: translateX(0) rotate(360deg); }
-}
-/* === Floating event card (reference: floating card with gradient) === */
 .public-site .home-hero-card {
-  position: absolute !important;
-  top: -60px !important;
-  right: -20px !important;
-  width: 260px !important;
-  background: var(--surface) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  grid-column: 3 !important;
+  position: relative !important;
+  z-index: 3 !important;
+  margin-left: 0 !important;
+  width: auto !important;
+  max-width: 280px !important;
+  background: #fff !important;
+  border-radius: 16px !important;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.15) !important;
   overflow: hidden !important;
-  z-index: 10 !important;
+  transform: translateY(-8px) !important;
+  transition: transform .3s ease, box-shadow .3s ease !important;
 }
-/* === Responsive: stack on smaller screens === */
-@media (max-width: 1024px) {
-  .public-site .home-hero-inner {
-    grid-template-columns: 1fr !important;
-  }
-  .public-site .home-hero-visual {
-    max-width: 280px !important;
-  }
+.public-site .home-hero-card:hover {
+  transform: translateY(-12px) !important;
+  box-shadow: 0 20px 48px rgba(0,0,0,0.2) !important;
 }
 
-@keyframes floatUp {
-  from { transform: translateY(0); }
-  to { transform: translateY(-8px); }
-}
-
-/* === Packages section layout === */
+/* Packages section layout */
 .public-site .home-packages-section {
   padding-block: var(--sp-section-gap) !important;
   background: var(--surface) !important;
