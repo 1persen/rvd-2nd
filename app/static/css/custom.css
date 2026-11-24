@@ -472,11 +472,11 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 /* === Hero 3-zone layout (branding | circle hero | event card floating) === */
 .public-site .home-page .home-hero-inner {
   display: grid !important;
-  grid-template-columns: 1fr 2fr 1fr !important;
-  gap: 32px !important;
+  grid-template-columns: 120px 2fr 280px !important;
+  gap: 16px !important;
   max-width: 1200px !important;
   margin: 0 auto !important;
-  padding-inline: 24px !important;
+  padding-inline: 16px !important;
   align-items: center !important;
   position: relative !important;
 }
@@ -773,10 +773,10 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 /* === Hero responsive: 3-col -> 2-col -> stacked === */
 @media (max-width: 1024px) {
   .public-site .home-page .home-hero-inner {
-    grid-template-columns: 1fr 320px !important;
+    grid-template-columns: 120px 2fr !important;
   }
   .public-site .home-hero-card {
-    grid-column: 3 !important;
+    grid-column: 2 !important;
   }
 }
 @media (max-width: 760px) {
