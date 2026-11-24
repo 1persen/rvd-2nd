@@ -10,8 +10,8 @@
         <div class="landing-section-inner section-visible">
           <div class="shell home-hero-inner">
             <!-- Column 1: Branding (crown, wordmark, tagline, buttons, benefits) -->
-            <div class="branding-column">
-              <div class="brand-crown-wrapper">
+                    <div class="branding-column home-hero-copy">
+                          <div class="brand-crown-wrapper">
                 <div class="brand-crown">
                   <span class="brand-crown__line"></span>
                   <svg viewBox="0 0 100 75" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -123,28 +123,30 @@
       </div>
     </section>
 
-    <section class="shell home-packages-section">
-          <div class="home-section-heading"><div><p class="eyebrow">PAKET RVD</p><h2>Pilih paket yang tepat untukmu</h2></div></div>
-          <div class="packages-grid">
-            <article class="card">
-              <div class="card-badge">Paket Dasar</div>
-              <h3 class="card-title">Fitur Dasar</h3>
-              <p class="card-desc">Untuk event kecil dengan kebutuhan voting standar.</p>
-              <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-            </article>
-            <article class="card">
-              <div class="card-badge">Paket Pro</div>
-              <h3 class="card-title">Fitur Pro</h3>
-              <p class="card-desc">Untuk event menengah dengan fitur lanjutan.</p>
-              <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-            </article>
-            <article class="card">
-              <div class="card-badge">Paket Premium</div>
-              <h3 class="card-title">Fitur Premium</h3>
-              <p class="card-desc">Untuk event besar dengan semua fitur unggulan.</p>
-              <a href="/pricing" class="button button-primary">Pilot Pakai</a>
-            </article>
-          </div>
-        </section>
-      {% endblock %}
+  <section class="shell home-packages-section">
+        <div class="home-section-heading"><div><p class="eyebrow">PAKET RVD</p><h2>Pilih paket yang tepat untukmu</h2></div></div>
+        <div class="packages-grid">
+          <article class="card">
+            <div class="card-badge">Paket Dasar</div>
+            <h3 class="card-title">Fitur Dasar</h3>
+            <p class="card-desc">Untuk event kecil dengan kebutuhan voting standar.</p>
+            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+          </article>
+          <article class="card">
+            <div class="card-badge">Paket Pro</div>
+            <h3 class="card-title">Fitur Pro</h3>
+            <p class="card-desc">Untuk event menengah dengan fitur lanjutan.</p>
+            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+          </article>
+          <article class="card">
+            <div class="card-badge">Paket Premium</div>
+            <h3 class="card-title">Fitur Premium</h3>
+            <p class="card-desc">Untuk event besar dengan semua fitur unggulan.</p>
+            <a href="/pricing" class="button button-primary">Pilot Pakai</a>
+          </article>
+        </div>
+  </section>
+</div>
+{% endblock %}
+
 {% block scripts %}<script src="/static/js/landing.js?v={{ tailwind_css_version | default("preview", true) }}"></script>{% endblock %}
