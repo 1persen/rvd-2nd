@@ -522,8 +522,8 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   display: flex !important;
   flex-direction: column !important;
   align-items: flex-start !important;
-  width: 100% !important;
-  max-width: 100% !important;
+  width: 118px !important;
+  max-width: 118px !important;
   padding-left: 0 !important;
   position: relative !important;
   z-index: 1 !important;
@@ -565,6 +565,10 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   line-height: 1.1 !important;
   color: var(--navy, #0B1D3A) !important;
   letter-spacing: -0.02em !important;
+  width: 118px !important;
+  max-width: 118px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 .public-site .home-page .brand-crown-wrapper {
   display: inline-block !important;
@@ -673,7 +677,7 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   flex-shrink: 0 !important;
   font-family: var(--font-body, 'Inter', sans-serif) !important;
   font-weight: 600 !important;
-  font-size: clamp(13px, 2vw, 14px) !important;
+  font-size: 14px !important;
   padding: 12px 24px !important;
   border-radius: 9999px !important;
   white-space: nowrap !important;
