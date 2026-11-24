@@ -753,11 +753,11 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
     right: -20px !important;
   }
   .public-site .home-page .hero-actions--inline {
-    flex-direction: column !important;
+    /* stay horizontal, no flex-direction: column */
     width: 100% !important;
   }
   .public-site .home-page .hero-actions--inline .button {
-    width: 100% !important;
+    width: auto !important;
     text-align: center !important;
   }
   .public-site .home-page .home-proof-line {
