@@ -1215,3 +1215,91 @@ html.dark .public-site .hero-actions--stack .button-outlined {
   line-height: 1.6;
   margin: 8px 0 16px;
 }
+
+/* === Package cards (Simpaskor-inspired) === */
+.public-site .card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: transform .2s, box-shadow .2s;
+}
+.public-site .card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+}
+.public-site .card-title {
+  font-family: "Noto Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+  color: var(--ink);
+}
+
+/* === Button primary (Simpaskor-inspired) === */
+.public-site .button-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  background: linear-gradient(110deg, #d8b36a, #a58852);
+  border: 1px solid #a58852;
+  color: #172b32;
+  transition: transform .2s, box-shadow .2s;
+}
+.public-site .button-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(196, 169, 102, 0.35);
+  background: linear-gradient(110deg, #e0c17f, #b89e4f);
+}
+
+/* === WhatsApp floating button (bottom-right of page) === */
+.wa-float {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 16px 10px 14px;
+  border-radius: var(--radius-full);
+  background: #25D366;
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+  transition: transform .2s, box-shadow .2s;
+}
+.wa-float:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.45);
+}
+.wa-float .wa-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  .wa-float {
+    bottom: 16px;
+    right: 16px;
+    font-size: 13px;
+    padding: 8px 12px 8px 10px;
+  }
+  .wa-float .wa-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
