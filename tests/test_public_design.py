@@ -10,6 +10,7 @@ from starlette.requests import Request
 from app.enums.event_status import EventStatus
 from app.models.event import Event
 from app.routers import pages
+from app.services import event_page_service
 
 
 @pytest.mark.parametrize('opens_days,closes_days,is_open,label', [
@@ -66,6 +67,34 @@ def test_public_templates_render(name):
         assert 'Event yang sedang berjalan' in html
         assert all(label in html for label in ('Voting', 'Peringkat', 'Peserta', 'Bantuan'))
         assert 'Event &amp; Peserta' not in html
+
+
+def test_landing_renders_iso_string_closes_at_without_crashing():
+    """Regression: closes_at is an ISO string in the event payload, so the
+    hero card must use closes_at_display instead of strftime (500 fix)."""
+    event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
+             'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,
+             'closes_at': '2026-11-28T00:00:00+00:00', 'closes_at_display': '28 Nov 2026',
+             'price_per_vote': 1000}
+    html = pages.templates.get_template('pages/landing.html').render(
+        request=request(), event=event, all_events=[event], leaderboard=[])
+    assert '28 Nov 2026' in html
+
+
+def test_event_dict_closes_at_display_formats_indonesian_date():
+    now = datetime(2026, 11, 27, 23, 0, tzinfo=timezone.utc)
+    data = pages._event_dict(Event(id='event-display', name='Display Event',
+                                   status=EventStatus.VOTING_OPEN,
+                                   closes_at=now, timezone='Asia/Jakarta'))
+    assert data['closes_at_display'] == '28 Nov 2026'
+
+
+def test_event_dict_closes_at_display_empty_and_invalid():
+    event = Event(id='event-none', name='No Date', status=EventStatus.VOTING_OPEN)
+    assert pages._event_dict(event)['closes_at_display'] == ''
+    # display_date guards against unparsable ISO strings (model-level
+    # comparisons would still reject them, so only the helper is tested).
+    assert event_page_service.display_date('not-a-date') == ''
 
 
 def test_public_navigation_uses_routes_supported_by_current_app():

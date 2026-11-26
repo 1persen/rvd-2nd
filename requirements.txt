@@ -28,6 +28,10 @@ redis==5.2.0
 # Sprint 7 — export
 openpyxl==3.1.5
 
+# Event timezone display (closes_at_display) — zoneinfo fallback for hosts
+# without a system tz database (Windows/dev; Linux uses /usr/share/zoneinfo).
+tzdata==2026.6
+
 # Event themes — asset uploads (validate + normalize before Storage).
 # Renovate/pin-review should regenerate requirements.lock at the same time;
 # both packages have wheels for the pinned Python runtime.

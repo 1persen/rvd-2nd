@@ -268,6 +268,35 @@ def build_theme_css(theme: dict, assets: dict) -> str:
     return "\n".join(rules)
 
 
+# --- Display date helper ----------------------------------------------------
+_MONTHS_ID = ("", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des")
+
+
+def display_date(value: Any, tz_name: Optional[str] = None) -> str:
+    """Render a datetime or ISO string as '28 Nov 2026' (Indonesian months).
+
+    Accepts the ISO strings produced by ``event_dict`` so templates never call
+    ``strftime`` on a serialized payload. Falls back to UTC when the event
+    timezone is unknown on this host (e.g. missing tzdata).
+    """
+    if not value:
+        return ""
+    try:
+        dt = value if isinstance(value, datetime) else datetime.fromisoformat(
+            str(value).replace("Z", "+00:00")
+        )
+    except ValueError:
+        return ""
+    if tz_name:
+        try:
+            from zoneinfo import ZoneInfo
+
+            dt = dt.astimezone(ZoneInfo(tz_name))
+        except Exception:
+            pass
+    return f"{dt.day:02d} {_MONTHS_ID[dt.month]} {dt.year}"
+
+
 # --- Event payload ----------------------------------------------------------
 def event_dict(
     event,
@@ -299,6 +328,9 @@ def event_dict(
         "banner_url": _safe_url(getattr(event, "banner_url", None)),
         "opens_at": event.opens_at.isoformat() if event.opens_at else None,
         "closes_at": event.closes_at.isoformat() if event.closes_at else None,
+        "closes_at_display": display_date(
+            event.closes_at, getattr(event, "timezone", None)
+        ),
         "price_per_vote": getattr(event, "price_per_vote", 10000) or 10000,
         "category": category,
         "category_label": EDUCATION_LABELS.get(category, ""),
