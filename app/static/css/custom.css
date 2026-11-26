@@ -421,9 +421,9 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 .public-site .home-page section {
   padding-block: var(--sp-section-gap) !important;
 }
-/* Desktop hero padding - reduced to avoid excessive spacing */
+/* Desktop hero padding - zero, spacing handled by .home-hero-inner */
 .public-site .home-hero {
-  padding: 64px 5% 48px !important;
+  padding: 0 !important;
   margin-top: 0 !important;
   background: var(--surface, #fff) !important;
 }
