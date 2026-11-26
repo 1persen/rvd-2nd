@@ -82,24 +82,33 @@
                 <span class="hero-element-orbit-2"></span>
               </div>
             </div>
-            <!-- Column 3: Event card (floating) -->
-            <div class="home-hero-card">
-              {% if event %}<a class="hero-event-card" href="{{ event.invite_path }}">
-                <div class="hero-event-card__top">
-                  <span class="status-pill {{ 'status-open' if event.is_voting_open else '' }}">
-                    <i></i>{{ 'Voting dibuka' if event.is_voting_open else event.status }}
-                  </span>
-                  <span class="hero-event-card__mark">RVD</span>
-                </div>
-                {% if event.banner_url %}<img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">{% endif %}
-                <div class="hero-event-card__body">
-                  <strong class="hero-event-card__title">{{ event.name }}</strong>
-                  <p class="hero-event-card__desc">{{ event.description or 'Kompetisi pilihan Raja Voting Digital' }}</p>
-                  {% if event.price_per_vote %}<p class="hero-event-card__price">Rp{{ '{:,.0f}'.format(event.price_per_vote).replace(',', '.') }} <span>per vote</span></p>{% endif %}
-                  <span class="hero-event-card__cta">{{ icon('arrow') }} Buka event</span>
-                </div>
-              </a>{% endif %}
-            </div>
+            <!-- Column 3: Event card (floating) — overlay style per reference -->
+                        <div class="home-hero-card">
+                          {% if event %}
+                          <a class="hero-event-card" href="{{ event.invite_path }}">
+                            {% if event.banner_url %}
+                            <img src="{{ event.banner_url }}" alt="Poster {{ event.name }}" width="1200" height="675" loading="lazy" onerror="this.style.display='none'">
+                            {% endif %}
+                            <div class="hero-event-card__overlay">
+                              <div class="hero-event-card__badge-wrap">
+                                <span class="hero-event-card__badge">
+                                  {% if event.is_voting_open %}Voting dibuka{% else %}{{ event.status }}{% endif %}
+                                </span>
+                              </div>
+                              <div class="hero-event-card__content">
+                                <h3 class="hero-event-card__title">{{ event.name }}</h3>
+                                <div class="hero-event-card__meta">
+                                  {% if event.closes_at %}
+                                  <svg class="hero-event-card__meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"></path></svg>
+                                  <span class="hero-event-card__meta-text">{{ event.closes_at.strftime('%d %b %Y') }}</span>
+                                  {% endif %}
+                                </div>
+                                <span class="hero-event-card__cta">Lihat Detail</span>
+                              </div>
+                            </div>
+                          </a>
+                          {% endif %}
+                        </div>
           </div>
         </div>
     </section>
