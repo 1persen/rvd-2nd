@@ -470,9 +470,12 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 /* ======================================== simpan package card styling - gunakan button-primary di custom.css === */
 
 /* === Hero 3-zone layout (branding | circle hero | event card floating) - 25:50:25 ratio === */
+/* Col 1 keeps a functional min-width: below ~360px the CTA wraps vertically and
+   benefit items pile up. When the row can no longer fit 360px, the media query
+   below (~1180px) collapses the grid to a single stacked column instead. */
 .public-site .home-page .home-hero-inner {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr) !important;
+  grid-template-columns: minmax(360px, 1fr) minmax(0, 2fr) minmax(0, 1fr) !important;
   gap: 32px !important;
   width: 100% !important;
   max-width: 1440px !important;
@@ -775,9 +778,12 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
 
 /* Gold curve margin 8px 0 (duplicate removed) */
 
-/* CTA Buttons - inline horizontal, Tentang Kami kiri, Daftar Mitra kanan */
+/* CTA Buttons - inline horizontal, Tentang Kami kiri, Daftar Mitra kanan.
+   nowrap: buttons never split into stacked rows; the 360px copy column
+   (and the stacked fallback below) always fits both pills. */
 .public-site .home-page .hero-actions--inline {
   display: flex !important;
+  flex-wrap: nowrap !important;
   gap: 16px !important;
   margin-bottom: 16px !important;
   position: relative !important;
@@ -812,15 +818,17 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   transform: translateX(4px) !important;
 }
 
-/* Benefits - horizontal with navy text and thin gray separators */
+/* Benefits - single horizontal row, left-aligned with the copy stack.
+   Left-aligned (not centered) so the row shares the headline/CTA edge;
+   items are sized to fit one row inside the 360px copy column. */
 .public-site .home-page .home-proof-line {
   display: flex !important;
   align-items: center !important;
-  justify-content: center !important;
+  justify-content: flex-start !important;
   flex-wrap: wrap !important;
-  gap: 16px !important;
+  gap: 10px !important;
   margin-top: 28px !important;
-  font-size: clamp(12px, 1.8vw, 13px) !important;
+  font-size: clamp(11px, 1vw, 12px) !important;
   position: relative !important;
 }
 .public-site .home-page .benefit-item {
@@ -828,17 +836,18 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   flex-direction: row !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  gap: 12px !important;
+  gap: 6px !important;
   text-align: left !important;
   flex: none !important;
   color: var(--navy, #0B1D3A) !important;
+  white-space: nowrap !important;
 }
 .public-site .home-page .benefit-item:first-child {
   padding-left: 0 !important;
 }
 .public-site .home-page .benefit-item + .benefit-item {
   position: relative;
-  padding-left: 16px !important;
+  padding-left: 14px !important;
 }
 .public-site .home-page .benefit-item:not(:first-child)::before {
   content: '';
@@ -847,27 +856,17 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
   top: 50% !important;
   transform: translateY(-50%) !important;
   width: 1px !important;
-  height: 20px !important;
+  height: 16px !important;
   background: rgba(83, 100, 126, 0.3) !important;
 }
 .public-site .home-page .benefit-icon {
-  width: clamp(28px, 4vw, 32px) !important;
-  height: clamp(28px, 4vw, 32px) !important;
+  width: clamp(15px, 1.6vw, 18px) !important;
+  height: clamp(15px, 1.6vw, 18px) !important;
   flex-shrink: 0 !important;
   color: var(--navy, #0B1D3A) !important;
 }
-.public-site .home-page .benefit-text {
-  font-size: 12px !important;
-  color: var(--navy, #0B1D3A) !important;
-  font-weight: 600 !important;
-}
-.public-site .home-page .benefit-separator {
-  display: inline-block !important;
-  width: 1px !important;
-  height: 20px !important;
-  background: rgba(83, 100, 126, 0.3) !important;
-  flex-shrink: 0 !important;
-}
+/* Separator spans removed from landing.html — the ::before line above is the
+   single separator between benefit items (prevents doubled vertical lines). */
 
 /* Responsive: Mobile - stack everything */
 @media (max-width: 760px) {
@@ -911,22 +910,41 @@ html.dark .public-site .public-header .desktop-nav a.nav-pill.is-active {
     }
 }
 
-/* === Hero responsive: 3-col -> 2-col -> stacked === */
-@media (max-width: 1024px) {
+/* === Hero responsive: 3-col -> auto-stacked ===
+   When the row can no longer guarantee the 360px copy column (~1180px),
+   collapse to ONE column: copy, visual, and card stack full-width so the
+   CTA row and benefit row always render on a single line instead of
+   being squeezed and piling up. */
+@media (max-width: 1180px) {
   .public-site .home-page .home-hero-inner {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    justify-items: start !important;
+  }
+  .public-site .home-hero-card,
+  .public-site .home-hero-visual {
+    grid-column: 1 !important;
+  }
+  .public-site .home-hero-visual {
+    min-height: 320px !important;
   }
   .public-site .home-hero-card {
-    grid-column: 2 !important;
+    justify-self: center !important;
+    width: 100% !important;
+    max-width: 300px !important;
   }
 }
 @media (max-width: 760px) {
   .public-site .home-page .home-hero-inner {
     grid-template-columns: minmax(0, 1fr) !important;
+    padding: 32px 5% !important;
   }
   .public-site .home-hero-card {
     grid-column: 1 !important;
     max-width: 280px !important;
+  }
+  .public-site .home-page .hero-actions--inline .button {
+    padding: 10px 16px !important;
+    font-size: 13px !important;
   }
 }
 

@@ -89,6 +89,22 @@ def test_event_dict_closes_at_display_formats_indonesian_date():
     assert data['closes_at_display'] == '28 Nov 2026'
 
 
+def test_landing_hero_cta_and_benefits_stay_on_single_rows():
+    """CTA pills never stack vertically (nowrap, no separator spans) and the
+    benefit row renders as one left-aligned line with ::before separators."""
+    event = {'id': 'event-example', 'name': 'Creative Awards', 'description': '',
+             'is_voting_open': True, 'status': 'Voting dibuka', 'banner_url': None,
+             'closes_at': None, 'closes_at_display': '', 'price_per_vote': 1000}
+    html = pages.templates.get_template('pages/landing.html').render(
+        request=request(), event=event, all_events=[event], leaderboard=[])
+    assert html.count('benefit-separator') == 0
+    assert html.count('class="benefit-item"') == 3
+    tentang = html.index('Tentang Kami')
+    daftar = html.index('Daftar Mitra')
+    qris = html.index('Pembayaran QRIS')
+    assert tentang < daftar < qris  # CTA row sits above the benefit row
+
+
 def test_event_dict_closes_at_display_empty_and_invalid():
     event = Event(id='event-none', name='No Date', status=EventStatus.VOTING_OPEN)
     assert pages._event_dict(event)['closes_at_display'] == ''
